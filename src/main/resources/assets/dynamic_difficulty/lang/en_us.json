@@ -1,0 +1,5 @@
+{
+  "dynamic_difficulty.level": "Level %s",
+  "config.jade.plugin_dynamic_difficulty.level": "Level",
+  "jade.dynamic_difficulty.tooltip": "Level: %d"
+}

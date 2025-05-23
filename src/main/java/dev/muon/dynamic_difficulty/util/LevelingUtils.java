@@ -1,0 +1,95 @@
+package dev.muon.dynamic_difficulty.util;
+
+import dev.muon.dynamic_difficulty.DynamicDifficulty;
+import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.settings.LevelingSettings;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.tags.TagKey;
+import net.minecraft.core.registries.Registries;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Utility methods for the Dynamic Difficulty mod.
+ * These methods handle general-purpose calculations and checks that aren't part of the core leveling system.
+ */
+public class LevelingUtils {
+    private static final TagKey<EntityType<?>> PASSIVE_WHITELIST = TagKey.create(Registries.ENTITY_TYPE,
+            DynamicDifficulty.loc("passive_whitelist"));
+
+    /**
+     * Checks if an entity type can have levels applied based on configuration and entity properties
+     */
+    public static boolean canHaveLevel(Entity entity) {
+        if (!(entity instanceof LivingEntity)) return false;
+        if (entity.getType() == EntityType.PLAYER) return false;
+
+        if (entity instanceof Animal animal && Config.COMMON.cancelLevelsForPassives.get()) {
+            if (entity.getType().is(PASSIVE_WHITELIST)) {
+                return true;
+            }
+            if (animal.getAttribute(Attributes.ATTACK_DAMAGE) == null ||
+                    animal.getAttribute(Attributes.ATTACK_DAMAGE).getValue() <= 0) {
+                return false;
+            }
+        }
+
+        return isEntityAllowed(entity);
+    }
+
+    /**
+     * Checks if an entity's level should be displayed based on configuration
+     */
+    public static boolean shouldShowLevel(Entity entity) {
+        ResourceLocation entityId = EntityType.getKey(entity.getType());
+        List<String> blacklist = Config.CLIENT.hiddenLevelEntities.get();
+        return !blacklist.contains(entityId.toString()) &&
+                !blacklist.contains(entityId.getNamespace() + ":*");
+    }
+
+    /**
+     * Gets the structure level bonus from configuration
+     */
+    public static int getStructureLevelBonus(ResourceLocation structureId) {
+        // TODO: use datapack system
+        // Map<String, Integer> bonuses = Config.COMMON.structureLevelBonuses.get();
+        // String key = structureId.toString();
+        // return bonuses.getOrDefault(key, 0);
+        return 0;
+    }
+
+    /**
+     * Calculates base level from distance and depth
+     */
+    public static int calculateDistanceFactors(
+            LivingEntity entity,
+            double distanceToSpawn,
+            LevelingSettings settings) {
+        double distanceLevel = distanceToSpawn * settings.levelsPerDistance();
+        double depthLevel = -entity.getY() * settings.levelsPerDeepness();
+        return (int) (distanceLevel + depthLevel);
+    }
+
+    /**
+     * Checks if an entity is allowed to have levels based on whitelist/blacklist configuration
+     */
+    private static boolean isEntityAllowed(Entity entity) {
+        ResourceLocation entityId = EntityType.getKey(entity.getType());
+        String namespace = entityId.getNamespace();
+
+        List<String> blacklist = Config.COMMON.blacklistedMobs.get();
+        if (blacklist.contains(namespace + ":*") || blacklist.contains(entityId.toString())) {
+            return false;
+        }
+
+        List<String> whitelist = Config.COMMON.whitelistedMobs.get();
+        if (whitelist.isEmpty()) return true;
+        return whitelist.contains(namespace + ":*") || whitelist.contains(entityId.toString());
+    }
+}

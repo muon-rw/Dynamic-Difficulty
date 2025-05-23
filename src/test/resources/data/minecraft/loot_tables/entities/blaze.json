@@ -11,7 +11,7 @@
       ],
       "conditions": [
         {
-          "condition": "autoleveling:level_check",
+          "condition": "dynamic_difficulty:level_check",
           "min": 5,
           "max": 10
         },
