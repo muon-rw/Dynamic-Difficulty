@@ -5,19 +5,17 @@ import java.util.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.common.ForgeConfigSpec.ConfigValue;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.common.ModConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec.ConfigValue;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class Config {
   public static final Common COMMON;
-  public static final ForgeConfigSpec COMMON_SPEC;
+  public static final ModConfigSpec COMMON_SPEC;
   public static final Client CLIENT;
-  public static final ForgeConfigSpec CLIENT_SPEC;
+  public static final ModConfigSpec CLIENT_SPEC;
   private static final Map<Attribute, AttributeModifier> ATTRIBUTE_BONUSES = new HashMap<>();
 
   // Define the RenderBehavior enum
@@ -27,17 +25,17 @@ public class Config {
     LOOKING_AT
   }
 
-  public static void register(FMLJavaModLoadingContext context) {
-    context.registerConfig(ModConfig.Type.COMMON, COMMON_SPEC);
-    context.registerConfig(ModConfig.Type.CLIENT, CLIENT_SPEC);
+  public static void register(ModContainer container) {
+    container.registerConfig(ModConfig.Type.COMMON, COMMON_SPEC);
+    container.registerConfig(ModConfig.Type.CLIENT, CLIENT_SPEC);
   }
 
   static {
-    Pair<Common, ForgeConfigSpec> commonSpec = new ForgeConfigSpec.Builder().configure(Common::new);
+    Pair<Common, ModConfigSpec> commonSpec = new ModConfigSpec.Builder().configure(Common::new);
     COMMON_SPEC = commonSpec.getRight();
     COMMON = commonSpec.getLeft();
 
-    Pair<Client, ForgeConfigSpec> clientSpec = new ForgeConfigSpec.Builder().configure(Client::new);
+    Pair<Client, ModConfigSpec> clientSpec = new ModConfigSpec.Builder().configure(Client::new);
     CLIENT_SPEC = clientSpec.getRight();
     CLIENT = clientSpec.getLeft();
   }
@@ -58,7 +56,7 @@ public class Config {
 
     // Player-Based Scaling
     public final ConfigValue<Double> playerLevelRadius;
-    public final ForgeConfigSpec.DoubleValue levelsPerPoint;
+    public final ModConfigSpec.DoubleValue levelsPerPoint;
     public final ConfigValue<Boolean> applyPlayerBasedLeveling;
 
     // Blacklist / Whitelist
@@ -69,7 +67,7 @@ public class Config {
     // Attribute Bonuses
     public final ConfigValue<List<? extends List<Object>>> attributesBonuses;
 
-    public Common(ForgeConfigSpec.Builder builder) {
+    public Common(ModConfigSpec.Builder builder) {
       builder.push("Base Leveling");
       startingLevel = builder
               .comment("Base level for all entities")
@@ -141,7 +139,7 @@ public class Config {
 
   public static class Client {
     // Visibility
-    public final ForgeConfigSpec.EnumValue<RenderBehavior> renderBehavior;
+    public final ModConfigSpec.EnumValue<RenderBehavior> renderBehavior;
     public final ConfigValue<Double> renderDistance;
     public final ConfigValue<List<String>> hiddenLevelEntities;
 
@@ -150,7 +148,7 @@ public class Config {
     public final ConfigValue<Integer> levelTextShiftY;
     public final ConfigValue<Float> textScale;
 
-    public Client(ForgeConfigSpec.Builder builder) {
+    public Client(ModConfigSpec.Builder builder) {
       builder.push("Level Plate Settings");
       renderBehavior = builder
               .comment("Determines when entity levels are rendered: ALWAYS, NEVER, or LOOKING_AT (only when the player is looking directly at/near the entity).")
@@ -195,17 +193,21 @@ public class Config {
   }
 
   private static void readAttributeBonus(List<Object> attributeBonusConfig) {
-    ResourceLocation attributeId = new ResourceLocation((String) attributeBonusConfig.get(0));
-    Attribute attribute = ForgeRegistries.ATTRIBUTES.getValue(attributeId);
+    ResourceLocation attributeId = ResourceLocation.tryParse((String) attributeBonusConfig.get(0));
+    if (attributeId == null) {
+        DynamicDifficulty.LOGGER.error("Attribute ID '{}' is invalid!", attributeBonusConfig.get(0));
+        return;
+    }
+    Attribute attribute = net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.get(attributeId);
     float attributeBonus = ((Double) attributeBonusConfig.get(1)).floatValue();
     if (attribute == null) {
-      DynamicDifficulty.LOGGER.error("Attribute '" + attributeId + "' can not be found!");
+      DynamicDifficulty.LOGGER.error("Attribute '{}' can not be found!", attributeId);
       return;
     }
-    UUID uuid = UUID.fromString("6a102cb4-d735-4cb7-8ab2-3d383219a44e");
-    AttributeModifier.Operation operation = AttributeModifier.Operation.MULTIPLY_BASE;
+    ResourceLocation modifierId = ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, "autoleveling_config_bonus");
+    AttributeModifier.Operation operation = AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
     AttributeModifier modifier =
-            new AttributeModifier(uuid, "AutoLeveling", attributeBonus, operation);
+            new AttributeModifier(modifierId, attributeBonus, operation);
     ATTRIBUTE_BONUSES.put(attribute, modifier);
   }
 }

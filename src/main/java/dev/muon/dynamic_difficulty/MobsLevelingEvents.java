@@ -9,11 +9,13 @@ import dev.muon.dynamic_difficulty.mixin.LivingEntityAccessor;
 import dev.muon.dynamic_difficulty.network.NetworkDispatcher;
 import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
 
-import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -32,19 +34,18 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.living.LivingDropsEvent;
-import net.minecraftforge.event.entity.living.LivingExperienceDropEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 @EventBusSubscriber(modid = DynamicDifficulty.MODID)
 public class MobsLevelingEvents {
@@ -81,11 +82,12 @@ public class MobsLevelingEvents {
   public static void dropAdditionalLoot(LivingDropsEvent event) {
     LivingEntity entity = event.getEntity();
     if (!LevelingAPI.hasLevel(entity)) return;
-    ResourceLocation lootTableId =
-        new ResourceLocation(DynamicDifficulty.MODID, "gameplay/leveled_mobs");
+    ResourceLocation lootTableIdRL =
+        ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, "gameplay/leveled_mobs");
     MinecraftServer server = entity.level().getServer();
     if (server == null) return;
-    LootTable lootTable = server.getLootData().getLootTable(lootTableId);
+    ResourceKey<LootTable> lootTableKey = ResourceKey.create(Registries.LOOT_TABLE, lootTableIdRL);
+    LootTable lootTable = server.reloadableRegistries().getLootTable(lootTableKey);
     LootParams lootParams = createLootParams(entity, event.getSource());
     lootTable.getRandomItems(lootParams, entity::spawnAtLocation);
   }
@@ -98,19 +100,18 @@ public class MobsLevelingEvents {
 
   @SubscribeEvent
   public static void syncEntityLevel(PlayerEvent.StartTracking event) {
-    if (!LevelingAPI.hasLevel(event.getTarget())) return;
-    LivingEntity entity = (LivingEntity) event.getTarget();
-    ServerPlayer player = (ServerPlayer) event.getEntity();
-    PacketDistributor.PacketTarget packetTarget = PacketDistributor.PLAYER.with(() -> player);
-    NetworkDispatcher.CHANNEL.send(packetTarget, new SyncLevelingData(entity));
+    if (!(event.getTarget() instanceof LivingEntity trackedEntity) || !LevelingAPI.hasLevel(trackedEntity)) return;
+    if (!(event.getEntity() instanceof ServerPlayer player)) return;
+
+    PacketDistributor.sendToPlayer(player, new SyncLevelingData(trackedEntity));
   }
 
   @SubscribeEvent
-  public static void applyAttributesDamageBonus(LivingHurtEvent event) {
+  public static void applyAttributesDamageBonus(LivingDamageEvent.Pre event) {
     DamageSource damage = event.getSource();
     if (!(damage.getEntity() instanceof LivingEntity attacker)) return;
     float multiplier = getDamageMultiplier(damage, attacker);
-    if (multiplier > 1F) event.setAmount(event.getAmount() * multiplier);
+    if (multiplier > 1F) event.setNewDamage(event.getNewDamage() * multiplier);
   }
 
   public static float getDamageMultiplier(DamageSource damage, LivingEntity attacker) {
@@ -124,76 +125,29 @@ public class MobsLevelingEvents {
   }
 
   private static float getAttributeValue(LivingEntity entity, Attribute damageBonusAttribute) {
-    if (entity.getAttribute(damageBonusAttribute) == null) return 0F;
-    return (float) Objects.requireNonNull(entity.getAttribute(damageBonusAttribute)).getValue();
-  }
-
-  @OnlyIn(Dist.CLIENT)
-  public static boolean shouldShowName(LivingEntity entity) {
-    Minecraft minecraft = Minecraft.getInstance();
-    LocalPlayer clientPlayer = minecraft.player;
-
-    // Initial checks from original method
-    if (clientPlayer == null) return false;
-    if (!Minecraft.renderNames()) return false;
-    if (entity.isVehicle()) return false;
-    if (entity == minecraft.getCameraEntity()) return false;
-
-    // Line of sight and invisibility (occlusion) - UNCOMMENTED
-    if (!clientPlayer.hasLineOfSight(entity) || entity.isInvisibleTo(clientPlayer)) return false;
-
-    // Leveling API checks
-    if (!LevelingAPI.hasLevel(entity)) {
-        // This check should now work correctly on the client due to LevelingSystem changes
-        return false; 
-    }
-
-    // UNCOMMENTED
-    if (!LevelingAPI.shouldShowLevel(entity)) return false; // Uses LevelingUtils which checks hiddenLevelEntities
-
-    // Config: Max Render Distance - UNCOMMENTED
-    double maxDistSq = Config.CLIENT.renderDistance.get() * Config.CLIENT.renderDistance.get();
-    if (entity.distanceToSqr(clientPlayer) > maxDistSq) {
-      return false;
-    }
-
-    // Config: Render Behavior
-    Config.RenderBehavior behavior = Config.CLIENT.renderBehavior.get();
-    switch (behavior) {
-      case NEVER:
-        return false;
-      case ALWAYS:
-        return true;
-      case LOOKING_AT:
-        HitResult hitResult = minecraft.hitResult;
-        if (hitResult != null && hitResult.getType() == HitResult.Type.ENTITY) {
-          EntityHitResult entityHitResult = (EntityHitResult) hitResult;
-          return entityHitResult.getEntity() == entity;
-        }
-        return false; 
-      default:
-        return false; 
-    }
+    var attributeInstance = entity.getAttribute(Holder.direct(damageBonusAttribute));
+    if (attributeInstance == null) return 1F;
+    return (float) attributeInstance.getValue();
   }
 
   @SubscribeEvent
   public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-    if (!event.getEntity().level().isClientSide()) {
-      NetworkDispatcher.syncLevelToAll((LivingEntity)event.getEntity());
+    if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof LivingEntity livingEntity) {
+      NetworkDispatcher.syncLevelToAllPlayers(livingEntity);
     }
   }
 
   @SubscribeEvent
   public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
-    if (!event.getEntity().level().isClientSide()) {
-      NetworkDispatcher.syncLevelToAll((LivingEntity)event.getEntity());
+    if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof LivingEntity livingEntity) {
+      NetworkDispatcher.syncLevelToAllPlayers(livingEntity);
     }
   }
 
   @SubscribeEvent
   public static void onPlayerChangeDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-    if (!event.getEntity().level().isClientSide()) {
-      NetworkDispatcher.syncLevelToAll((LivingEntity)event.getEntity());
+    if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof LivingEntity livingEntity) {
+      NetworkDispatcher.syncLevelToAllPlayers(livingEntity);
     }
   }
 
@@ -222,15 +176,16 @@ public class MobsLevelingEvents {
   private static LootTable getEquipmentLootTableForSlot(
       MinecraftServer server, LivingEntity entity, EquipmentSlot slot) {
     ResourceLocation entityId = EntityType.getKey(entity.getType());
-    ResourceLocation lootTableId = getEquipmentTableId(slot, entityId);
-    return server.getLootData().getLootTable(lootTableId);
+    ResourceLocation lootTableIdRL = getEquipmentTableId(slot, entityId);
+    ResourceKey<LootTable> lootTableKey = ResourceKey.create(Registries.LOOT_TABLE, lootTableIdRL);
+    return server.reloadableRegistries().getLootTable(lootTableKey);
   }
 
   @Nonnull
   private static ResourceLocation getEquipmentTableId(
       EquipmentSlot slot, ResourceLocation entityId) {
     String path = "equipment/" + entityId.getPath() + "_" + slot.getName();
-    return new ResourceLocation(entityId.getNamespace(), path);
+    return ResourceLocation.fromNamespaceAndPath(entityId.getNamespace(), path);
   }
 
   private static LootParams createLootParams(LivingEntity entity, DamageSource damageSource) {
@@ -241,9 +196,9 @@ public class MobsLevelingEvents {
             .withParameter(LootContextParams.THIS_ENTITY, entity)
             .withParameter(LootContextParams.ORIGIN, entity.position())
             .withParameter(LootContextParams.DAMAGE_SOURCE, damageSource)
-            .withOptionalParameter(LootContextParams.KILLER_ENTITY, damageSource.getEntity())
+            .withOptionalParameter(LootContextParams.ATTACKING_ENTITY, damageSource.getEntity())
             .withOptionalParameter(
-                LootContextParams.DIRECT_KILLER_ENTITY, damageSource.getDirectEntity());
+                LootContextParams.DIRECT_ATTACKING_ENTITY, damageSource.getDirectEntity());
     int lastHurtByPlayerTime = accessor.getLastHurtByPlayerTime();
     Player lastHurtByPlayer = accessor.getLastHurtByPlayer();
     if (lastHurtByPlayerTime > 0 && lastHurtByPlayer != null) {
@@ -259,6 +214,6 @@ public class MobsLevelingEvents {
     return new LootParams.Builder((ServerLevel) entity.level())
         .withParameter(LootContextParams.THIS_ENTITY, entity)
         .withParameter(LootContextParams.ORIGIN, entity.position())
-        .create(LootContextParamSets.SELECTOR);
+        .create(LootContextParamSets.ENTITY);
   }
 }

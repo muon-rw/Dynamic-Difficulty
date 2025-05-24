@@ -5,12 +5,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
+import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.settings.EntityLevelingSettings;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import javax.annotation.Nullable;
 
-import dev.muon.dynamic_difficulty.settings.LevelingSettings;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
@@ -18,13 +20,11 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.level.storage.loot.Deserializers;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.slf4j.Logger;
 
 public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadListener {
   private static final Logger LOGGER = LogUtils.getLogger();
-  private static final Gson GSON = Deserializers.createLootTableSerializer().create();
+  private static final Gson GSON = new Gson();
   private static final Map<ResourceLocation, EntityLevelingSettings> SETTINGS = new HashMap<>();
 
   public EntityLevelingSettingsReloader() {
@@ -33,7 +33,7 @@ public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadList
 
   @Nullable
   public static EntityLevelingSettings get(EntityType<?> entityType) {
-    return SETTINGS.get(ForgeRegistries.ENTITY_TYPES.getKey(entityType));
+    return SETTINGS.get(BuiltInRegistries.ENTITY_TYPE.getKey(entityType));
   }
 
   @Override
@@ -59,7 +59,7 @@ public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadList
     }
   }
 
-  private Map<Attribute, AttributeModifier> readAttributeModifiers(JsonObject json) {
+  private Map<Attribute, AttributeModifier> readAttributeModifiers(JsonObject json, ResourceLocation entityFileId) {
     Map<Attribute, AttributeModifier> attributeModifiers = new HashMap<>();
     if (!json.has("attribute_modifiers")) {
       return attributeModifiers;
@@ -69,18 +69,26 @@ public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadList
     for (JsonElement element : modifiersArray) {
       JsonObject modifierObject = element.getAsJsonObject();
       String attributeKey = modifierObject.get("attribute").getAsString();
-      ResourceLocation attributeId = new ResourceLocation(attributeKey);
-      Attribute attribute = ForgeRegistries.ATTRIBUTES.getValue(attributeId);
+      ResourceLocation attributeId = ResourceLocation.tryParse(attributeKey);
+      if (attributeId == null) {
+        LOGGER.warn("Invalid attribute ResourceLocation string: {}", attributeKey);
+        continue;
+      }
+      Attribute attribute = BuiltInRegistries.ATTRIBUTE.get(attributeId);
 
       if (attribute != null) {
         double amount = modifierObject.get("amount").getAsDouble();
         AttributeModifier.Operation operation = getOperation(modifierObject.get("operation").getAsInt());
+        
+        String modifierName = "leveling_bonus_" + entityFileId.getPath().replace("/", "_") + "_" + attributeId.getPath().replace("/", "_");
+        ResourceLocation uniqueModifierId = ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, modifierName);
+
         attributeModifiers.put(attribute, new AttributeModifier(
-                "LevelingBonus", amount, operation));
-        LOGGER.debug("Added attribute modifier: {} = {} ({})",
-                attributeId, amount, operation);
+                uniqueModifierId, amount, operation));
+        LOGGER.debug("Added attribute modifier: {} = {} ({}) for entity settings {}",
+                attributeId, amount, operation, entityFileId);
       } else {
-        LOGGER.warn("Unknown attribute: {}", attributeId);
+        LOGGER.warn("Unknown attribute: {} for entity settings {}", attributeId, entityFileId);
       }
     }
     return attributeModifiers;
@@ -88,12 +96,12 @@ public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadList
 
   private AttributeModifier.Operation getOperation(int operationId) {
     return switch (operationId) {
-      case 0 -> AttributeModifier.Operation.ADDITION;
-      case 1 -> AttributeModifier.Operation.MULTIPLY_BASE;
-      case 2 -> AttributeModifier.Operation.MULTIPLY_TOTAL;
+      case 0 -> AttributeModifier.Operation.ADD_VALUE;
+      case 1 -> AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
+      case 2 -> AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
       default -> {
-        LOGGER.warn("Unknown operation ID: {}. Defaulting to ADDITION", operationId);
-        yield AttributeModifier.Operation.ADDITION;
+        LOGGER.warn("Unknown operation ID: {}. Defaulting to ADD_VALUE", operationId);
+        yield AttributeModifier.Operation.ADD_VALUE;
       }
     };
   }
@@ -102,7 +110,7 @@ public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadList
     String path = fileId.getPath();
     String[] pathParts = path.split("/");
     String entityName = pathParts[pathParts.length - 1].replace(".json", "");
-    return new ResourceLocation(fileId.getNamespace(), entityName);
+    return ResourceLocation.fromNamespaceAndPath(fileId.getNamespace(), entityName);
   }
 
   private void loadSettings(ResourceLocation fileId, JsonElement jsonElement) {
@@ -111,6 +119,7 @@ public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadList
 
       // Validate required fields first
       validateRequiredFields(jsonObject);
+      ResourceLocation normalizedFileId = normalizeResourceLocation(fileId);
 
       EntityLevelingSettings settings = new EntityLevelingSettings(
               jsonObject.get("starting_level").getAsInt(),
@@ -118,12 +127,11 @@ public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadList
               jsonObject.get("levels_per_distance").getAsFloat(),
               jsonObject.get("levels_per_deepness").getAsFloat(),
               jsonObject.get("random_level_bonus").getAsInt(),
-              readAttributeModifiers(jsonObject)
+              readAttributeModifiers(jsonObject, normalizedFileId)
       );
 
-      ResourceLocation entityId = normalizeResourceLocation(fileId);
-      SETTINGS.put(entityId, settings);
-      LOGGER.debug("Loaded leveling settings for {}", entityId);
+      SETTINGS.put(normalizedFileId, settings);
+      LOGGER.debug("Loaded leveling settings for {}", normalizedFileId);
     } catch (Exception exception) {
       LOGGER.error("Couldn't load leveling settings {}", fileId, exception);
     }

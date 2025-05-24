@@ -132,7 +132,6 @@ public class LevelingAPI {
     /**
      * Registers a new provider for calculating player levels
      * @param provider The provider to register
-     * @since 1.0.0
      */
     public static void registerPlayerLevelProvider(PlayerLevelProvider provider) {
         PlayerLevelProvider.registerProvider(provider);

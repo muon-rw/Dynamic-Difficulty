@@ -2,60 +2,40 @@ package dev.muon.dynamic_difficulty.network;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
-@Mod.EventBusSubscriber(modid = DynamicDifficulty.MODID)
+@EventBusSubscriber(modid = DynamicDifficulty.MODID, bus = EventBusSubscriber.Bus.MOD)
 public class NetworkDispatcher {
-  private static final String PROTOCOL_VERSION = "1";
-  public static SimpleChannel CHANNEL;
-  private static int packetId = 0;
 
-  private static int nextPacketId() {
-    return packetId++;
-  }
+  @SubscribeEvent
+  public static void registerPackets(final RegisterPayloadHandlersEvent event) {
+    final PayloadRegistrar registrar = event.registrar(DynamicDifficulty.MODID)
+            .versioned("1");
 
-  public static void init() {
-    CHANNEL = NetworkRegistry.newSimpleChannel(
-            new ResourceLocation(DynamicDifficulty.MODID, "main"),
-            () -> PROTOCOL_VERSION,
-            PROTOCOL_VERSION::equals,
-            PROTOCOL_VERSION::equals
+    registrar.playToClient(
+            SyncLevelingData.TYPE,
+            CustomPacketPayload.codec(SyncLevelingData::write, SyncLevelingData::new),
+            SyncLevelingData::handle
     );
-
-    // Register messages
-    CHANNEL.messageBuilder(SyncLevelingData.class, nextPacketId(), NetworkDirection.PLAY_TO_CLIENT)
-            .encoder(SyncLevelingData::encode)
-            .decoder(SyncLevelingData::decode)
-            .consumerMainThread(SyncLevelingData::handle)
-            .add();
   }
 
   public static void syncLevelToClients(LivingEntity entity) {
     if (entity.level().isClientSide()) return;
-    CHANNEL.send(
-            PacketDistributor.TRACKING_ENTITY.with(() -> entity),
-            new SyncLevelingData(entity)
-    );
+    PacketDistributor.sendToPlayersTrackingEntity(entity, new SyncLevelingData(entity));
   }
 
   public static void syncLevelToPlayer(LivingEntity entity, ServerPlayer player) {
-    CHANNEL.send(
-            PacketDistributor.PLAYER.with(() -> player),
-            new SyncLevelingData(entity)
-    );
+    PacketDistributor.sendToPlayer(player, new SyncLevelingData(entity)); 
   }
 
-  public static void syncLevelToAll(LivingEntity entity) {
-    CHANNEL.send(
-            PacketDistributor.ALL.noArg(),
-            new SyncLevelingData(entity)
-    );
+  public static void syncLevelToAllPlayers(LivingEntity entity) {
+    PacketDistributor.sendToAllPlayers(new SyncLevelingData(entity));
   }
 }

@@ -5,77 +5,47 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
- * Interface for providing player level calculations from different sources.
- * This system allows mods to contribute their own player level calculations
- * to the Dynamic Difficulty mod's mob scaling system.
- *
- * Usage:
- * 1. To add your own leveling system:
- *    - Implement this interface
- *    - Call {@link #registerProvider(PlayerLevelProvider)} during mod initialization
- *    Example:
- *    {@code
- *    public class MyLevelProvider implements PlayerLevelProvider {
- *        @Override
- *        public boolean isEnabled() {
- *            return true; // or check if your mod/system is active
- *        }
- *
- *        @Override
- *        public int calculateBonusLevels(List<Player> players) {
- *            // Calculate and return level contribution
- *        }
- *    }
- *
- *    // During mod init:
- *    PlayerLevelProvider.registerProvider(new MyLevelProvider());
- *    }
- *
- * 2. To use existing providers:
- *    {@code
- *    int totalLevels = PlayerLevelProvider.getProviders().stream()
- *        .filter(PlayerLevelProvider::isEnabled)
- *        .mapToInt(provider -> provider.calculateLevels(players))
- *        .sum();
- *    }
+ * Interface for mods to provide their own player level calculations to Dynamic Difficulty.
+ * Implement this interface and register it via {@link LevelingAPI#registerPlayerLevelProvider(PlayerLevelProvider)}
+ * to contribute to the overall player level considered by Dynamic Difficulty when scaling mobs.
  */
 public interface PlayerLevelProvider {
     List<PlayerLevelProvider> providers = new ArrayList<>();
 
     /**
-     * Checks if this provider should be used for calculations.
-     * Implementations should return false if their mod is not loaded
-     * or if their leveling system is disabled.
+     * Determines if this provider is active and should contribute to level calculations.
+     * For example, return false if a required mod is not loaded or a config option disables this provider.
      *
-     * @return whether this provider should be used for calculations
+     * @return true if this provider is enabled, false otherwise.
      */
     boolean isEnabled();
 
     /**
-     * Calculate the level contribution from a list of players.
-     * This method should aggregate the levels from all provided players
-     * and return a single value representing their combined contribution.
+     * Calculates the bonus levels based on the provided list of nearby players.
+     * This method should aggregate levels from the players according to the provider's logic
+     * and return a single integer representing the level contribution.
      *
-     * @param players The list of nearby players to consider
-     * @return The combined level contribution from these players
+     * @param players A list of players near the entity being leveled.
+     * @return The calculated level bonus based on the players.
      */
     int calculateBonusLevels(List<Player> players);
 
     /**
-     * Registers a new provider to contribute to level calculations.
-     * Call this during your mod's initialization phase.
+     * Registers a player level provider.
+     * This method is called by {@link LevelingAPI#registerPlayerLevelProvider(PlayerLevelProvider)}.
+     * Mod authors should use the LevelingAPI method to register their providers.
      *
-     * @param provider The provider to register
+     * @param provider The provider instance to register.
      */
     static void registerProvider(PlayerLevelProvider provider) {
         providers.add(provider);
     }
 
     /**
-     * Gets all registered level providers.
-     * Typically used to aggregate levels from all enabled providers.
+     * Retrieves all registered player level providers.
+     * This is used internally by Dynamic Difficulty to aggregate levels from all enabled providers.
      *
-     * @return List of all registered providers
+     * @return A list of all registered {@link PlayerLevelProvider} instances.
      */
     static List<PlayerLevelProvider> getProviders() {
         return providers;

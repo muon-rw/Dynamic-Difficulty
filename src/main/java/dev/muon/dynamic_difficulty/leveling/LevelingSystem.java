@@ -10,6 +10,7 @@ import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
 import dev.muon.dynamic_difficulty.settings.LevelingSettings;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -36,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 
 public class LevelingSystem {
-    private static final String LEVEL_TAG = "LEVEL";
+    private static final String LEVEL_TAG = (DynamicDifficulty.MODID + ":level").toLowerCase();
     private static final TagKey<EntityType<?>> FIXED_LEVEL_ENTITIES = TagKey.create(Registries.ENTITY_TYPE,
             DynamicDifficulty.loc("fixed_level_entities"));
 
@@ -127,22 +128,21 @@ public class LevelingSystem {
             LivingEntity entity,
             Attribute attribute,
             AttributeModifier modifier) {
-        AttributeInstance instance = entity.getAttribute(attribute);
+        AttributeInstance instance = entity.getAttribute(Holder.direct(attribute));
         if (instance == null) return;
 
-        AttributeModifier existing = instance.getModifier(modifier.getId());
+        AttributeModifier existing = instance.getModifier(modifier.id());
         if (existing != null) {
-            if (existing.getAmount() == modifier.getAmount()) return;
+            if (existing.amount() == modifier.amount()) return;
             instance.removeModifier(existing);
         }
 
         int level = getLevel(entity);
-        double amount = modifier.getAmount() * level;
+        double amount = modifier.amount() * level;
         AttributeModifier newModifier = new AttributeModifier(
-                modifier.getId(),
-                "DynamicDifficulty",
+                modifier.id(),
                 amount,
-                modifier.getOperation()
+                modifier.operation()
         );
 
         instance.addPermanentModifier(newModifier);

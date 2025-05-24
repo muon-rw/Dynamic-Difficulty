@@ -7,13 +7,17 @@ import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
-@EventBusSubscriber(modid = DynamicDifficulty.MODID)
+
+/**
+// Not yet implemented
+//@EventBusSubscriber(modid = DynamicDifficulty.MODID)
+ */
 public class ModCommands {
-  @SubscribeEvent
+  //@SubscribeEvent
   public static void onRegisterCommands(RegisterCommandsEvent event) {
     LiteralArgumentBuilder<CommandSourceStack> addGlobalLevelCommand =
         Commands.literal("dynamic_difficulty")

@@ -5,18 +5,20 @@ import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import java.util.function.Supplier;
+public class SyncLevelingData implements CustomPacketPayload {
+  public static final CustomPacketPayload.Type<SyncLevelingData> TYPE =
+      new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, "sync_leveling_data"));
 
-public class SyncLevelingData {
   private final int entityId;
   private final int level;
 
@@ -30,25 +32,30 @@ public class SyncLevelingData {
     this.level = level;
   }
 
-  public static void encode(SyncLevelingData msg, FriendlyByteBuf buf) {
-    buf.writeInt(msg.entityId);
-    buf.writeInt(msg.level);
+  public void write(FriendlyByteBuf buf) {
+    buf.writeInt(entityId);
+    buf.writeInt(level);
   }
 
-  public static SyncLevelingData decode(FriendlyByteBuf buf) {
-    return new SyncLevelingData(buf.readInt(), buf.readInt());
+  public SyncLevelingData(FriendlyByteBuf buf) {
+    this(buf.readInt(), buf.readInt());
   }
 
-  public static void handle(SyncLevelingData msg, Supplier<NetworkEvent.Context> ctx) {
-    ctx.get().enqueueWork(() ->
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> handleClient(msg))
-    );
-    ctx.get().setPacketHandled(true);
+  @Override
+  public CustomPacketPayload.Type<SyncLevelingData> type() {
+    return TYPE;
+  }
+
+  public static void handle(final SyncLevelingData msg, final IPayloadContext context) {
+    context.enqueueWork(() -> {
+      if (context.flow().isClientbound()) {
+        handleClient(msg);
+      }
+    });
   }
 
   @OnlyIn(Dist.CLIENT)
   private static void handleClient(SyncLevelingData msg) {
-
     Minecraft client = Minecraft.getInstance();
     ClientLevel level = client.level;
     if (level == null) {
@@ -57,14 +64,16 @@ public class SyncLevelingData {
     
     Entity entity = level.getEntity(msg.entityId);
     if (entity == null) {
-      DynamicDifficulty.LOGGER.warn("Entity with ID {} not found on client", msg.entityId);
+      DynamicDifficulty.LOGGER.warn("Entity with ID {} not found on client for SyncLevelingData", msg.entityId);
       return;
     }
 
     if (entity instanceof Player player) {
       ClientLevelCache.updatePlayerLevel(player.getUUID(), msg.level);
-    } else {
+    } else if (entity instanceof LivingEntity) {
       ClientLevelCache.updateEntityLevel(msg.entityId, msg.level);
+    } else {
+      DynamicDifficulty.LOGGER.warn("Received SyncLevelingData for non-living entity ID {}", msg.entityId);
     }
   }
 }

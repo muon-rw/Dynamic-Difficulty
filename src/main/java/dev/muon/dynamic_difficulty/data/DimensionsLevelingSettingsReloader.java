@@ -15,13 +15,12 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.storage.loot.Deserializers;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
 public class DimensionsLevelingSettingsReloader extends SimpleJsonResourceReloadListener {
   private static final Logger LOGGER = LogUtils.getLogger();
-  private static final Gson GSON = Deserializers.createLootTableSerializer().create();
+  private static final Gson GSON = new Gson();
   private static final Map<ResourceLocation, DimensionLevelingSettings> SETTINGS = new HashMap<>();
 
   public DimensionsLevelingSettingsReloader() {

@@ -2,14 +2,15 @@ package dev.muon.dynamic_difficulty.settings;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.config.Config;
 import java.util.*;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import org.jetbrains.annotations.Nullable;
 
 public interface LevelingSettings {
@@ -37,22 +38,30 @@ public interface LevelingSettings {
           JsonObject elementJson = jsonElement.getAsJsonObject();
           Attribute attribute = readAttribute(elementJson);
           AttributeModifier modifier = readAttributeModifier(elementJson);
-          modifiers.put(attribute, modifier);
+          if (attribute != null && modifier != null) {
+            modifiers.put(attribute, modifier);
+          }
         });
     return modifiers;
   }
 
-  static Attribute readAttribute(JsonObject jsonObject) {
-    ResourceLocation attributeId = new ResourceLocation(jsonObject.get("attribute").getAsString());
-    return ForgeRegistries.ATTRIBUTES.getValue(attributeId);
+  static @Nullable Attribute readAttribute(JsonObject jsonObject) {
+    ResourceLocation attributeId = ResourceLocation.tryParse(jsonObject.get("attribute").getAsString());
+    if (attributeId == null) return null;
+    Attribute attribute = BuiltInRegistries.ATTRIBUTE.get(attributeId);
+    if (attribute == null) {
+        // Optionally log an error if the attribute isn't found
+        // DynamicDifficulty.LOGGER.warn("Attribute not found: {}", attributeId);
+    }
+    return attribute;
   }
 
-  static AttributeModifier readAttributeModifier(JsonObject jsonObject) {
-    UUID uuid = UUID.fromString("6a102cb4-d735-4cb7-8ab2-3d383219a44e");
+  static @Nullable AttributeModifier readAttributeModifier(JsonObject jsonObject) {
+    ResourceLocation modifierId = ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, "autoleveling_settings_bonus");
     double amount = jsonObject.get("amount").getAsDouble();
     AttributeModifier.Operation operation =
-        AttributeModifier.Operation.fromValue(jsonObject.get("operation").getAsInt());
-    return new AttributeModifier(uuid, "AutoLeveling", amount, operation);
+        AttributeModifier.Operation.BY_ID.apply(jsonObject.get("operation").getAsInt());
+    return new AttributeModifier(modifierId, amount, operation);
   }
 
   static @Nullable BlockPos readSpawnPosOverride(JsonObject jsonObject) {
@@ -65,7 +74,7 @@ public interface LevelingSettings {
   }
 
   static float readOptionalFloat(
-      JsonObject jsonObject, String name, ForgeConfigSpec.ConfigValue<Double> alternative) {
+      JsonObject jsonObject, String name, ModConfigSpec.ConfigValue<Double> alternative) {
     if (!jsonObject.has(name)) {
       return alternative.get().floatValue();
     }
