@@ -217,13 +217,6 @@ publishMods {
     }
 
     // TODO: Modrinth Publish
-
-    github {
-        accessToken = providers.environmentVariable("GITHUB_TOKEN")
-        repository = "muon-rw/Dynamic-Difficulty"
-        commitish = "master"
-        tagName = "v${project.version}"
-    }
 }
 
 tasks.withType(JavaCompile).configureEach {
