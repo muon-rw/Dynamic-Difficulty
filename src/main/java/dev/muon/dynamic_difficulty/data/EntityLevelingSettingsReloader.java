@@ -38,10 +38,10 @@ public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadList
 
   @Override
   protected void apply(Map<ResourceLocation, JsonElement> map, ResourceManager resourceManager, ProfilerFiller profiler) {
-    LOGGER.debug("Loading entity leveling settings");
+    LOGGER.info("Loading entity leveling settings from 'leveling_settings/entities'");
     SETTINGS.clear();
     map.forEach(this::loadSettings);
-    LOGGER.debug("Loaded {} entity leveling settings", SETTINGS.size());
+    LOGGER.info("Loaded {} entity leveling settings from 'leveling_settings/entities'", SETTINGS.size());
   }
 
   private void validateRequiredFields(JsonObject json) {
@@ -59,7 +59,7 @@ public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadList
     }
   }
 
-  private Map<Attribute, AttributeModifier> readAttributeModifiers(JsonObject json, ResourceLocation entityFileId) {
+  private Map<Attribute, AttributeModifier> readAttributeModifiers(JsonObject json, ResourceLocation entityKey) {
     Map<Attribute, AttributeModifier> attributeModifiers = new HashMap<>();
     if (!json.has("attribute_modifiers")) {
       return attributeModifiers;
@@ -80,15 +80,13 @@ public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadList
         double amount = modifierObject.get("amount").getAsDouble();
         AttributeModifier.Operation operation = getOperation(modifierObject.get("operation").getAsInt());
         
-        String modifierName = "leveling_bonus_" + entityFileId.getPath().replace("/", "_") + "_" + attributeId.getPath().replace("/", "_");
+        String modifierName = "leveling_bonus_" + entityKey.getPath().replace("/", "_") + "_" + attributeId.getPath().replace("/", "_");
         ResourceLocation uniqueModifierId = ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, modifierName);
 
         attributeModifiers.put(attribute, new AttributeModifier(
                 uniqueModifierId, amount, operation));
-        LOGGER.debug("Added attribute modifier: {} = {} ({}) for entity settings {}",
-                attributeId, amount, operation, entityFileId);
       } else {
-        LOGGER.warn("Unknown attribute: {} for entity settings {}", attributeId, entityFileId);
+        LOGGER.warn("Unknown attribute: {} for entity settings {}", attributeId, entityKey);
       }
     }
     return attributeModifiers;
@@ -106,20 +104,12 @@ public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadList
     };
   }
 
-  private ResourceLocation normalizeResourceLocation(ResourceLocation fileId) {
-    String path = fileId.getPath();
-    String[] pathParts = path.split("/");
-    String entityName = pathParts[pathParts.length - 1].replace(".json", "");
-    return ResourceLocation.fromNamespaceAndPath(fileId.getNamespace(), entityName);
-  }
-
-  private void loadSettings(ResourceLocation fileId, JsonElement jsonElement) {
+  private void loadSettings(ResourceLocation entityKey, JsonElement jsonElement) {
     try {
       JsonObject jsonObject = jsonElement.getAsJsonObject();
 
       // Validate required fields first
       validateRequiredFields(jsonObject);
-      ResourceLocation normalizedFileId = normalizeResourceLocation(fileId);
 
       EntityLevelingSettings settings = new EntityLevelingSettings(
               jsonObject.get("starting_level").getAsInt(),
@@ -127,13 +117,13 @@ public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadList
               jsonObject.get("levels_per_distance").getAsFloat(),
               jsonObject.get("levels_per_deepness").getAsFloat(),
               jsonObject.get("random_level_bonus").getAsInt(),
-              readAttributeModifiers(jsonObject, normalizedFileId)
+              readAttributeModifiers(jsonObject, entityKey)
       );
 
-      SETTINGS.put(normalizedFileId, settings);
-      LOGGER.debug("Loaded leveling settings for {}", normalizedFileId);
+      SETTINGS.put(entityKey, settings);
+      LOGGER.info("Loaded leveling settings for entity {}", entityKey);
     } catch (Exception exception) {
-      LOGGER.error("Couldn't load leveling settings {}", fileId, exception);
+      LOGGER.error("Couldn't load leveling settings for entity {}", entityKey, exception);
     }
   }
 }

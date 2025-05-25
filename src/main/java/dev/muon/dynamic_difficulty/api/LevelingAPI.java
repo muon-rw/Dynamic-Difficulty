@@ -8,6 +8,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.resources.ResourceKey;
 
 import java.util.Map;
 
@@ -95,7 +96,7 @@ public class LevelingAPI {
      * @param entity The entity to get modifiers for
      * @return Map of attributes to their modifiers
      */
-    public static Map<Attribute, AttributeModifier> getLevelAttributes(LivingEntity entity) {
+    public static Map<ResourceKey<Attribute>, AttributeModifier> getLevelAttributes(LivingEntity entity) {
         return LevelingSystem.getAttributeBonuses(entity);
     }
 

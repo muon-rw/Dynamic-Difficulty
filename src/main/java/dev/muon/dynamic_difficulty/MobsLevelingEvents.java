@@ -66,6 +66,7 @@ public class MobsLevelingEvents {
 
     int level = LevelingAPI.calculateLevelForEntity(living);
     LevelingAPI.setLevel(living, level);
+    LevelingAPI.applyAllLevelAttributes(living);
     addEquipment(living);
   }
 

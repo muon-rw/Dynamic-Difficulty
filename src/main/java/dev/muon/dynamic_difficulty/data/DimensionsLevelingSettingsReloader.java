@@ -50,17 +50,17 @@ public class DimensionsLevelingSettingsReloader extends SimpleJsonResourceReload
       @NotNull ProfilerFiller profilerFiller) {
     SETTINGS.clear();
     jsonElements.forEach(this::loadSettings);
+    LOGGER.info("Loaded {} dimension leveling settings from 'leveling_settings/dimensions'", SETTINGS.size());
   }
 
-  private void loadSettings(ResourceLocation fileId, JsonElement jsonElement) {
+  private void loadSettings(ResourceLocation dimensionKey, JsonElement jsonElement) {
     try {
       JsonObject jsonObject = jsonElement.getAsJsonObject();
       DimensionLevelingSettings settings = DimensionLevelingSettings.load(jsonObject);
-      SETTINGS.put(fileId, settings);
-      LOGGER.info("Loaded leveling settings {}", fileId);
+      SETTINGS.put(dimensionKey, settings);
+      LOGGER.info("Loaded leveling settings for dimension {}", dimensionKey);
     } catch (Exception exception) {
-      LOGGER.error("Couldn't load leveling settings {}", fileId);
-      exception.printStackTrace();
+      LOGGER.error("Couldn't load leveling settings for dimension {}", dimensionKey, exception);
     }
   }
 }

@@ -35,6 +35,8 @@ import dev.muon.dynamic_difficulty.client.ClientLevelCache;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.Optional;
 
 public class LevelingSystem {
     private static final String LEVEL_TAG = (DynamicDifficulty.MODID + ":level").toLowerCase();
@@ -86,19 +88,21 @@ public class LevelingSystem {
         BlockPos spawnPos = getSpawnPosition(entity);
         double distanceToSpawn = Math.sqrt(spawnPos.distSqr(entity.blockPosition()));
 
-        int baseLevel = LevelingUtils.calculateDistanceFactors(entity, distanceToSpawn, settings);
+        int baseLevel = settings.startingLevel();
 
-        int randomBonus = settings.randomLevelBonus() + 1;
-        if (randomBonus > 0) {
-            baseLevel += entity.getRandom().nextInt(randomBonus);
+        baseLevel += LevelingUtils.calculateDistanceFactors(entity, distanceToSpawn, settings);
+
+        int randomBonusValue = settings.randomLevelBonus();
+        if (randomBonusValue > 0) { 
+            baseLevel += entity.getRandom().nextInt(randomBonusValue + 1); 
         }
 
-        baseLevel = Math.abs(baseLevel);
+        baseLevel = Math.max(0, baseLevel); 
+
         int maxLevel = settings.maxLevel();
         if (maxLevel > 0) {
-            baseLevel = Math.min(baseLevel, maxLevel - 1);
+            baseLevel = Math.min(baseLevel, maxLevel);
         }
-
         return baseLevel;
     }
 
@@ -113,41 +117,73 @@ public class LevelingSystem {
     }
 
     public static void applyAllLevelAttributes(LivingEntity entity) {
-        getAttributeBonuses(entity).forEach((attribute, modifier) ->
-                applyAttributeBonus(entity, attribute, modifier));
+        getAttributeBonuses(entity).forEach((attributeKey, modifier) -> {
+            Optional<? extends Holder<Attribute>> optAttributeHolder = BuiltInRegistries.ATTRIBUTE.getHolder(attributeKey);
+            if (optAttributeHolder.isPresent()) {
+                applyAttributeBonus(entity, optAttributeHolder.get(), modifier);
+            } else {
+                DynamicDifficulty.LOGGER.warn("Entity {}: Could not find attribute holder for key {} when applying all attributes.", 
+                                            EntityType.getKey(entity.getType()), attributeKey.location());
+            }
+        });
     }
 
-    public static Map<Attribute, AttributeModifier> getAttributeBonuses(LivingEntity entity) {
+    public static Map<ResourceKey<Attribute>, AttributeModifier> getAttributeBonuses(LivingEntity entity) {
         LevelingSettings settings = getLevelingSettings(entity);
-        return settings.attributeModifiers().isEmpty() ?
-                Config.getAttributeBonuses() :
-                settings.attributeModifiers();
+        Map<ResourceKey<Attribute>, AttributeModifier> modifiersToUse;
+        String sourceName = "Unknown"; // Initialize sourceName
+
+        if (settings instanceof dev.muon.dynamic_difficulty.settings.EntityLevelingSettings && !settings.attributeModifiers().isEmpty()) {
+            modifiersToUse = convertAttributeMapToKeyMap(settings.attributeModifiers());
+            sourceName = "EntitySpecific (" + EntityType.getKey(entity.getType()) + ".json)";
+        } else if (settings instanceof dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings && !settings.attributeModifiers().isEmpty()) {
+            modifiersToUse = convertAttributeMapToKeyMap(settings.attributeModifiers());
+            sourceName = "DimensionSpecific (" + entity.level().dimension().location() + ".json)";
+        } else {
+            modifiersToUse = Config.getAttributeBonuses();
+            sourceName = "GlobalConfig";
+        }
+        DynamicDifficulty.LOGGER.info("Entity {}: Using attribute modifiers from {} ({} modifiers found)", EntityType.getKey(entity.getType()), sourceName, modifiersToUse.size());
+        return modifiersToUse;
+    }
+
+    // Helper method to convert Map<Attribute, AttributeModifier> to Map<ResourceKey<Attribute>, AttributeModifier>
+    private static Map<ResourceKey<Attribute>, AttributeModifier> convertAttributeMapToKeyMap(Map<Attribute, AttributeModifier> attributeMap) {
+        Map<ResourceKey<Attribute>, AttributeModifier> keyMap = new HashMap<>();
+        for (Map.Entry<Attribute, AttributeModifier> entry : attributeMap.entrySet()) {
+            BuiltInRegistries.ATTRIBUTE.getResourceKey(entry.getKey())
+                .ifPresent(key -> keyMap.put(key, entry.getValue()));
+        }
+        return keyMap;
     }
 
     private static void applyAttributeBonus(
             LivingEntity entity,
-            Attribute attribute,
+            Holder<Attribute> attributeHolder,
             AttributeModifier modifier) {
-        AttributeInstance instance = entity.getAttribute(Holder.direct(attribute));
-        if (instance == null) return;
+        Optional<ResourceKey<Attribute>> optAttributeKey = attributeHolder.unwrapKey();
 
-        AttributeModifier existing = instance.getModifier(modifier.id());
-        if (existing != null) {
-            if (existing.amount() == modifier.amount()) return;
-            instance.removeModifier(existing);
+        AttributeInstance instance = entity.getAttribute(attributeHolder);
+
+        if (instance == null) {
+            return;
         }
+        instance.removeModifier(modifier.id());
 
         int level = getLevel(entity);
-        double amount = modifier.amount() * level;
-        AttributeModifier newModifier = new AttributeModifier(
-                modifier.id(),
-                amount,
-                modifier.operation()
-        );
+
+        if (level == 0 || modifier.amount() == 0) {
+            return;
+        }
+
+        double scaledAmount = modifier.amount() * level;
+
+        AttributeModifier newModifier = new AttributeModifier(modifier.id(), scaledAmount, modifier.operation());
 
         instance.addPermanentModifier(newModifier);
 
-        if (attribute == Attributes.MAX_HEALTH) {
+        Optional<ResourceKey<Attribute>> maxHealthResKeyOpt = Attributes.MAX_HEALTH.unwrapKey();
+        if (maxHealthResKeyOpt.isPresent() && optAttributeKey.isPresent() && maxHealthResKeyOpt.get().location().equals(optAttributeKey.get().location())) {
             entity.heal(entity.getMaxHealth());
         }
     }

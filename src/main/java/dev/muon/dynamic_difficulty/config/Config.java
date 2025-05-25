@@ -10,15 +10,16 @@ import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforge.common.ModConfigSpec.ConfigValue;
 import org.apache.commons.lang3.tuple.Pair;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceKey;
 
 public class Config {
   public static final Common COMMON;
   public static final ModConfigSpec COMMON_SPEC;
   public static final Client CLIENT;
   public static final ModConfigSpec CLIENT_SPEC;
-  private static final Map<Attribute, AttributeModifier> ATTRIBUTE_BONUSES = new HashMap<>();
+  private static final Map<ResourceKey<Attribute>, AttributeModifier> ATTRIBUTE_BONUSES = new HashMap<>();
 
-  // Define the RenderBehavior enum
   public enum RenderBehavior {
     ALWAYS,
     NEVER,
@@ -183,31 +184,42 @@ public class Config {
     return false;
   }
 
-  public static Map<Attribute, AttributeModifier> getAttributeBonuses() {
+  public static Map<ResourceKey<Attribute>, AttributeModifier> getAttributeBonuses() {
     if (ATTRIBUTE_BONUSES.isEmpty()) {
-      for (List<Object> objects : Config.COMMON.attributesBonuses.get()) {
-        readAttributeBonus(objects);
-      }
+      COMMON.attributesBonuses.get().forEach(Config::readAttributeBonus);
     }
     return ATTRIBUTE_BONUSES;
   }
 
   private static void readAttributeBonus(List<Object> attributeBonusConfig) {
-    ResourceLocation attributeId = ResourceLocation.tryParse((String) attributeBonusConfig.get(0));
-    if (attributeId == null) {
+    ResourceLocation attributeRL = ResourceLocation.tryParse((String) attributeBonusConfig.get(0));
+    if (attributeRL == null) {
         DynamicDifficulty.LOGGER.error("Attribute ID '{}' is invalid!", attributeBonusConfig.get(0));
         return;
     }
-    Attribute attribute = net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.get(attributeId);
+    Attribute attribute = BuiltInRegistries.ATTRIBUTE.get(attributeRL);
     float attributeBonus = ((Double) attributeBonusConfig.get(1)).floatValue();
+
     if (attribute == null) {
-      DynamicDifficulty.LOGGER.error("Attribute '{}' can not be found!", attributeId);
+      DynamicDifficulty.LOGGER.error("Attribute '{}' can not be found for ID: {}!", attributeRL, attributeBonusConfig.get(0));
       return;
     }
-    ResourceLocation modifierId = ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, "autoleveling_config_bonus");
+
+    Optional<ResourceKey<Attribute>> optAttributeKey = BuiltInRegistries.ATTRIBUTE.getResourceKey(attribute);
+    if (optAttributeKey.isEmpty()) {
+        DynamicDifficulty.LOGGER.error("Could not retrieve ResourceKey for attribute: {} ({})", attribute.getDescriptionId(), attributeRL);
+        return;
+    }
+    ResourceKey<Attribute> attributeKey = optAttributeKey.get();
+
+    String uniqueModifierName = "config_bonus_" + attributeRL.getNamespace().replace(":", "_") + "_" + attributeRL.getPath().replace("/", "_");
+    ResourceLocation modifierId = ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, uniqueModifierName);
     AttributeModifier.Operation operation = AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
     AttributeModifier modifier =
             new AttributeModifier(modifierId, attributeBonus, operation);
-    ATTRIBUTE_BONUSES.put(attribute, modifier);
+    
+    ATTRIBUTE_BONUSES.put(attributeKey, modifier);
+    DynamicDifficulty.LOGGER.info("Config: Registered attribute bonus for ResourceKey {} ({}) with amount {}/level, operation {}, ModID {}", 
+                                attributeKey.location(), attribute.getDescriptionId(), attributeBonus, operation, modifierId);
   }
 }

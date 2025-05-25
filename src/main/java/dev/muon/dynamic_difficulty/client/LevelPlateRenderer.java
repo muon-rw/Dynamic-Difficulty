@@ -17,23 +17,20 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderNameTagEvent;
 import net.neoforged.neoforge.common.util.TriState;
-import dev.muon.dynamic_difficulty.MobsLevelingEvents;
 
 @EventBusSubscriber(modid = DynamicDifficulty.MODID, value = Dist.CLIENT)
 public class LevelPlateRenderer {
 
   @SubscribeEvent
   public static void renderEntityLevel(RenderNameTagEvent event) {
-
     if (!(event.getEntity() instanceof LivingEntity entity)) {
       return;
     }
 
     if (shouldShowName(entity)) {
-
       Component originalName = event.getContent();
       int entityLevel = ClientLevelCache.getLevel(entity);
-      String levelString = " Level " + (entityLevel + 1);
+      String levelString = " Level " + (entityLevel);
       
       MutableComponent fullDisplayName = originalName.copy();
       Component levelComponentStyled = Component.literal(levelString)
@@ -60,7 +57,6 @@ public class LevelPlateRenderer {
     }
   }
 
-  @OnlyIn(Dist.CLIENT)
   public static boolean shouldShowName(LivingEntity entity) {
     Minecraft minecraft = Minecraft.getInstance();
     LocalPlayer clientPlayer = minecraft.player;

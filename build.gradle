@@ -198,7 +198,7 @@ publishMods {
     modLoaders.add("neoforge")
     changelog = new File("$project.rootDir/CHANGELOG.md").getText('UTF-8')
     version = "${mod_version}+${minecraft_version}"
-    type = STABLE
+    type = BETA
     displayName = "${mod_version}+${minecraft_version}"
 
     curseforge {
