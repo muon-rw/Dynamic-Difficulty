@@ -1,3 +1,6 @@
+## 0.3.1
+- Fix incorrect id's for projectile/explosion damage bonus
+
 ## 0.3.0
 - Add Apotheosis World Tier support to rendering
 - Fix damage modifiers
