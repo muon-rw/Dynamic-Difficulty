@@ -45,20 +45,19 @@ public class LevelingSystem {
 
     public static boolean hasLevel(Entity entity) {
         if (entity.level().isClientSide()) {
-            if (entity instanceof LivingEntity livingEntity) {
-                return ClientLevelCache.getLevel(livingEntity) > 0; // Use ClientLevelCache on client
-            }
-            return false; // Non-living entities or other client-side cases
+            // On client, we consider an entity to have a level if it's a living entity that can have levels
+            // The actual level value will come from ClientLevelCache once synced
+            return entity instanceof LivingEntity && LevelingUtils.canHaveLevel(entity);
         } else {
-            return entity.getPersistentData().contains(LEVEL_TAG); // Server-side logic remains
+            return entity.getPersistentData().contains(LEVEL_TAG);
         }
     }
 
     public static int getLevel(LivingEntity entity) {
         if (entity.level().isClientSide()) {
-            return ClientLevelCache.getLevel(entity); // Use ClientLevelCache on client
+            return ClientLevelCache.getLevel(entity);
         } else {
-            return entity.getPersistentData().getInt(LEVEL_TAG); // Server-side logic remains
+            return entity.getPersistentData().getInt(LEVEL_TAG);
         }
     }
 
@@ -67,20 +66,24 @@ public class LevelingSystem {
     }
 
     public static int createLevelForEntity(LivingEntity entity) {
-        if (!LevelingAPI.canHaveLevel(entity)) return 0;
+        if (!LevelingAPI.canHaveLevel(entity)) {
+            return 0;
+        }
 
         if (entity.getType().is(FIXED_LEVEL_ENTITIES)) {
-            return getFixedLevel(entity);
+            int fixedLevel = getFixedLevel(entity);
+            return fixedLevel;
         }
 
         int baseLevel = calculateInitialLevel(entity);
         int totalBonusLevels = calculateBonusLevels(entity);
-
-        return Math.max(0, baseLevel + totalBonusLevels);
+        int finalLevel = Math.max(0, baseLevel + totalBonusLevels);
+        
+        return finalLevel;
     }
 
     private static int getFixedLevel(LivingEntity entity) {
-        return getLevelingSettings(entity).startingLevel() - 1;
+        return getLevelingSettings(entity).startingLevel();
     }
 
     private static int calculateInitialLevel(LivingEntity entity) {
@@ -94,14 +97,18 @@ public class LevelingSystem {
 
         int randomBonusValue = settings.randomLevelBonus();
         if (randomBonusValue > 0) { 
-            baseLevel += entity.getRandom().nextInt(randomBonusValue + 1); 
+            int randomBonus = entity.getRandom().nextInt(randomBonusValue + 1);
+            baseLevel += randomBonus;
         }
 
         baseLevel = Math.max(0, baseLevel); 
 
         int maxLevel = settings.maxLevel();
         if (maxLevel > 0) {
+            int originalLevel = baseLevel;
             baseLevel = Math.min(baseLevel, maxLevel);
+            if (originalLevel != baseLevel) {
+            }
         }
         return baseLevel;
     }
@@ -131,19 +138,38 @@ public class LevelingSystem {
     public static Map<ResourceKey<Attribute>, AttributeModifier> getAttributeBonuses(LivingEntity entity) {
         LevelingSettings settings = getLevelingSettings(entity);
         Map<ResourceKey<Attribute>, AttributeModifier> modifiersToUse;
-        String sourceName = "Unknown"; // Initialize sourceName
 
-        if (settings instanceof dev.muon.dynamic_difficulty.settings.EntityLevelingSettings && !settings.attributeModifiers().isEmpty()) {
-            modifiersToUse = convertAttributeMapToKeyMap(settings.attributeModifiers());
-            sourceName = "EntitySpecific (" + EntityType.getKey(entity.getType()) + ".json)";
-        } else if (settings instanceof dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings && !settings.attributeModifiers().isEmpty()) {
-            modifiersToUse = convertAttributeMapToKeyMap(settings.attributeModifiers());
-            sourceName = "DimensionSpecific (" + entity.level().dimension().location() + ".json)";
+        // Check if we have entity-specific settings with non-empty modifiers
+        if (settings instanceof dev.muon.dynamic_difficulty.settings.EntityLevelingSettings entitySettings) {
+            Map<Attribute, AttributeModifier> entityModifiers = entitySettings.attributeModifiers();
+            if (entityModifiers != null && !entityModifiers.isEmpty()) {
+                modifiersToUse = convertAttributeMapToKeyMap(entityModifiers);
+            } else {
+                // Entity settings exist but modifiers are empty/null, check dimension settings
+                ResourceKey<Level> dimension = entity.level().dimension();
+                DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension);
+                Map<Attribute, AttributeModifier> dimModifiers = dimSettings.attributeModifiers();
+                
+                if (dimModifiers != null && !dimModifiers.isEmpty()) {
+                    modifiersToUse = convertAttributeMapToKeyMap(dimModifiers);
+                } else {
+                    // Fall back to global config
+                    modifiersToUse = Config.getAttributeBonuses();
+                }
+            }
+        } else if (settings instanceof dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings dimSettings) {
+            Map<Attribute, AttributeModifier> dimModifiers = dimSettings.attributeModifiers();
+            if (dimModifiers != null && !dimModifiers.isEmpty()) {
+                modifiersToUse = convertAttributeMapToKeyMap(dimModifiers);
+            } else {
+                // Dimension settings exist but modifiers are empty/null, use global config
+                modifiersToUse = Config.getAttributeBonuses();
+            }
         } else {
+            // No specific settings, use global config
             modifiersToUse = Config.getAttributeBonuses();
-            sourceName = "GlobalConfig";
         }
-        DynamicDifficulty.LOGGER.info("Entity {}: Using attribute modifiers from {} ({} modifiers found)", EntityType.getKey(entity.getType()), sourceName, modifiersToUse.size());
+        
         return modifiersToUse;
     }
 
@@ -198,10 +224,13 @@ public class LevelingSystem {
 
     static LevelingSettings getLevelingSettings(LivingEntity entity) {
         LevelingSettings entitySettings = EntityLevelingSettingsReloader.get(entity.getType());
-        if (entitySettings != null) return entitySettings;
+        if (entitySettings != null) {
+            return entitySettings;
+        }
 
         ResourceKey<Level> dimension = entity.level().dimension();
-        return DimensionsLevelingSettingsReloader.get(dimension);
+        DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension);
+        return dimSettings;
     }
 
     /**

@@ -3,6 +3,8 @@ package dev.muon.dynamic_difficulty.attribute;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.RangedAttribute;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -11,16 +13,18 @@ import net.neoforged.neoforge.event.entity.EntityAttributeModificationEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
+import java.util.function.BiConsumer;
+
 
 @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
 public class ModAttributes {
     public static final DeferredRegister<Attribute> REGISTRY =
             DeferredRegister.create(BuiltInRegistries.ATTRIBUTE, DynamicDifficulty.MODID);
 
-    public static final DeferredHolder<Attribute, Attribute> PROJECTILE_DAMAGE_MULTIPLIER =
-            rangedAttribute("monster", "projectile_damage_bonus", 1, 1, 1000);
-    public static final DeferredHolder<Attribute, Attribute> EXPLOSION_DAMAGE_MULTIPLIER =
-            rangedAttribute("monster", "explosion_damage_bonus", 1, 1, 1000);
+    public static final DeferredHolder<Attribute, Attribute> PROJECTILE_DAMAGE_ADDITION =
+            rangedAttribute("generic", "projectile_damage_bonus", 0, 0, 65536);
+    public static final DeferredHolder<Attribute, Attribute> EXPLOSION_DAMAGE_ADDITION =
+            rangedAttribute("generic", "explosion_damage_bonus", 0, 0, 65536);
 
     private static DeferredHolder<Attribute, Attribute> rangedAttribute(
             String category, String name, double defaultValue, double minValue, double maxValue) {
@@ -33,13 +37,18 @@ public class ModAttributes {
 
 
     @SubscribeEvent
-    public static void attachMobAttributes(EntityAttributeModificationEvent event) {
-        event
-                .getTypes()
-                .forEach(
-                        entityType -> {
-                            event.add(entityType, Holder.direct(ModAttributes.PROJECTILE_DAMAGE_MULTIPLIER.get()));
-                            event.add(entityType, Holder.direct(ModAttributes.EXPLOSION_DAMAGE_MULTIPLIER.get()));
-                        });
+    public static void attachMobAttributes(EntityAttributeModificationEvent e) {
+        e.getTypes().forEach(type -> {
+            addAll(type, e::add,
+                    ModAttributes.PROJECTILE_DAMAGE_ADDITION,
+                    ModAttributes.EXPLOSION_DAMAGE_ADDITION
+            );
+        });
+    }
+
+    @SafeVarargs
+    private static void addAll(EntityType<? extends LivingEntity> type, BiConsumer<EntityType<? extends LivingEntity>, Holder<Attribute>> add, Holder<Attribute>... attribs) {
+        for (Holder<Attribute> a : attribs)
+            add.accept(type, a);
     }
 }

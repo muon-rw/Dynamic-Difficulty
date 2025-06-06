@@ -30,12 +30,24 @@ public class LevelPlateRenderer {
     if (shouldShowName(entity)) {
       Component originalName = event.getContent();
       int entityLevel = ClientLevelCache.getLevel(entity);
-      String levelString = " Level " + (entityLevel);
       
       MutableComponent fullDisplayName = originalName.copy();
-      Component levelComponentStyled = Component.literal(levelString)
+      
+      // Build level component
+      MutableComponent levelComponent = Component.literal(" Level " + entityLevel)
           .withStyle(style -> style.withColor(getLevelColor(Minecraft.getInstance().player, entity)));
-      fullDisplayName.append(levelComponentStyled);
+      
+      // Add Apotheosis world tier if available and enabled
+      if (Config.CLIENT.showApotheosisWorldTier.get()) {
+        String worldTier = ApotheosisClientCache.getWorldTier(entity);
+        if (worldTier != null) {
+          MutableComponent tierComponent = Component.literal(" [" + worldTier + "]")
+              .withStyle(style -> style.withColor(getTierColor(worldTier)));
+          levelComponent.append(tierComponent);
+        }
+      }
+      
+      fullDisplayName.append(levelComponent);
 
       event.setContent(fullDisplayName);
       event.setCanRender(TriState.TRUE);
@@ -55,6 +67,18 @@ public class LevelPlateRenderer {
       if (entityLevel <= 19) return 0xFFFFFF00; // yellow (ARGB)
       return 0xFFFF0000; // red (ARGB)
     }
+  }
+  
+  private static int getTierColor(String tier) {
+    // Color coding for Apotheosis tiers (ARGB format)
+    return switch (tier) {
+      case "Haven" -> 0xFF90EE90;     // Light green
+      case "Frontier" -> 0xFF3CB371;   // Medium sea green
+      case "Ascent" -> 0xFFFFD700;     // Gold
+      case "Summit" -> 0xFFFF8C00;     // Dark orange
+      case "Pinnacle" -> 0xFFDC143C;   // Crimson
+      default -> 0xFFFFFFFF;          // White
+    };
   }
 
   public static boolean shouldShowName(LivingEntity entity) {

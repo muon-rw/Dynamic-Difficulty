@@ -1,5 +1,7 @@
 {
   "dynamic_difficulty.level": "Level %s",
   "config.jade.plugin_dynamic_difficulty.level": "Level",
-  "jade.dynamic_difficulty.tooltip": "Level: %d"
+  "jade.dynamic_difficulty.tooltip": "Level: %d",
+  "attribute.dynamic_difficulty.projectile_damage_bonus": "Projectile Damage",
+  "attribute.dynamic_difficulty.explosion_damage_bonus": "Explosion Damage"
 }

@@ -212,8 +212,8 @@ publishMods {
         serverRequired = true
 
         // Dependencies
-        // requires "apotheosis"
-        // optional "cataclysm-spellbooks"
+        requires "attributefix"
+        optional "apotheosis"
     }
 
     // TODO: Modrinth Publish

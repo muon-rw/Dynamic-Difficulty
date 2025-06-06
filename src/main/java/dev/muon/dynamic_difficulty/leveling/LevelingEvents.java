@@ -1,5 +1,6 @@
-package dev.muon.dynamic_difficulty;
+package dev.muon.dynamic_difficulty.leveling;
 
+import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
@@ -11,8 +12,6 @@ import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
 
 import javax.annotation.Nonnull;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -22,20 +21,13 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
-import net.minecraft.world.phys.EntityHitResult;
-import net.minecraft.world.phys.HitResult;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -48,7 +40,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 @EventBusSubscriber(modid = DynamicDifficulty.MODID)
-public class MobsLevelingEvents {
+public class LevelingEvents {
   private static final String LEVEL_TAG = "LEVEL";
 
 
@@ -111,18 +103,18 @@ public class MobsLevelingEvents {
   public static void applyAttributesDamageBonus(LivingDamageEvent.Pre event) {
     DamageSource damage = event.getSource();
     if (!(damage.getEntity() instanceof LivingEntity attacker)) return;
-    float multiplier = getDamageMultiplier(damage, attacker);
-    if (multiplier > 1F) event.setNewDamage(event.getNewDamage() * multiplier);
+    float bonus = getAdditionalDamage(damage, attacker);
+    event.setNewDamage(event.getNewDamage() + bonus);
   }
 
-  public static float getDamageMultiplier(DamageSource damage, LivingEntity attacker) {
+  public static float getAdditionalDamage(DamageSource damage, LivingEntity attacker) {
     if (damage.is(DamageTypeTags.IS_PROJECTILE)) {
-      return getAttributeValue(attacker, ModAttributes.PROJECTILE_DAMAGE_MULTIPLIER.get());
+      return getAttributeValue(attacker, ModAttributes.PROJECTILE_DAMAGE_ADDITION.get());
     }
     if (damage.is(DamageTypeTags.IS_EXPLOSION)) {
-      return getAttributeValue(attacker, ModAttributes.EXPLOSION_DAMAGE_MULTIPLIER.get());
+      return getAttributeValue(attacker, ModAttributes.EXPLOSION_DAMAGE_ADDITION.get());
     }
-    return 1F;
+    return 0;
   }
 
   private static float getAttributeValue(LivingEntity entity, Attribute damageBonusAttribute) {

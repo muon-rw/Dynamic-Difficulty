@@ -5,6 +5,7 @@ import java.util.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
@@ -29,6 +30,14 @@ public class Config {
   public static void register(ModContainer container) {
     container.registerConfig(ModConfig.Type.COMMON, COMMON_SPEC);
     container.registerConfig(ModConfig.Type.CLIENT, CLIENT_SPEC);
+  }
+
+  public static void reloadAttributeBonuses() {
+    synchronized (ATTRIBUTE_BONUSES) {
+      ATTRIBUTE_BONUSES.clear();
+      COMMON.attributesBonuses.get().forEach(Config::readAttributeBonus);
+      DynamicDifficulty.LOGGER.info("Reloaded {} attribute bonuses from config", ATTRIBUTE_BONUSES.size());
+    }
   }
 
   static {
@@ -130,7 +139,11 @@ public class Config {
 
       builder.push("Attribute Bonuses");
       attributesBonuses = builder
-              .comment("List of [attribute_id, bonus_per_level] pairs")
+              .comment("List of [attribute_id, bonus_per_level, operation_type] triplets",
+                      "attribute_id: The resource location of the attribute (e.g., \"minecraft:generic.attack_damage\")",
+                      "bonus_per_level: The amount to add per entity level",
+                      "operation_type: 0 = ADD_VALUE (flat addition), 1 = ADD_MULTIPLIED_BASE (percentage), 2 = ADD_MULTIPLIED_TOTAL (percentage of final value)",
+                      "If operation_type is omitted, ADD_VALUE is used (except for max_health which defaults to ADD_MULTIPLIED_BASE)")
               .defineList("Level bonus per attribute",
                       Config::getDefaultAttributeBonuses,
                       Config::isValidAttributeBonus);
@@ -143,11 +156,7 @@ public class Config {
     public final ModConfigSpec.EnumValue<RenderBehavior> renderBehavior;
     public final ConfigValue<Double> renderDistance;
     public final ConfigValue<List<String>> hiddenLevelEntities;
-
-    // Visual Settings
-    public final ConfigValue<Integer> levelTextShiftX;
-    public final ConfigValue<Integer> levelTextShiftY;
-    public final ConfigValue<Float> textScale;
+    public final ConfigValue<Boolean> showApotheosisWorldTier;
 
     public Client(ModConfigSpec.Builder builder) {
       builder.push("Level Plate Settings");
@@ -155,9 +164,11 @@ public class Config {
               .comment("Determines when entity levels are rendered: ALWAYS, NEVER, or LOOKING_AT (only when the player is looking directly at/near the entity).")
               .defineEnum("Render Behavior", RenderBehavior.LOOKING_AT);
       renderDistance = builder.define("Maximum render distance", 64.0D);
-      levelTextShiftX = builder.define("Level text X offset", 0);
-      levelTextShiftY = builder.define("Level text Y offset", 0);
-      textScale = builder.define("Level text relative size", 0.025F);
+      showApotheosisWorldTier = builder
+              .comment("Show Apotheosis world tier in entity level display (if Apotheosis is installed)",
+                      "This will scan entity attributes for Apotheosis tier modifiers",
+                      "Tiers: Haven, Frontier, Ascent, Summit, Pinnacle")
+              .define("Show Apotheosis World Tier", true);
       builder.pop();
       builder.push("Entity Settings");
       hiddenLevelEntities = builder.define("Entities with hidden levels", new ArrayList<>());
@@ -167,26 +178,37 @@ public class Config {
 
   private static List<List<Object>> getDefaultAttributeBonuses() {
     List<List<Object>> attributeBonuses = new ArrayList<>();
-    attributeBonuses.add(Arrays.asList("minecraft:generic.movement_speed", 0.001));
-    attributeBonuses.add(Arrays.asList("minecraft:generic.flying_speed", 0.001));
-    attributeBonuses.add(Arrays.asList("minecraft:generic.attack_damage", 0.1));
-    attributeBonuses.add(Arrays.asList("minecraft:generic.armor", 0.1));
-    attributeBonuses.add(Arrays.asList("minecraft:generic.max_health", 0.1));
-    attributeBonuses.add(Arrays.asList("dynamic_difficulty:monster.projectile_damage_bonus", 0.1));
-    attributeBonuses.add(Arrays.asList("dynamic_difficulty:monster.explosion_damage_bonus", 0.1));
+    // Format: [attribute_id, bonus_per_level, operation_type]
+    // operation_type: 0 = ADD_VALUE, 1 = ADD_MULTIPLIED_BASE, 2 = ADD_MULTIPLIED_TOTAL
+    attributeBonuses.add(Arrays.asList("minecraft:generic.attack_damage", 0.2, 0)); // ADD_VALUE
+    attributeBonuses.add(Arrays.asList("minecraft:generic.armor", 0.2, 0)); // ADD_VALUE
+    attributeBonuses.add(Arrays.asList("minecraft:generic.max_health", 0.05, 1)); // ADD_MULTIPLIED_BASE
+    attributeBonuses.add(Arrays.asList("dynamic_difficulty:monster.projectile_damage_bonus", 0.2, 0)); // ADD_VALUE
+    attributeBonuses.add(Arrays.asList("dynamic_difficulty:monster.explosion_damage_bonus", 0.2, 0)); // ADD_VALUE
     return attributeBonuses;
   }
 
   private static <T> boolean isValidAttributeBonus(T object) {
     if (object instanceof List<?> list) {
-      return list.size() == 2 && list.get(0) instanceof String && list.get(1) instanceof Double;
+      // Support both old format (2 elements) and new format (3 elements)
+      if (list.size() == 2) {
+        return list.get(0) instanceof String && list.get(1) instanceof Double;
+      } else if (list.size() == 3) {
+        return list.get(0) instanceof String && list.get(1) instanceof Double && list.get(2) instanceof Integer;
+      }
     }
     return false;
   }
 
   public static Map<ResourceKey<Attribute>, AttributeModifier> getAttributeBonuses() {
     if (ATTRIBUTE_BONUSES.isEmpty()) {
-      COMMON.attributesBonuses.get().forEach(Config::readAttributeBonus);
+      // Only initialize once to avoid triggering config reloads
+      synchronized (ATTRIBUTE_BONUSES) {
+        if (ATTRIBUTE_BONUSES.isEmpty()) {
+          COMMON.attributesBonuses.get().forEach(Config::readAttributeBonus);
+          DynamicDifficulty.LOGGER.info("Initialized {} attribute bonuses from config", ATTRIBUTE_BONUSES.size());
+        }
+      }
     }
     return ATTRIBUTE_BONUSES;
   }
@@ -214,7 +236,30 @@ public class Config {
 
     String uniqueModifierName = "config_bonus_" + attributeRL.getNamespace().replace(":", "_") + "_" + attributeRL.getPath().replace("/", "_");
     ResourceLocation modifierId = ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, uniqueModifierName);
-    AttributeModifier.Operation operation = AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
+
+    AttributeModifier.Operation operation;
+    
+    // Check if operation is specified (new format with 3 elements)
+    if (attributeBonusConfig.size() >= 3) {
+      int operationId = ((Integer) attributeBonusConfig.get(2));
+      operation = switch (operationId) {
+        case 0 -> AttributeModifier.Operation.ADD_VALUE;
+        case 1 -> AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
+        case 2 -> AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
+        default -> {
+          DynamicDifficulty.LOGGER.warn("Unknown operation ID: {}. Defaulting to ADD_VALUE", operationId);
+          yield AttributeModifier.Operation.ADD_VALUE;
+        }
+      };
+    } else {
+      // Legacy format - use old behavior
+      if (attributeKey.location().equals(Attributes.MAX_HEALTH.unwrapKey().orElse(null).location())) {
+        operation = AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
+      } else {
+        operation = AttributeModifier.Operation.ADD_VALUE;
+      }
+    }
+
     AttributeModifier modifier =
             new AttributeModifier(modifierId, attributeBonus, operation);
     
