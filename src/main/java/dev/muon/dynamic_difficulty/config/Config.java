@@ -183,8 +183,8 @@ public class Config {
     attributeBonuses.add(Arrays.asList("minecraft:generic.attack_damage", 0.2, 0)); // ADD_VALUE
     attributeBonuses.add(Arrays.asList("minecraft:generic.armor", 0.2, 0)); // ADD_VALUE
     attributeBonuses.add(Arrays.asList("minecraft:generic.max_health", 0.05, 1)); // ADD_MULTIPLIED_BASE
-    attributeBonuses.add(Arrays.asList("dynamic_difficulty:projectile_damage_bonus", 0.2, 0)); // ADD_VALUE
-    attributeBonuses.add(Arrays.asList("dynamic_difficulty:explosion_damage_bonus", 0.2, 0)); // ADD_VALUE
+    attributeBonuses.add(Arrays.asList("dynamic_difficulty:projectile_damage_multiplier", 0.02, 0)); // ADD_VALUE
+    attributeBonuses.add(Arrays.asList("dynamic_difficulty:explosion_damage_multiplier", 0.02, 0)); // ADD_VALUE
     return attributeBonuses;
   }
 

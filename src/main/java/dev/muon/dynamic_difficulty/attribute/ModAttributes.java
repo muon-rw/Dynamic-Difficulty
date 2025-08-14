@@ -21,10 +21,10 @@ public class ModAttributes {
     public static final DeferredRegister<Attribute> REGISTRY =
             DeferredRegister.create(BuiltInRegistries.ATTRIBUTE, DynamicDifficulty.MODID);
 
-    public static final DeferredHolder<Attribute, Attribute> PROJECTILE_DAMAGE_ADDITION =
-            rangedAttribute("generic", "projectile_damage_bonus", 0, 0, 65536);
-    public static final DeferredHolder<Attribute, Attribute> EXPLOSION_DAMAGE_ADDITION =
-            rangedAttribute("generic", "explosion_damage_bonus", 0, 0, 65536);
+    public static final DeferredHolder<Attribute, Attribute> PROJECTILE_DAMAGE_MULTIPLIER =
+            rangedAttribute("generic", "projectile_damage_multiplier", 0, 0, 65536);
+    public static final DeferredHolder<Attribute, Attribute> EXPLOSION_DAMAGE_MULTIPLIER =
+            rangedAttribute("generic", "explosion_damage_multiplier", 0, 0, 65536);
 
     private static DeferredHolder<Attribute, Attribute> rangedAttribute(
             String category, String name, double defaultValue, double minValue, double maxValue) {
@@ -40,8 +40,8 @@ public class ModAttributes {
     public static void attachMobAttributes(EntityAttributeModificationEvent e) {
         e.getTypes().forEach(type -> {
             addAll(type, e::add,
-                    ModAttributes.PROJECTILE_DAMAGE_ADDITION,
-                    ModAttributes.EXPLOSION_DAMAGE_ADDITION
+                    ModAttributes.PROJECTILE_DAMAGE_MULTIPLIER,
+                    ModAttributes.EXPLOSION_DAMAGE_MULTIPLIER
             );
         });
     }

@@ -12,7 +12,6 @@ import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
 
 import javax.annotation.Nonnull;
 
-import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -22,7 +21,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
-import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
@@ -100,47 +98,45 @@ public class LevelingEvents {
   }
 
   @SubscribeEvent
-  public static void applyAttributesDamageBonus(LivingDamageEvent.Pre event) {
+  public static void applyDamageMultipliers(LivingDamageEvent.Pre event) {
     DamageSource damage = event.getSource();
     if (!(damage.getEntity() instanceof LivingEntity attacker)) return;
-    float bonus = getAdditionalDamage(damage, attacker);
-    event.setNewDamage(event.getNewDamage() + bonus);
+    double bonus = getDamageMultipler(damage, attacker);
+    float newDamage = event.getNewDamage();
+    // This might be a bad failsafe, is there some valid use-case for multiplied negative damage?
+    if (newDamage > 0) {
+      event.setNewDamage((float) (event.getNewDamage() * bonus));
+    }
   }
 
-  public static float getAdditionalDamage(DamageSource damage, LivingEntity attacker) {
+  public static double getDamageMultipler(DamageSource damage, LivingEntity attacker) {
     if (damage.is(DamageTypeTags.IS_PROJECTILE)) {
-      return getAttributeValue(attacker, ModAttributes.PROJECTILE_DAMAGE_ADDITION.get());
+      return attacker.getAttributeValue(ModAttributes.PROJECTILE_DAMAGE_MULTIPLIER);
     }
     if (damage.is(DamageTypeTags.IS_EXPLOSION)) {
-      return getAttributeValue(attacker, ModAttributes.EXPLOSION_DAMAGE_ADDITION.get());
+      return attacker.getAttributeValue(ModAttributes.EXPLOSION_DAMAGE_MULTIPLIER);
     }
     return 0;
   }
 
-  private static float getAttributeValue(LivingEntity entity, Attribute damageBonusAttribute) {
-    var attributeInstance = entity.getAttribute(Holder.direct(damageBonusAttribute));
-    if (attributeInstance == null) return 1F;
-    return (float) attributeInstance.getValue();
-  }
-
   @SubscribeEvent
   public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-    if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof LivingEntity livingEntity) {
-      NetworkDispatcher.syncLevelToAllPlayers(livingEntity);
+    if (!event.getEntity().level().isClientSide()) {
+        NetworkDispatcher.syncLevelToAllPlayers(event.getEntity());
     }
   }
 
   @SubscribeEvent
   public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
-    if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof LivingEntity livingEntity) {
-      NetworkDispatcher.syncLevelToAllPlayers(livingEntity);
+    if (!event.getEntity().level().isClientSide()) {
+      NetworkDispatcher.syncLevelToAllPlayers(event.getEntity());
     }
   }
 
   @SubscribeEvent
   public static void onPlayerChangeDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-    if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof LivingEntity livingEntity) {
-      NetworkDispatcher.syncLevelToAllPlayers(livingEntity);
+    if (!event.getEntity().level().isClientSide()) {
+      NetworkDispatcher.syncLevelToAllPlayers(event.getEntity());
     }
   }
 
