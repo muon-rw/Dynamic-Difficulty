@@ -105,7 +105,7 @@ public class LevelingEvents {
     float newDamage = event.getNewDamage();
     // This might be a bad failsafe, is there some valid use-case for multiplied negative damage?
     if (newDamage > 0) {
-      event.setNewDamage((float) (event.getNewDamage() * bonus));
+      event.setNewDamage((float) (newDamage + (newDamage * bonus)));
     }
   }
 

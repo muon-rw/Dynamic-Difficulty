@@ -1,3 +1,6 @@
+## 0.4.1
+- Fix incorrect multiplier logic causing low player damage
+
 ## 0.4.0
 **BREAKING CHANGE: REQUIRES CONFIG RESET!**
 - Renamed Projectile/Explosion damage attributes (You'll see some Unknown Attribute log messages, these will only happen once per entity and can be ignored)
