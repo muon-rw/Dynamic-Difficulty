@@ -4,24 +4,27 @@ import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
-import dev.muon.dynamic_difficulty.attribute.ModAttributes;
 import dev.muon.dynamic_difficulty.data.EntityLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.mixin.LivingEntityAccessor;
 import dev.muon.dynamic_difficulty.network.NetworkDispatcher;
 import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
+import dev.muon.dynamic_difficulty.util.LevelingUtils;
 
 import javax.annotation.Nonnull;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
@@ -31,15 +34,20 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @EventBusSubscriber(modid = DynamicDifficulty.MODID)
 public class LevelingEvents {
   private static final String LEVEL_TAG = "LEVEL";
+  private static final Map<UUID, ResourceLocation> playerStructureMap = new HashMap<>();
 
 
   @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -95,28 +103,6 @@ public class LevelingEvents {
     if (!(event.getEntity() instanceof ServerPlayer player)) return;
 
     PacketDistributor.sendToPlayer(player, new SyncLevelingData(trackedEntity));
-  }
-
-  @SubscribeEvent
-  public static void applyDamageMultipliers(LivingDamageEvent.Pre event) {
-    DamageSource damage = event.getSource();
-    if (!(damage.getEntity() instanceof LivingEntity attacker)) return;
-    double bonus = getDamageMultipler(damage, attacker);
-    float newDamage = event.getNewDamage();
-    // This might be a bad failsafe, is there some valid use-case for multiplied negative damage?
-    if (newDamage > 0) {
-      event.setNewDamage((float) (newDamage + (newDamage * bonus)));
-    }
-  }
-
-  public static double getDamageMultipler(DamageSource damage, LivingEntity attacker) {
-    if (damage.is(DamageTypeTags.IS_PROJECTILE)) {
-      return attacker.getAttributeValue(ModAttributes.PROJECTILE_DAMAGE_MULTIPLIER);
-    }
-    if (damage.is(DamageTypeTags.IS_EXPLOSION)) {
-      return attacker.getAttributeValue(ModAttributes.EXPLOSION_DAMAGE_MULTIPLIER);
-    }
-    return 0;
   }
 
   @SubscribeEvent
@@ -204,5 +190,72 @@ public class LevelingEvents {
         .withParameter(LootContextParams.THIS_ENTITY, entity)
         .withParameter(LootContextParams.ORIGIN, entity.position())
         .create(LootContextParamSets.ENTITY);
+  }
+  
+  @SubscribeEvent
+  public static void onPlayerTick(PlayerTickEvent.Post event) {
+    if (event.getEntity() instanceof ServerPlayer player && event.getEntity().tickCount % 20 == 0) {
+      // Check every second to reduce performance impact
+      checkPlayerStructure(player);
+    }
+  }
+  
+  private static void checkPlayerStructure(ServerPlayer player) {
+    BlockPos playerPos = player.blockPosition();
+    ServerLevel level = player.serverLevel();
+    Registry<Structure> structureRegistry = level.registryAccess().registryOrThrow(Registries.STRUCTURE);
+    
+    ResourceLocation currentStructure = null;
+    int highestLevelBonus = 0;
+    
+    // Check all structures at player position
+    for (Structure structure : structureRegistry) {
+      StructureStart structureStart = level.structureManager().getStructureAt(playerPos, structure);
+      if (structureStart != null && structureStart.isValid()) {
+        ResourceLocation structureId = structureRegistry.getKey(structure);
+        if (structureId != null) {
+          int levelBonus = LevelingUtils.getStructureLevelBonus(structureId, structureRegistry);
+          if (levelBonus > highestLevelBonus) {
+            highestLevelBonus = levelBonus;
+            currentStructure = structureId;
+          }
+        }
+      }
+    }
+    
+    // Get the last known structure for this player
+    ResourceLocation lastStructure = playerStructureMap.get(player.getUUID());
+    
+    // If structure changed (including null -> structure or structure -> null)
+    if ((currentStructure != null && !currentStructure.equals(lastStructure)) ||
+        (currentStructure == null && lastStructure != null)) {
+      
+      // Update the map
+      if (currentStructure != null) {
+        playerStructureMap.put(player.getUUID(), currentStructure);
+      } else {
+        playerStructureMap.remove(player.getUUID());
+      }
+      
+      // Send packet if entering a structure with bonus
+      if (currentStructure != null && highestLevelBonus > 0) {
+        // Calculate base level at this position
+        int baseLevel = calculateBaseEntityLevel(player, playerPos);
+        
+        // Send the packet
+        NetworkDispatcher.sendStructureEntry(player, currentStructure, highestLevelBonus, baseLevel);
+      }
+    }
+  }
+  
+  private static int calculateBaseEntityLevel(ServerPlayer player, BlockPos pos) {
+    // Simple calculation - just using starting level and distance
+    BlockPos spawnPos = player.serverLevel().getSharedSpawnPos();
+    double distance = Math.sqrt(spawnPos.distSqr(pos));
+    
+    int baseLevel = Config.COMMON.startingLevel.get();
+    baseLevel += (int)(distance * Config.COMMON.levelsPerDistance.get());
+    
+    return Math.max(1, baseLevel);
   }
 }

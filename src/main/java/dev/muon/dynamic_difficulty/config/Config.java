@@ -20,6 +20,8 @@ public class Config {
   public static final Client CLIENT;
   public static final ModConfigSpec CLIENT_SPEC;
   private static final Map<ResourceKey<Attribute>, AttributeModifier> ATTRIBUTE_BONUSES = new HashMap<>();
+  private static final Map<ResourceLocation, Integer> STRUCTURE_BONUSES = new HashMap<>();
+  private static final Map<ResourceLocation, Integer> STRUCTURE_TAG_BONUSES = new HashMap<>();
 
   public enum RenderBehavior {
     ALWAYS,
@@ -37,6 +39,19 @@ public class Config {
       ATTRIBUTE_BONUSES.clear();
       COMMON.attributesBonuses.get().forEach(Config::readAttributeBonus);
       DynamicDifficulty.LOGGER.info("Reloaded {} attribute bonuses from config", ATTRIBUTE_BONUSES.size());
+    }
+  }
+  
+  public static void reloadStructureBonuses() {
+    synchronized (STRUCTURE_BONUSES) {
+      synchronized (STRUCTURE_TAG_BONUSES) {
+        STRUCTURE_BONUSES.clear();
+        STRUCTURE_TAG_BONUSES.clear();
+        COMMON.structureBonuses.get().forEach(Config::readStructureBonus);
+        COMMON.structureTagBonuses.get().forEach(Config::readStructureTagBonus);
+        DynamicDifficulty.LOGGER.info("Reloaded {} structure bonuses and {} structure tag bonuses from config", 
+                                    STRUCTURE_BONUSES.size(), STRUCTURE_TAG_BONUSES.size());
+      }
     }
   }
 
@@ -76,6 +91,10 @@ public class Config {
 
     // Attribute Bonuses
     public final ConfigValue<List<? extends List<Object>>> attributesBonuses;
+    
+    // Structure Bonuses
+    public final ConfigValue<List<? extends List<Object>>> structureBonuses;
+    public final ConfigValue<List<? extends List<Object>>> structureTagBonuses;
 
     public Common(ModConfigSpec.Builder builder) {
       builder.push("Base Leveling");
@@ -93,7 +112,7 @@ public class Config {
               .define("Experience bonus per level", 0.1D);
       builder.pop();
 
-      builder.push("Environmental Scaling");
+      builder.push("Environmental Leveling");
       levelsPerDistance = builder
               .comment("How many levels to add per block from world spawn")
               .define("Levels per block from spawn", 0.01D);
@@ -111,7 +130,7 @@ public class Config {
               .define("Depth power scaling", 0.0D);
       builder.pop();
 
-      builder.push("Player-Based Scaling");
+      builder.push("Player-Based Bonus Scaling");
       playerLevelRadius = builder
               .comment("Radius to search for players when calculating level bonuses")
               .define("Player search radius", 128.0D);
@@ -122,6 +141,26 @@ public class Config {
       applyPlayerBasedLeveling = builder
               .comment("Whether to factor in player levels when calculating mob levels")
               .define("Enable player-based leveling", false);
+      builder.pop();
+
+      builder.push("Structure-Based Bonus Scaling");
+      structureBonuses = builder
+              .comment("List of [structure_id, level_bonus] pairs for individual structures",
+                      "structure_id: The resource location of the structure (e.g., \"minecraft:fortress\")",
+                      "level_bonus: The number of levels to add for entities spawning in this structure",
+                      "Individual structure IDs take precedence over structure tags")
+              .defineList("Structure level bonuses",
+                      Config::getDefaultStructureBonuses,
+                      Config::isValidStructureBonus);
+      structureTagBonuses = builder
+              .comment("List of [structure_tag, level_bonus] pairs for structure tags",
+                      "structure_tag: The tag for structures (e.g., \"minecraft:village\")",
+                      "level_bonus: The number of levels to add for entities spawning in structures with this tag",
+                      "These are overridden by individual structure bonuses if both are present",
+                      "Note that Structure Bonuses apply in addition to scaling from this config, or leveling datapacks" )
+              .defineList("Structure tag level bonuses",
+                      Config::getDefaultStructureTagBonuses,
+                      Config::isValidStructureBonus);
       builder.pop();
 
       builder.push("Entity Filtering");
@@ -148,6 +187,7 @@ public class Config {
                       Config::getDefaultAttributeBonuses,
                       Config::isValidAttributeBonus);
       builder.pop();
+
     }
   }
 
@@ -157,6 +197,18 @@ public class Config {
     public final ConfigValue<Double> renderDistance;
     public final ConfigValue<List<String>> hiddenLevelEntities;
     public final ConfigValue<Boolean> showApotheosisWorldTier;
+    
+    // Structure Title Display
+    public final ConfigValue<Boolean> showStructureTitles;
+    public final ConfigValue<Integer> structureTitleFadeInTime;
+    public final ConfigValue<Integer> structureTitleDisplayTime;
+    public final ConfigValue<Integer> structureTitleFadeOutTime;
+    public final ConfigValue<String> structureTitleTextColor;
+    public final ConfigValue<Boolean> structureTitleRenderShadow;
+    public final ConfigValue<Double> structureTitleTextSize;
+    public final ConfigValue<Integer> structureTitleXOffset;
+    public final ConfigValue<Integer> structureTitleYOffset;
+    public final ConfigValue<Boolean> structureTitleCenterText;
 
     public Client(ModConfigSpec.Builder builder) {
       builder.push("Level Plate Settings");
@@ -173,6 +225,39 @@ public class Config {
       builder.push("Entity Settings");
       hiddenLevelEntities = builder.define("Entities with hidden levels", new ArrayList<>());
       builder.pop();
+      
+      builder.push("Structure Title Display");
+      showStructureTitles = builder
+              .comment("Display structure names and level bonuses when entering structures")
+              .define("Show structure titles", true);
+      structureTitleFadeInTime = builder
+              .comment("Time in ticks for structure title to fade in")
+              .defineInRange("Fade in time", 10, 0, 100);
+      structureTitleDisplayTime = builder
+              .comment("Time in ticks to display structure title")
+              .defineInRange("Display time", 60, 0, 600);
+      structureTitleFadeOutTime = builder
+              .comment("Time in ticks for structure title to fade out")
+              .defineInRange("Fade out time", 20, 0, 100);
+      structureTitleTextColor = builder
+              .comment("Text color in hex format (e.g., \"FFFFFF\" for white)")
+              .define("Text color", "FFFFFF");
+      structureTitleRenderShadow = builder
+              .comment("Render text shadow for structure titles")
+              .define("Render shadow", true);
+      structureTitleTextSize = builder
+              .comment("Text size multiplier for structure titles")
+              .defineInRange("Text size", 2.0, 0.5, 5.0);
+      structureTitleXOffset = builder
+              .comment("X offset for structure title position")
+              .define("X offset", 0);
+      structureTitleYOffset = builder
+              .comment("Y offset for structure title position")
+              .define("Y offset", 20);
+      structureTitleCenterText = builder
+              .comment("Center structure title text on screen")
+              .define("Center text", true);
+      builder.pop();
     }
   }
 
@@ -183,9 +268,29 @@ public class Config {
     attributeBonuses.add(Arrays.asList("minecraft:generic.attack_damage", 0.2, 0)); // ADD_VALUE
     attributeBonuses.add(Arrays.asList("minecraft:generic.armor", 0.2, 0)); // ADD_VALUE
     attributeBonuses.add(Arrays.asList("minecraft:generic.max_health", 0.05, 1)); // ADD_MULTIPLIED_BASE
-    attributeBonuses.add(Arrays.asList("dynamic_difficulty:projectile_damage_multiplier", 0.02, 0)); // ADD_VALUE
-    attributeBonuses.add(Arrays.asList("dynamic_difficulty:explosion_damage_multiplier", 0.02, 0)); // ADD_VALUE
+    attributeBonuses.add(Arrays.asList("dynamic_difficulty:projectile_damage_bonus", 0.2, 0)); // ADD_VALUE
+    attributeBonuses.add(Arrays.asList("dynamic_difficulty:explosion_damage_bonus", 0.2, 0)); // ADD_VALUE
     return attributeBonuses;
+  }
+  
+  private static List<List<Object>> getDefaultStructureBonuses() {
+    List<List<Object>> structureBonuses = new ArrayList<>();
+    // Format: [structure_id, level_bonus]
+    structureBonuses.add(Arrays.asList("minecraft:trial_dungeon", 10));
+    return structureBonuses;
+  }
+  
+  private static List<List<Object>> getDefaultStructureTagBonuses() {
+    List<List<Object>> structureTagBonuses = new ArrayList<>();
+    // Format: [structure_tag, level_bonus]
+    // Built-in difficulty tags
+    structureTagBonuses.add(Arrays.asList("dynamic_difficulty:level_1", 5));
+    structureTagBonuses.add(Arrays.asList("dynamic_difficulty:level_2", 10));
+    structureTagBonuses.add(Arrays.asList("dynamic_difficulty:level_3", 15));
+    structureTagBonuses.add(Arrays.asList("dynamic_difficulty:level_4", 20));
+    structureTagBonuses.add(Arrays.asList("dynamic_difficulty:level_5", 25));
+    structureTagBonuses.add(Arrays.asList("dynamic_difficulty:level_6", 30));
+    return structureTagBonuses;
   }
 
   private static <T> boolean isValidAttributeBonus(T object) {
@@ -195,6 +300,15 @@ public class Config {
         return list.get(0) instanceof String && list.get(1) instanceof Double;
       } else if (list.size() == 3) {
         return list.get(0) instanceof String && list.get(1) instanceof Double && list.get(2) instanceof Integer;
+      }
+    }
+    return false;
+  }
+  
+  private static <T> boolean isValidStructureBonus(T object) {
+    if (object instanceof List<?> list) {
+      if (list.size() == 2) {
+        return list.get(0) instanceof String && list.get(1) instanceof Integer;
       }
     }
     return false;
@@ -266,5 +380,54 @@ public class Config {
     ATTRIBUTE_BONUSES.put(attributeKey, modifier);
     DynamicDifficulty.LOGGER.info("Config: Registered attribute bonus for ResourceKey {} ({}) with amount {}/level, operation {}, ModID {}", 
                                 attributeKey.location(), attribute.getDescriptionId(), attributeBonus, operation, modifierId);
+  }
+  
+  private static void readStructureBonus(List<Object> structureBonusConfig) {
+    String structureId = (String) structureBonusConfig.get(0);
+    ResourceLocation structureRL = ResourceLocation.tryParse(structureId);
+    if (structureRL == null) {
+      DynamicDifficulty.LOGGER.error("Structure ID '{}' is invalid!", structureId);
+      return;
+    }
+    int levelBonus = ((Integer) structureBonusConfig.get(1));
+    
+    STRUCTURE_BONUSES.put(structureRL, levelBonus);
+    DynamicDifficulty.LOGGER.info("Config: Registered structure bonus for {} with {} levels", structureRL, levelBonus);
+  }
+  
+  private static void readStructureTagBonus(List<Object> structureTagBonusConfig) {
+    String tagId = (String) structureTagBonusConfig.get(0);
+    ResourceLocation tagRL = ResourceLocation.tryParse(tagId);
+    if (tagRL == null) {
+      DynamicDifficulty.LOGGER.error("Structure tag ID '{}' is invalid!", tagId);
+      return;
+    }
+    int levelBonus = ((Integer) structureTagBonusConfig.get(1));
+    
+    STRUCTURE_TAG_BONUSES.put(tagRL, levelBonus);
+    DynamicDifficulty.LOGGER.info("Config: Registered structure tag bonus for {} with {} levels", tagRL, levelBonus);
+  }
+  
+  public static Map<ResourceLocation, Integer> getStructureBonuses() {
+    if (STRUCTURE_BONUSES.isEmpty() && STRUCTURE_TAG_BONUSES.isEmpty()) {
+      synchronized (STRUCTURE_BONUSES) {
+        synchronized (STRUCTURE_TAG_BONUSES) {
+          if (STRUCTURE_BONUSES.isEmpty() && STRUCTURE_TAG_BONUSES.isEmpty()) {
+            COMMON.structureBonuses.get().forEach(Config::readStructureBonus);
+            COMMON.structureTagBonuses.get().forEach(Config::readStructureTagBonus);
+            DynamicDifficulty.LOGGER.info("Initialized {} structure bonuses and {} structure tag bonuses from config", 
+                                        STRUCTURE_BONUSES.size(), STRUCTURE_TAG_BONUSES.size());
+          }
+        }
+      }
+    }
+    return STRUCTURE_BONUSES;
+  }
+  
+  public static Map<ResourceLocation, Integer> getStructureTagBonuses() {
+    if (STRUCTURE_BONUSES.isEmpty() && STRUCTURE_TAG_BONUSES.isEmpty()) {
+      getStructureBonuses(); // This will initialize both maps
+    }
+    return STRUCTURE_TAG_BONUSES;
   }
 }

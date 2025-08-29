@@ -2,7 +2,9 @@ package dev.muon.dynamic_difficulty.network;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
+import dev.muon.dynamic_difficulty.network.message.StructureEntryPacket;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -24,6 +26,12 @@ public class NetworkDispatcher {
             CustomPacketPayload.codec(SyncLevelingData::write, SyncLevelingData::new),
             SyncLevelingData::handle
     );
+    
+    registrar.playToClient(
+            StructureEntryPacket.TYPE,
+            CustomPacketPayload.codec(StructureEntryPacket::write, StructureEntryPacket::new),
+            StructureEntryPacket::handle
+    );
   }
 
   public static void syncLevelToClients(LivingEntity entity) {
@@ -37,5 +45,9 @@ public class NetworkDispatcher {
 
   public static void syncLevelToAllPlayers(LivingEntity entity) {
     PacketDistributor.sendToAllPlayers(new SyncLevelingData(entity));
+  }
+  
+  public static void sendStructureEntry(ServerPlayer player, ResourceLocation structureId, int levelBonus, int baseLevel) {
+    PacketDistributor.sendToPlayer(player, new StructureEntryPacket(structureId, levelBonus, baseLevel));
   }
 }

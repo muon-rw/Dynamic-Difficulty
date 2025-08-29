@@ -146,6 +146,10 @@ configurations {
 }
 
 dependencies {
+
+    // required
+    runtimeOnly ("me.shedaniel.cloth:cloth-config-neoforge:${cloth_config}")
+
     // Dev Env
     localRuntime("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}")
     localRuntime("snownee.jade:Jade-NeoForge:${minecraft_version}-${jade_version}")
@@ -157,14 +161,19 @@ dependencies {
     implementation("dev.shadowsoffire:ApothicSpawners:${minecraft_version}-${apothic_spawners}")
     implementation("dev.shadowsoffire:ApothicEnchanting:${minecraft_version}-${apothic_enchanting}")
 
+    // traveler's
+    implementation "curse.maven:travelers-titles-neoforge-1015155:6294123"
+    implementation "curse.maven:yungs-api-neoforge-1015100:6715463"
 
+    // just to fix the dev env crash
+    localRuntime "curse.maven:patchouli-306770:6842247"
+
+    // why is this in here again?
     implementation ("io.redspace:irons_spellbooks:${irons_version}")
     runtimeOnly ("software.bernie.geckolib:geckolib-neoforge-${geckolib_version}")
     compileOnly ("top.theillusivec4.curios:curios-neoforge:${curios_version}:api")
     runtimeOnly ("top.theillusivec4.curios:curios-neoforge:${curios_version}")
     runtimeOnly("dev.kosmx.player-anim:player-animation-lib-forge:${player_animator}")
-
-    runtimeOnly ("me.shedaniel.cloth:cloth-config-neoforge:${cloth_config}")
 
 }
 

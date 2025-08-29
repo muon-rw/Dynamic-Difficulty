@@ -2,6 +2,7 @@ package dev.muon.dynamic_difficulty.api;
 
 import dev.muon.dynamic_difficulty.leveling.LevelingSystem;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
+import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -9,6 +10,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.levelgen.structure.Structure;
 
 import java.util.Map;
 
@@ -126,8 +128,8 @@ public class LevelingAPI {
      * @param structureId The structure's ResourceLocation
      * @return The level bonus configured for the structure
      */
-    public static int getStructureLevelBonus(ResourceLocation structureId) {
-        return LevelingUtils.getStructureLevelBonus(structureId);
+    public static int getStructureLevelBonus(ResourceLocation structureId, Registry<Structure> structureRegistry) {
+        return LevelingUtils.getStructureLevelBonus(structureId, structureRegistry);
     }
 
     /**

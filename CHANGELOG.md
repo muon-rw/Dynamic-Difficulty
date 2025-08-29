@@ -1,3 +1,9 @@
+## 0.5.0
+- Add structure levels, structure tags, structure title renderer
+- Mob levels now start at 1 instead of 0
+- Re-add projectile_damage_bonus
+- Improve damage modification method
+
 ## 0.4.1
 - Fix incorrect multiplier logic causing low player damage
 

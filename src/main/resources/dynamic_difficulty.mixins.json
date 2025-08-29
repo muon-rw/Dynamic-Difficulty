@@ -4,7 +4,8 @@
   "compatibilityLevel": "JAVA_17",
   "package": "dev.muon.dynamic_difficulty.mixin",
   "mixins": [
-    "LivingEntityAccessor"
+    "LivingEntityAccessor",
+    "LivingEntityMixin"
   ],
   "client": [
   ],

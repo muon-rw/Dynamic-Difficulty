@@ -67,18 +67,17 @@ public class LevelingSystem {
 
     public static int createLevelForEntity(LivingEntity entity) {
         if (!LevelingAPI.canHaveLevel(entity)) {
-            return 0;
+            return 1;
         }
 
         if (entity.getType().is(FIXED_LEVEL_ENTITIES)) {
-            int fixedLevel = getFixedLevel(entity);
-            return fixedLevel;
+            return getFixedLevel(entity);
         }
 
         int baseLevel = calculateInitialLevel(entity);
         int totalBonusLevels = calculateBonusLevels(entity);
-        int finalLevel = Math.max(0, baseLevel + totalBonusLevels);
-        
+        int finalLevel = Math.max(1, baseLevel + totalBonusLevels);
+
         return finalLevel;
     }
 
@@ -101,10 +100,11 @@ public class LevelingSystem {
             baseLevel += randomBonus;
         }
 
-        baseLevel = Math.max(0, baseLevel); 
+
+        baseLevel = Math.max(1, baseLevel);
 
         int maxLevel = settings.maxLevel();
-        if (maxLevel > 0) {
+        if (maxLevel > 1) {
             int originalLevel = baseLevel;
             baseLevel = Math.min(baseLevel, maxLevel);
             if (originalLevel != baseLevel) {
@@ -119,6 +119,8 @@ public class LevelingSystem {
         if (Config.COMMON.applyPlayerBasedLeveling.get() && entity.level() instanceof ServerLevel serverLevel) {
             bonusLevels += LevelingAPI.getLevelsFromNearbyPlayers(serverLevel, entity);
         }
+
+        bonusLevels += LevelingAPI.getStructureLevelBonus(entity);
 
         return bonusLevels;
     }
@@ -187,7 +189,6 @@ public class LevelingSystem {
             LivingEntity entity,
             Holder<Attribute> attributeHolder,
             AttributeModifier modifier) {
-        Optional<ResourceKey<Attribute>> optAttributeKey = attributeHolder.unwrapKey();
 
         AttributeInstance instance = entity.getAttribute(attributeHolder);
 
@@ -198,7 +199,7 @@ public class LevelingSystem {
 
         int level = getLevel(entity);
 
-        if (level == 0 || modifier.amount() == 0) {
+        if (level == 1 || modifier.amount() == 0) {
             return;
         }
 
@@ -208,9 +209,8 @@ public class LevelingSystem {
 
         instance.addPermanentModifier(newModifier);
 
-        Optional<ResourceKey<Attribute>> maxHealthResKeyOpt = Attributes.MAX_HEALTH.unwrapKey();
-        if (maxHealthResKeyOpt.isPresent() && optAttributeKey.isPresent() && maxHealthResKeyOpt.get().location().equals(optAttributeKey.get().location())) {
-            entity.heal(entity.getMaxHealth());
+        if (attributeHolder == Attributes.MAX_HEALTH); {
+            entity.setHealth(entity.getMaxHealth());
         }
     }
 
@@ -261,16 +261,18 @@ public class LevelingSystem {
         Registry<Structure> structureRegistry = serverLevel.registryAccess()
                 .registryOrThrow(Registries.STRUCTURE);
 
+        int highestBonus = 0;
         for (Structure structure : structureRegistry) {
             StructureStart start = serverLevel.structureManager().getStructureAt(pos, structure);
             if (start != null && start.isValid()) {
                 ResourceLocation structureId = structureRegistry.getKey(structure);
                 if (structureId != null) {
-                    return LevelingUtils.getStructureLevelBonus(structureId);
+                    int bonus = LevelingUtils.getStructureLevelBonus(structureId, structureRegistry);
+                    highestBonus = Math.max(highestBonus, bonus);
                 }
             }
         }
 
-        return 0;
+        return highestBonus;
     }
 }

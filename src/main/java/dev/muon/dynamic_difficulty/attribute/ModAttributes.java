@@ -25,6 +25,10 @@ public class ModAttributes {
             rangedAttribute("generic", "projectile_damage_multiplier", 0, 0, 65536);
     public static final DeferredHolder<Attribute, Attribute> EXPLOSION_DAMAGE_MULTIPLIER =
             rangedAttribute("generic", "explosion_damage_multiplier", 0, 0, 65536);
+    public static final DeferredHolder<Attribute, Attribute> PROJECTILE_DAMAGE_BONUS =
+            rangedAttribute("generic", "projectile_damage_bonus", 0, 0, 65536);
+    public static final DeferredHolder<Attribute, Attribute> EXPLOSION_DAMAGE_BONUS =
+            rangedAttribute("generic", "explosion_damage_bonus", 0, 0, 65536);
 
     private static DeferredHolder<Attribute, Attribute> rangedAttribute(
             String category, String name, double defaultValue, double minValue, double maxValue) {
@@ -41,7 +45,9 @@ public class ModAttributes {
         e.getTypes().forEach(type -> {
             addAll(type, e::add,
                     ModAttributes.PROJECTILE_DAMAGE_MULTIPLIER,
-                    ModAttributes.EXPLOSION_DAMAGE_MULTIPLIER
+                    ModAttributes.EXPLOSION_DAMAGE_MULTIPLIER,
+                    ModAttributes.PROJECTILE_DAMAGE_BONUS,
+                    ModAttributes.EXPLOSION_DAMAGE_BONUS
             );
         });
     }

@@ -11,6 +11,8 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.tags.TagKey;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.core.Registry;
 
 import java.util.List;
 import java.util.Map;
@@ -54,13 +56,31 @@ public class LevelingUtils {
     }
 
     /**
-     * Gets the structure level bonus from configuration
+     * Gets the structure level bonus from configuration, checking both individual IDs and tags
+     * @param structureId The resource location of the structure
+     * @param structureRegistry The registry to check tags against
+     * @return The level bonus for this structure
      */
-    public static int getStructureLevelBonus(ResourceLocation structureId) {
-        // TODO: use datapack system
-        // Map<String, Integer> bonuses = Config.COMMON.structureLevelBonuses.get();
-        // String key = structureId.toString();
-        // return bonuses.getOrDefault(key, 0);
+    public static int getStructureLevelBonus(ResourceLocation structureId, Registry<Structure> structureRegistry) {
+        Map<ResourceLocation, Integer> structureBonuses = Config.getStructureBonuses();
+        Map<ResourceLocation, Integer> tagBonuses = Config.getStructureTagBonuses();
+        
+        // Check individual structure bonuses first (they take precedence)
+        if (structureBonuses.containsKey(structureId)) {
+            return structureBonuses.get(structureId);
+        }
+        
+        // Check structure tags
+        Structure structure = structureRegistry.get(structureId);
+        if (structure != null) {
+            for (Map.Entry<ResourceLocation, Integer> tagEntry : tagBonuses.entrySet()) {
+                TagKey<Structure> structureTag = TagKey.create(Registries.STRUCTURE, tagEntry.getKey());
+                if (structureRegistry.getHolderOrThrow(structureRegistry.getResourceKey(structure).get()).is(structureTag)) {
+                    return tagEntry.getValue();
+                }
+            }
+        }
+        
         return 0;
     }
 

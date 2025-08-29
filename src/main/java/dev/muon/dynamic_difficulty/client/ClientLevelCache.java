@@ -16,9 +16,9 @@ public class ClientLevelCache {
 
     public static int getLevel(LivingEntity entity) {
         if (entity instanceof Player) {
-            return PLAYER_LEVELS.getOrDefault(entity.getUUID(), 0);
+            return PLAYER_LEVELS.getOrDefault(entity.getUUID(), 1);
         }
-        return ENTITY_LEVELS.getOrDefault(entity.getId(), 0);
+        return ENTITY_LEVELS.getOrDefault(entity.getId(), 1);
     }
 
     public static void updatePlayerLevel(UUID playerId, int level) {
