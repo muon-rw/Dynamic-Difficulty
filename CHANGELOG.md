@@ -1,3 +1,6 @@
+## 0.5.1
+- Re-add translation keys for damage bonus attributes
+
 ## 0.5.0
 - Add structure levels, structure tags, structure title renderer
 - Mob levels now start at 1 instead of 0
