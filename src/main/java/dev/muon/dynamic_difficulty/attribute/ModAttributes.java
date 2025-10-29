@@ -21,14 +21,24 @@ public class ModAttributes {
     public static final DeferredRegister<Attribute> REGISTRY =
             DeferredRegister.create(BuiltInRegistries.ATTRIBUTE, DynamicDifficulty.MODID);
 
-    public static final DeferredHolder<Attribute, Attribute> PROJECTILE_DAMAGE_MULTIPLIER =
-            rangedAttribute("generic", "projectile_damage_multiplier", 0, 0, 65536);
-    public static final DeferredHolder<Attribute, Attribute> EXPLOSION_DAMAGE_MULTIPLIER =
-            rangedAttribute("generic", "explosion_damage_multiplier", 0, 0, 65536);
     public static final DeferredHolder<Attribute, Attribute> PROJECTILE_DAMAGE_BONUS =
             rangedAttribute("generic", "projectile_damage_bonus", 0, 0, 65536);
+    public static final DeferredHolder<Attribute, Attribute> PROJECTILE_DAMAGE_MULTIPLIER =
+            rangedAttribute("generic", "projectile_damage_multiplier", 0, 0, 65536);
     public static final DeferredHolder<Attribute, Attribute> EXPLOSION_DAMAGE_BONUS =
             rangedAttribute("generic", "explosion_damage_bonus", 0, 0, 65536);
+    public static final DeferredHolder<Attribute, Attribute> EXPLOSION_DAMAGE_MULTIPLIER =
+            rangedAttribute("generic", "explosion_damage_multiplier", 0, 0, 65536);
+    public static final DeferredHolder<Attribute, Attribute> DAMAGE_BONUS =
+            rangedAttribute("generic", "damage_bonus", 0, 0, 65536);
+    public static final DeferredHolder<Attribute, Attribute> DAMAGE_MULTIPLIER =
+            rangedAttribute("generic", "damage_multiplier", 0, 0, 65536);
+    public static final DeferredHolder<Attribute, Attribute> MAGIC_DAMAGE_BONUS =
+            rangedAttribute("generic", "magic_damage_bonus", 0, 0, 65536);
+    public static final DeferredHolder<Attribute, Attribute> MAGIC_DAMAGE_MULTIPLIER =
+            rangedAttribute("generic", "magic_damage_multiplier", 0, 0, 65536);
+
+
 
     private static DeferredHolder<Attribute, Attribute> rangedAttribute(
             String category, String name, double defaultValue, double minValue, double maxValue) {
@@ -44,10 +54,14 @@ public class ModAttributes {
     public static void attachMobAttributes(EntityAttributeModificationEvent e) {
         e.getTypes().forEach(type -> {
             addAll(type, e::add,
-                    ModAttributes.PROJECTILE_DAMAGE_MULTIPLIER,
-                    ModAttributes.EXPLOSION_DAMAGE_MULTIPLIER,
                     ModAttributes.PROJECTILE_DAMAGE_BONUS,
-                    ModAttributes.EXPLOSION_DAMAGE_BONUS
+                    ModAttributes.PROJECTILE_DAMAGE_MULTIPLIER,
+                    ModAttributes.EXPLOSION_DAMAGE_BONUS,
+                    ModAttributes.EXPLOSION_DAMAGE_MULTIPLIER,
+                    ModAttributes.DAMAGE_BONUS,
+                    ModAttributes.DAMAGE_MULTIPLIER,
+                    ModAttributes.MAGIC_DAMAGE_BONUS,
+                    ModAttributes.MAGIC_DAMAGE_MULTIPLIER
             );
         });
     }
