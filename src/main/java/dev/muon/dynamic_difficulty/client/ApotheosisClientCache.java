@@ -11,6 +11,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 
@@ -27,8 +28,8 @@ public class ApotheosisClientCache {
     private static final long CLEANUP_INTERVAL = 20 * 60; // Every 60 seconds
     private static final long ENTITY_TIMEOUT = 5 * 60 * 20; // 5 minutes
     private static long lastCleanup = 0;
-    
-    // Tier mappings based on the identifier patterns
+
+    // lol
     private static final Map<String, String> TIER_NAMES = Map.of(
         "haven", "Haven",
         "frontier", "Frontier", 
@@ -49,6 +50,7 @@ public class ApotheosisClientCache {
         }
         
         // Scan for Apotheosis modifiers
+        // Expensive! But should only happen once-ish per entity
         String tier = scanForApotheosisModifiers(entity);
         if (tier != null) {
             TIER_CACHE.put(entityId, tier);
@@ -104,8 +106,7 @@ public class ApotheosisClientCache {
             }
         }
     }
-    
-    // Clear cache entry when entity dies
+
     @SubscribeEvent
     public static void onEntityDeath(LivingDeathEvent event) {
         if (event.getEntity().level().isClientSide()) {
@@ -114,8 +115,16 @@ public class ApotheosisClientCache {
             LAST_SEEN.remove(entityId);
         }
     }
-    
-    // Clear cache when leaving a world
+
+    @SubscribeEvent
+    public static void onEntityUnload(EntityLeaveLevelEvent event) {
+        if (event.getEntity().level().isClientSide()) {
+            int entityId = event.getEntity().getId();
+            TIER_CACHE.remove(entityId);
+            LAST_SEEN.remove(entityId);
+        }
+    }
+
     @SubscribeEvent
     public static void onLevelUnload(LevelEvent.Unload event) {
         if (event.getLevel().isClientSide()) {

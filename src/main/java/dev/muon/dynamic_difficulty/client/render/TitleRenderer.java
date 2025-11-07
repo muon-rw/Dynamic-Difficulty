@@ -30,6 +30,8 @@ public class TitleRenderer<T> {
     public float titleTextSize;
     public int titleXOffset;
     public int titleYOffset;
+    public float subTitleScale;
+    public int subTitleSpacing;
     public boolean isTextCentered;
 
     public TitleRenderer(
@@ -43,6 +45,8 @@ public class TitleRenderer<T> {
         double textSize,
         int xOffset,
         int yOffset,
+        float subTitleScale,
+        int subTitleSpacing,
         boolean centerText
     ) {
         this.maxRecentListSize = maxRecentListSize;
@@ -56,26 +60,14 @@ public class TitleRenderer<T> {
         this.titleTextSize = (float)textSize;
         this.titleXOffset = xOffset;
         this.titleYOffset = yOffset;
+        this.subTitleScale = subTitleScale;
+        this.subTitleSpacing = subTitleSpacing;
         this.isTextCentered = centerText;
     }
 
     public void renderText(float partialTicks, GuiGraphics guiGraphics) {
         if (displayedTitle != null && titleTimer > 0) {
-            float age = (float) titleTimer - partialTicks;
-            int opacity = 255;
-
-            // Fade in
-            if (titleTimer > titleFadeOutTicks + titleDisplayTime) {
-                float r = (float) (titleFadeInTicks + titleDisplayTime + titleFadeOutTicks) - age;
-                opacity = (int) (r * 255.0F / (float) titleFadeInTicks);
-            }
-
-            // Fade out
-            if (titleTimer <= titleFadeOutTicks) {
-                opacity = (int) (age * 255.0F / (float) titleFadeOutTicks);
-            }
-
-            opacity = Mth.clamp(opacity, 0, 255);
+            int opacity = getOpacity(partialTicks);
             if (opacity > 8) {
                 // Set up render system
                 guiGraphics.pose().pushPose();
@@ -85,40 +77,67 @@ public class TitleRenderer<T> {
                 }
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();
-
-                // Render title
-                guiGraphics.pose().pushPose();
-                guiGraphics.pose().scale(titleTextSize, titleTextSize, titleTextSize);
                 int alpha = opacity << 24 & 0xFF000000;
                 Font fontRenderer = Minecraft.getInstance().font;
-                int titleWidth = fontRenderer.width(displayedTitle);
 
-                // Determine x offset
-                int xOffset = this.isTextCentered
-                    ? this.titleXOffset + (-titleWidth / 2)
-                    : this.titleXOffset;
-
-                // Render title
-                guiGraphics.drawString(fontRenderer, displayedTitle, xOffset, titleYOffset, titleTextColor | alpha, showTextShadow);
-                guiGraphics.pose().popPose();
-
-                // Subtitle render (level info)
-                if (displayedSubTitle != null) {
-                    guiGraphics.pose().pushPose();
-                    guiGraphics.pose().scale(titleTextSize * 0.7f, titleTextSize * 0.7f, titleTextSize * 0.7f);
-                    int subtitleWidth = fontRenderer.width(displayedSubTitle);
-
-                    int subXOffset = this.isTextCentered
-                        ? this.titleXOffset + (-subtitleWidth / 2)
-                        : this.titleXOffset;
-
-                    guiGraphics.drawString(fontRenderer, displayedSubTitle, subXOffset, titleYOffset + 30, titleTextColor | alpha, showTextShadow);
-                    guiGraphics.pose().popPose();
-                }
+                renderTitle(guiGraphics, fontRenderer, alpha);
+                renderSubtitle(guiGraphics, fontRenderer, alpha);
 
                 RenderSystem.disableBlend();
                 guiGraphics.pose().popPose();
             }
+        }
+    }
+
+    private int getOpacity(float partialTicks) {
+        float age = (float) titleTimer - partialTicks;
+        int opacity = 255;
+
+        // Fade in
+        if (titleTimer > titleFadeOutTicks + titleDisplayTime) {
+            float r = (float) (titleFadeInTicks + titleDisplayTime + titleFadeOutTicks) - age;
+            opacity = (int) (r * 255.0F / (float) titleFadeInTicks);
+        }
+
+        // Fade out
+        if (titleTimer <= titleFadeOutTicks) {
+            opacity = (int) (age * 255.0F / (float) titleFadeOutTicks);
+        }
+
+        opacity = Mth.clamp(opacity, 0, 255);
+        return opacity;
+    }
+
+    private void renderTitle(GuiGraphics guiGraphics, Font fontRenderer, int alpha) {
+        // Render title
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().scale(titleTextSize, titleTextSize, titleTextSize);
+        int titleWidth = fontRenderer.width(displayedTitle);
+
+        int xOffset = this.isTextCentered
+            ? this.titleXOffset + (-titleWidth / 2)
+            : this.titleXOffset;
+
+        guiGraphics.drawString(fontRenderer, displayedTitle, xOffset, titleYOffset, titleTextColor | alpha, showTextShadow);
+        guiGraphics.pose().popPose();
+    }
+
+    private void renderSubtitle(GuiGraphics guiGraphics, Font fontRenderer, int alpha) {
+        if (displayedSubTitle != null) {
+            guiGraphics.pose().pushPose();
+
+            float subTitleTextSize = titleTextSize * subTitleScale;
+            guiGraphics.pose().scale(subTitleTextSize, subTitleTextSize, subTitleTextSize);
+
+            int subtitleWidth = (int) (fontRenderer.width(displayedSubTitle) * subTitleScale);
+            int subXOffset = (int) ((this.isTextCentered
+                    ? this.titleXOffset + ((float) -subtitleWidth / 2)
+                    : this.titleXOffset)
+                    / subTitleScale);
+            int subYOffset = (int) ((titleYOffset + subTitleSpacing) / subTitleScale);
+
+            guiGraphics.drawString(fontRenderer, displayedSubTitle, subXOffset, subYOffset, titleTextColor | alpha, showTextShadow);
+            guiGraphics.pose().popPose();
         }
     }
 
@@ -152,7 +171,7 @@ public class TitleRenderer<T> {
     }
 
     public void addRecentEntry(T entry) {
-        if (this.recentEntries.size() >= this.maxRecentListSize && this.recentEntries.size() > 0) {
+        if (this.recentEntries.size() >= this.maxRecentListSize && !this.recentEntries.isEmpty()) {
             this.recentEntries.removeFirst();
         }
         if (this.maxRecentListSize > 0) {

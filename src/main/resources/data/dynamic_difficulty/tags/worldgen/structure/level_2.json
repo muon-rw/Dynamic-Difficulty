@@ -2,6 +2,8 @@
   "replace": false,
   "values": [
     {"id":"mss:arena", "required": false},
+    {"id":"irons_spellbooks:pyromancer_tower", "required": false},
+    {"id":"irons_spellbooks:evoker_tower", "required": false},
     {"id":"illagerinvasion:firecaller_hut", "required": false},
     {"id":"illagerinvasion:illusioner_tower", "required": false},
     {"id":"illagerinvasion:sorcerer_hut", "required": false},

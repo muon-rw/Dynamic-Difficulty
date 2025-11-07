@@ -24,6 +24,8 @@ public class StructureTitleRenderManager {
             Config.CLIENT.structureTitleTextSize.get(),
             Config.CLIENT.structureTitleXOffset.get(),
             Config.CLIENT.structureTitleYOffset.get(),
+            Config.CLIENT.structureSubtitleScale.get(),
+            Config.CLIENT.structureSubtitleSpacing.get(),
             Config.CLIENT.structureTitleCenterText.get()
         );
     }
@@ -34,19 +36,13 @@ public class StructureTitleRenderManager {
         }
         return instance;
     }
-    
-    /**
-     * Ticks the renderer
-     */
+
     public void clientTick() {
         if (!Minecraft.getInstance().isPaused()) {
             structureTitleRenderer.tick();
         }
     }
-    
-    /**
-     * Renders structure titles
-     */
+
     public void renderTitles(GuiGraphics guiGraphics, float partialTicks) {
         if (!Minecraft.getInstance().getDebugOverlay().showDebugScreen()) {
             structureTitleRenderer.renderText(partialTicks, guiGraphics);

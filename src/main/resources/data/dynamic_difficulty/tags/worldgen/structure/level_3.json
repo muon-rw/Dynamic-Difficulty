@@ -1,6 +1,8 @@
 {
   "replace": false,
   "values": [
+    {"id":"irons_spellbooks:catacombs", "required": false},
+    {"id":"irons_spellbooks:citadel", "required": false},
     {"id":"betterstrongholds:stronghold", "required": false},
     {"id":"friendsandfoes:citadel", "required": false},
     {"id":"illagerinvasion:illager_fort", "required": false},

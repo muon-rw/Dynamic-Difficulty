@@ -1,3 +1,7 @@
+## 0.5.2
+- Fix structure subtitle not moving properly with title
+- Add client config values for structure subtitle scaling, subtitle y offset
+
 ## 0.5.1
 - Re-add translation keys for damage bonus attributes
 

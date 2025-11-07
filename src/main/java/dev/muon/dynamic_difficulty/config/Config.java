@@ -208,6 +208,8 @@ public class Config {
     public final ConfigValue<Double> structureTitleTextSize;
     public final ConfigValue<Integer> structureTitleXOffset;
     public final ConfigValue<Integer> structureTitleYOffset;
+    public final ConfigValue<Float> structureSubtitleScale;
+    public final ConfigValue<Integer> structureSubtitleSpacing;
     public final ConfigValue<Boolean> structureTitleCenterText;
 
     public Client(ModConfigSpec.Builder builder) {
@@ -254,6 +256,12 @@ public class Config {
       structureTitleYOffset = builder
               .comment("Y offset for structure title position")
               .define("Y offset", 20);
+      structureSubtitleScale = builder
+                .comment("Size for structure subtitles, relative to title")
+                .define("Subtitle Scale", 0.7F);
+      structureSubtitleSpacing = builder
+                .comment("Vertical distance between title and subtitle")
+                .define("Subtitle Spacing", 15);
       structureTitleCenterText = builder
               .comment("Center structure title text on screen")
               .define("Center text", true);
