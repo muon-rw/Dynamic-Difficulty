@@ -1,5 +1,5 @@
 ## 0.6.0
-- Added items to level up mobs
+- Added 5 new items, used to level up tamed pets (or any mob)
 - Greatly improve player-based scaling framework
 - Add player scaling/level tracking for Puffish Skills
 - Make level display translatable
