@@ -1,0 +1,6 @@
+{
+  "type": "dynamic_difficulty:inject_loot_table",
+  "conditions": [],
+  "loot_table": "dynamic_difficulty:inject/level_based_drops"
+}
+

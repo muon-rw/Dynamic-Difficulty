@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "dynamic_difficulty:item/elixir_of_nurturing"
+  }
+}
+

@@ -37,25 +37,44 @@ public class LevelingAPI {
     }
 
     /**
-     * Gets the current level of an entity
+     * Gets the current level of any living entity, including players.
+     * 
+     * IMPORTANT DISTINCTION:
+     * - For mobs/entities: Level grants attribute bonuses (health, damage, etc.)
+     * - For players: Level is DISPLAY ONLY (shown above head, used for color-coding mob difficulty)
+     * 
+     * Players do NOT receive attribute bonuses from levels. Instead, they use the
+     * PlayerLevelProvider system to contribute to nearby mob difficulty scaling.
+     * 
      * @param entity The entity to get the level for
-     * @return The entity's level, or 0 if it has no level
+     * @return The entity's level, or 1 if it has no level
      */
     public static int getLevel(LivingEntity entity) {
         return LevelingSystem.getLevel(entity);
     }
 
     /**
-     * Sets an entity's level and applies appropriate modifiers
-     * @param entity The entity to set the level for
-     * @param level The level to set (must be >= 0)
-     * @throws IllegalArgumentException if level is negative
+     * Sets an entity's level, updates attributes, and syncs to clients.
+     * This is the proper way to change an entity's level at runtime (e.g., from items).
+     * 
+     * @param entity The entity to level up/down (must NOT be a player)
+     * @param newLevel The new level to set (must be >= 1)
+     * @throws IllegalArgumentException if entity is a player, level is invalid, or entity can't have levels
      */
-    public static void setLevel(LivingEntity entity, int level) {
-        if (level < 0) {
-            throw new IllegalArgumentException("Level cannot be negative");
-        }
-        LevelingSystem.setLevel(entity, level);
+    public static void setAndUpdateLevel(LivingEntity entity, int newLevel) {
+        LevelingSystem.setAndUpdateLevel(entity, newLevel);
+    }
+
+    /**
+     * Adds levels to an entity (can be negative to subtract).
+     * Minimum level is 1. Updates attributes and syncs to clients.
+     * 
+     * @param entity The entity to level up/down (must NOT be a player)
+     * @param levelsToAdd How many levels to add (negative to subtract)
+     * @throws IllegalArgumentException if entity is a player or entity can't have levels
+     */
+    public static void addLevels(LivingEntity entity, int levelsToAdd) {
+        LevelingSystem.addLevels(entity, levelsToAdd);
     }
 
     /**

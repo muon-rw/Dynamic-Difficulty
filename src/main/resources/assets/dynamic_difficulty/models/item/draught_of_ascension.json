@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "dynamic_difficulty:item/draught_of_ascension"
+  }
+}
+

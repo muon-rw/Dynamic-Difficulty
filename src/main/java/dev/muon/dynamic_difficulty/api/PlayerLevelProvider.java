@@ -1,5 +1,6 @@
 package dev.muon.dynamic_difficulty.api;
 
+import dev.muon.dynamic_difficulty.leveling.PlayerLevelUpdateHandler;
 import net.minecraft.server.level.ServerPlayer;
 import java.util.List;
 import java.util.ArrayList;
@@ -8,6 +9,14 @@ import java.util.ArrayList;
  * Interface for mods to provide their own player level calculations to Dynamic Difficulty.
  * Implement this interface and register it via {@link LevelingAPI#registerPlayerLevelProvider(PlayerLevelProvider)}
  * to contribute to the overall player level considered by Dynamic Difficulty when scaling mobs.
+ * 
+ * IMPORTANT: Player levels from this system are used for TWO purposes:
+ * 1. DISPLAY: Shown above player heads and used to color-code mob difficulty (red/yellow/green)
+ * 2. MOB SCALING: Nearby mobs get bonus levels based on player levels (via calculateBonusLevels)
+ * 
+ * Player levels do NOT grant attribute bonuses to players themselves. Players do not gain
+ * health, damage, or other combat bonuses from their level. This system only affects how
+ * difficult nearby mobs become and how levels are displayed for informational purposes.
  */
 public interface PlayerLevelProvider {
     List<PlayerLevelProvider> providers = new ArrayList<>();
@@ -117,7 +126,6 @@ public interface PlayerLevelProvider {
      * @param player The player whose level should be recalculated
      */
     static void requestPlayerLevelUpdate(ServerPlayer player) {
-        // Trigger internal handler - implementation is in PlayerLevelUpdateHandler
-        dev.muon.dynamic_difficulty.leveling.PlayerLevelUpdateHandler.triggerUpdate(player);
+        PlayerLevelUpdateHandler.triggerUpdate(player);
     }
 }

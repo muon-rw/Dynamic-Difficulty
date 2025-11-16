@@ -99,6 +99,16 @@ public class Config {
     public final ConfigValue<List<? extends List<Object>>> structureBonuses;
     public final ConfigValue<List<? extends List<Object>>> structureTagBonuses;
 
+    // Level-Up Items
+    public final ConfigValue<Integer> potionOfGrowthMaxLevel;
+    public final ConfigValue<Integer> elixirOfNurturingMaxLevel;
+    public final ConfigValue<Integer> draughtOfAscensionMaxLevel;
+    public final ConfigValue<Integer> essenceOfVitalityMaxLevel;
+    public final ConfigValue<Integer> crystalOfAwakeningMaxLevel;
+    
+    // Level-Based Drops
+    public final ConfigValue<Boolean> enableLevelBasedDrops;
+
     public Common(ModConfigSpec.Builder builder) {
       builder.push("Base Leveling");
       startingLevel = builder
@@ -203,6 +213,32 @@ public class Config {
               .defineList("Level bonus per attribute",
                       Config::getDefaultAttributeBonuses,
                       Config::isValidAttributeBonus);
+      builder.pop();
+
+      builder.push("Level-Up Items");
+      potionOfGrowthMaxLevel = builder
+              .comment("Maximum level that Potion of Growth can raise an entity to")
+              .defineInRange("Potion of Growth max level", 20, 1, 10000);
+      elixirOfNurturingMaxLevel = builder
+              .comment("Maximum level that Elixir of Nurturing can raise an entity to")
+              .defineInRange("Elixir of Nurturing max level", 40, 1, 10000);
+      draughtOfAscensionMaxLevel = builder
+              .comment("Maximum level that Draught of Ascension can raise an entity to")
+              .defineInRange("Draught of Ascension max level", 60, 1, 10000);
+      essenceOfVitalityMaxLevel = builder
+              .comment("Maximum level that Essence of Vitality can raise an entity to")
+              .defineInRange("Essence of Vitality max level", 80, 1, 10000);
+      crystalOfAwakeningMaxLevel = builder
+              .comment("Maximum level that Crystal of Awakening can raise an entity to")
+              .defineInRange("Crystal of Awakening max level", 100, 1, 10000);
+      builder.pop();
+
+      builder.push("Level-Based Drops");
+      enableLevelBasedDrops = builder
+              .comment("Whether mobs should drop level-up items based on their level",
+                      "The drops are defined in data/dynamic_difficulty/loot_tables/inject/level_based_drops.json",
+                      "Users can edit that file to customize drop rates, level ranges, and add custom items")
+              .define("Enable level-based drops", true);
       builder.pop();
 
     }

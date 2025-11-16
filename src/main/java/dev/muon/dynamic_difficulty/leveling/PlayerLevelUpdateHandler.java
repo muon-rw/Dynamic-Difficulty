@@ -40,7 +40,7 @@ public class PlayerLevelUpdateHandler {
         int newLevel = LevelingAPI.getPlayerDisplayLevel(player);
         
         if (currentLevel != newLevel) {
-            LevelingSystem.setLevel(player, newLevel);
+            LevelingSystem.setLevelTag(player, newLevel);
             NetworkDispatcher.syncLevelToAllPlayers(player);
         }
     }

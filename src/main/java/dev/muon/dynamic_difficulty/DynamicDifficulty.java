@@ -5,7 +5,10 @@ import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.compat.PuffishSkillsProvider;
 import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.attribute.ModAttributes;
+import dev.muon.dynamic_difficulty.item.ModItems;
 import dev.muon.dynamic_difficulty.leveling.PlayerLevelUpdateHandler;
+import dev.muon.dynamic_difficulty.loot.condition.ModLootConditions;
+import dev.muon.dynamic_difficulty.loot.modifier.ModLootModifiers;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -25,6 +28,9 @@ public class DynamicDifficulty {
 
   public DynamicDifficulty(ModContainer container, IEventBus bus) {
     ModAttributes.REGISTRY.register(bus);
+    ModItems.REGISTRY.register(bus);
+    ModLootConditions.REGISTRY.register(bus);
+    ModLootModifiers.REGISTRY.register(bus);
     Config.register(container);
     bus.addListener(this::onInterMod);
 

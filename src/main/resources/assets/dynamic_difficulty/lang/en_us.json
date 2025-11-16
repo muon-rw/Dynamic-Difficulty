@@ -2,9 +2,28 @@
   "dynamic_difficulty.level": "Level %s",
   "config.jade.plugin_dynamic_difficulty.level": "Level",
   "jade.dynamic_difficulty.tooltip": "Level: %d",
-  "attribute.dynamic_difficulty.projectile_damage_bonus": "Projectile Damage Bonus",
+  "attribute.dynamic_difficulty.damage_bonus": "Damage Bonus",
+  "attribute.dynamic_difficulty.damage_multiplier": "Damage Multiplier",
+  "attribute.dynamic_difficulty.magic_damage_bonus": "Magic Damage Bonus",
+  "attribute.dynamic_difficulty.magic_damage_multiplier": "Magic Damage Multiplier",
   "attribute.dynamic_difficulty.explosion_damage_bonus": "Explosion Damage Bonus",
-  "attribute.dynamic_difficulty.projectile_damage_multiplier": "Projectile Damage Multiplier",
   "attribute.dynamic_difficulty.explosion_damage_multiplier": "Explosion Damage Multiplier",
-  "dynamic_difficulty.structure.level_info": "Level %s"
+  "attribute.dynamic_difficulty.projectile_damage_bonus": "Projectile Damage Bonus",
+  "attribute.dynamic_difficulty.projectile_damage_multiplier": "Projectile Damage Multiplier",
+  "dynamic_difficulty.structure.level_info": "Level %s",
+  
+  "item.dynamic_difficulty.potion_of_growth": "Potion of Growth",
+  "item.dynamic_difficulty.elixir_of_nurturing": "Elixir of Nurturing",
+  "item.dynamic_difficulty.draught_of_ascension": "Draught of Ascension",
+  "item.dynamic_difficulty.essence_of_vitality": "Essence of Vitality",
+  "item.dynamic_difficulty.crystal_of_awakening": "Crystal of Awakening",
+  
+  "item.dynamic_difficulty.level_up.tooltip.levels": "Grants a target mob +%s level",
+  "item.dynamic_difficulty.level_up.tooltip.max_level": "Max Level: %s",
+  "item.dynamic_difficulty.level_up.tooltip.usage": "Right-click on a mob to level it up. Consumed on use.",
+  
+  "item.dynamic_difficulty.level_up.success": "%s leveled up! %s → %s",
+  "item.dynamic_difficulty.level_up.cannot_use_on_player": "Cannot be used on players",
+  "item.dynamic_difficulty.level_up.cannot_level_entity": "This entity cannot be leveled",
+  "item.dynamic_difficulty.level_up.max_level_reached": "This item can only level up mobs to level %s"
 }

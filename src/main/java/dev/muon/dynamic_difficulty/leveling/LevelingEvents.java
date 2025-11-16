@@ -64,7 +64,7 @@ public class LevelingEvents {
     }
 
     int level = LevelingAPI.calculateLevelForEntity(living);
-    LevelingAPI.setLevel(living, level);
+    LevelingSystem.setLevelTag(living, level);
     LevelingAPI.applyAllLevelAttributes(living);
     addEquipment(living);
   }
@@ -158,7 +158,7 @@ public class LevelingEvents {
    */
   private static void calculateAndSyncPlayerLevel(ServerPlayer player) {
     int playerLevel = LevelingAPI.getPlayerDisplayLevel(player);
-    LevelingSystem.setLevel(player, playerLevel);
+    LevelingSystem.setLevelTag(player, playerLevel);
     DynamicDifficulty.LOGGER.debug("Syncing player {} level ({}) to clients", 
         player.getName().getString(), playerLevel);
     NetworkDispatcher.syncLevelToAllPlayers(player);
@@ -255,7 +255,7 @@ public class LevelingEvents {
     int newLevel = LevelingAPI.getPlayerDisplayLevel(player);
     
     if (currentLevel != newLevel) {
-      LevelingSystem.setLevel(player, newLevel);
+      LevelingSystem.setLevelTag(player, newLevel);
       NetworkDispatcher.syncLevelToAllPlayers(player);
     }
   }
@@ -274,7 +274,7 @@ public class LevelingEvents {
       if (structureStart != null && structureStart.isValid()) {
         ResourceLocation structureId = structureRegistry.getKey(structure);
         if (structureId != null) {
-          int levelBonus = LevelingUtils.getStructureLevelBonus(structureId, structureRegistry);
+          int levelBonus = LevelingAPI.getStructureLevelBonus(structureId, structureRegistry);
           if (levelBonus > highestLevelBonus) {
             highestLevelBonus = levelBonus;
             currentStructure = structureId;

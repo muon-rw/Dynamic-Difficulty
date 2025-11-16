@@ -1,0 +1,228 @@
+{
+  "type": "minecraft:generic",
+  "pools": [
+    {
+      "name": "level_2_19",
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:potion_of_growth",
+          "weight": 70,
+          "quality": 1
+        },
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:elixir_of_nurturing",
+          "weight": 25,
+          "quality": 1.5
+        },
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:draught_of_ascension",
+          "weight": 5,
+          "quality": 2
+        },
+        {
+          "type": "minecraft:empty",
+          "weight": 1800
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "dynamic_difficulty:entity_level",
+          "min": 2,
+          "max": 19
+        }
+      ]
+    },
+    {
+      "name": "level_20_39",
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:potion_of_growth",
+          "weight": 40,
+          "quality": 1
+        },
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:elixir_of_nurturing",
+          "weight": 40,
+          "quality": 1.5
+        },
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:draught_of_ascension",
+          "weight": 15,
+          "quality": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:essence_of_vitality",
+          "weight": 5,
+          "quality": 2.5
+        },
+        {
+          "type": "minecraft:empty",
+          "weight": 1800
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "dynamic_difficulty:entity_level",
+          "min": 20,
+          "max": 39
+        }
+      ]
+    },
+    {
+      "name": "level_40_59",
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:potion_of_growth",
+          "weight": 20,
+          "quality": 1
+        },
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:elixir_of_nurturing",
+          "weight": 25,
+          "quality": 1.5
+        },
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:draught_of_ascension",
+          "weight": 35,
+          "quality": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:essence_of_vitality",
+          "weight": 15,
+          "quality": 2.5
+        },
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:crystal_of_awakening",
+          "weight": 5,
+          "quality": 3
+        },
+        {
+          "type": "minecraft:empty",
+          "weight": 1800
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "dynamic_difficulty:entity_level",
+          "min": 40,
+          "max": 59
+        }
+      ]
+    },
+    {
+      "name": "level_60_79",
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:potion_of_growth",
+          "weight": 10,
+          "quality": 1
+        },
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:elixir_of_nurturing",
+          "weight": 15,
+          "quality": 1.5
+        },
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:draught_of_ascension",
+          "weight": 25,
+          "quality": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:essence_of_vitality",
+          "weight": 40,
+          "quality": 2.5
+        },
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:crystal_of_awakening",
+          "weight": 10,
+          "quality": 3
+        },
+        {
+          "type": "minecraft:empty",
+          "weight": 1800
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "dynamic_difficulty:entity_level",
+          "min": 60,
+          "max": 79
+        }
+      ]
+    },
+    {
+      "name": "level_80_plus",
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:potion_of_growth",
+          "weight": 5,
+          "quality": 1
+        },
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:elixir_of_nurturing",
+          "weight": 5,
+          "quality": 1.5
+        },
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:draught_of_ascension",
+          "weight": 15,
+          "quality": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:essence_of_vitality",
+          "weight": 30,
+          "quality": 2.5
+        },
+        {
+          "type": "minecraft:item",
+          "name": "dynamic_difficulty:crystal_of_awakening",
+          "weight": 45,
+          "quality": 3
+        },
+        {
+          "type": "minecraft:empty",
+          "weight": 1800
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "dynamic_difficulty:entity_level",
+          "min": 80,
+          "max": 999
+        }
+      ]
+    }
+  ]
+}
+

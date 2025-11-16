@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "EEE",
+    "EEE",
+    "EEE"
+  ],
+  "key": {
+    "E": {
+      "item": "dynamic_difficulty:elixir_of_nurturing"
+    }
+  },
+  "result": {
+    "id": "dynamic_difficulty:draught_of_ascension",
+    "count": 1
+  }
+}
+

@@ -1,11 +1,15 @@
 ## 0.6.0
+- Added items to level up mobs
 - Greatly improve player-based scaling framework
 - Add player scaling/level tracking for Puffish Skills
 - Make level display translatable
-- Structure titles now also display the player level bonus applied to mobs
+- Structure subtitle level bonuses now also display any player level bonus also applied to mobs
 - Added several config values
 - Added Jade compat
 - Add vanilla structures to the default structure level bonus tags
+- Added API methods for live-updating mob levels
+- Add loot table and loot condition for modifying leveled mob loot
+- At some point here I added more damage attributes. Maybe that was in 0.5.2. i'm losing my mind
 
 ## 0.5.2
 - Fix structure subtitle not moving properly with title

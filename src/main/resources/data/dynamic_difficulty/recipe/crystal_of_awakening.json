@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "VVV",
+    "VVV",
+    "VVV"
+  ],
+  "key": {
+    "V": {
+      "item": "dynamic_difficulty:essence_of_vitality"
+    }
+  },
+  "result": {
+    "id": "dynamic_difficulty:crystal_of_awakening",
+    "count": 1
+  }
+}
+
