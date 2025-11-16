@@ -16,7 +16,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import java.util.function.BiConsumer;
 
 
-@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber
 public class ModAttributes {
     public static final DeferredRegister<Attribute> REGISTRY =
             DeferredRegister.create(BuiltInRegistries.ATTRIBUTE, DynamicDifficulty.MODID);

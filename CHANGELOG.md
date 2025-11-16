@@ -1,3 +1,12 @@
+## 0.6.0
+- Greatly improve player-based scaling framework
+- Add player scaling/level tracking for Puffish Skills
+- Make level display translatable
+- Structure titles now also display the player level bonus applied to mobs
+- Added several config values
+- Added Jade compat
+- Add vanilla structures to the default structure level bonus tags
+
 ## 0.5.2
 - Fix structure subtitle not moving properly with title
 - Add client config values for structure subtitle scaling, subtitle y offset

@@ -63,17 +63,21 @@ public class SyncLevelingData implements CustomPacketPayload {
     }
     
     Entity entity = level.getEntity(msg.entityId);
-    if (entity == null) {
-      DynamicDifficulty.LOGGER.warn("Entity with ID {} not found on client for SyncLevelingData", msg.entityId);
-      return;
-    }
-
-    if (entity instanceof Player player) {
-      ClientLevelCache.updatePlayerLevel(player.getUUID(), msg.level);
-    } else if (entity instanceof LivingEntity) {
-      ClientLevelCache.updateEntityLevel(msg.entityId, msg.level);
-    } else {
-      DynamicDifficulty.LOGGER.warn("Received SyncLevelingData for non-living entity ID {}", msg.entityId);
-    }
+      switch (entity) {
+          case null ->
+                  DynamicDifficulty.LOGGER.warn("Entity with ID {} not found on client for SyncLevelingData", msg.entityId);
+          case Player player -> {
+              ClientLevelCache.updatePlayerLevel(player.getUUID(), msg.level);
+              DynamicDifficulty.LOGGER.debug("Updated client cache: Player {} level = {}",
+                      player.getName().getString(), msg.level);
+          }
+          case LivingEntity livingEntity -> {
+              ClientLevelCache.updateEntityLevel(msg.entityId, msg.level);
+              DynamicDifficulty.LOGGER.debug("Updated client cache: {} (ID {}) level = {}",
+                      livingEntity.getType().getDescription().getString(), msg.entityId, msg.level);
+          }
+          default ->
+                  DynamicDifficulty.LOGGER.warn("Received SyncLevelingData for non-living entity ID {}", msg.entityId);
+      }
   }
 }

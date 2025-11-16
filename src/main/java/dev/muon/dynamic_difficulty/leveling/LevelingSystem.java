@@ -17,6 +17,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -25,7 +26,6 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
@@ -71,12 +71,18 @@ public class LevelingSystem {
         }
 
         if (entity.getType().is(FIXED_LEVEL_ENTITIES)) {
-            return getFixedLevel(entity);
+            int fixedLevel = getFixedLevel(entity);
+            DynamicDifficulty.LOGGER.debug("{} has fixed level: {}", 
+                entity.getType().getDescription().getString(), fixedLevel);
+            return fixedLevel;
         }
 
         int baseLevel = calculateInitialLevel(entity);
         int totalBonusLevels = calculateBonusLevels(entity);
         int finalLevel = Math.max(1, baseLevel + totalBonusLevels);
+
+        DynamicDifficulty.LOGGER.debug("{} level calculated: base={}, bonuses={}, final={}", 
+            entity.getType().getDescription().getString(), baseLevel, totalBonusLevels, finalLevel);
 
         return finalLevel;
     }
@@ -90,16 +96,22 @@ public class LevelingSystem {
         BlockPos spawnPos = getSpawnPosition(entity);
         double distanceToSpawn = Math.sqrt(spawnPos.distSqr(entity.blockPosition()));
 
-        int baseLevel = settings.startingLevel();
+        int startingLevel = settings.startingLevel();
+        int baseLevel = startingLevel;
 
-        baseLevel += LevelingUtils.calculateDistanceFactors(entity, distanceToSpawn, settings);
+        int distanceBonus = LevelingUtils.calculateDistanceFactors(entity, distanceToSpawn, settings);
+        baseLevel += distanceBonus;
 
+        int randomBonus = 0;
         int randomBonusValue = settings.randomLevelBonus();
         if (randomBonusValue > 0) { 
-            int randomBonus = entity.getRandom().nextInt(randomBonusValue + 1);
+            randomBonus = entity.getRandom().nextInt(randomBonusValue + 1);
             baseLevel += randomBonus;
         }
 
+        DynamicDifficulty.LOGGER.debug("{} base factors: starting={}, distance={}, random={}, subtotal={}", 
+            entity.getType().getDescription().getString(), 
+            startingLevel, distanceBonus, randomBonus, baseLevel);
 
         baseLevel = Math.max(1, baseLevel);
 
@@ -108,6 +120,8 @@ public class LevelingSystem {
             int originalLevel = baseLevel;
             baseLevel = Math.min(baseLevel, maxLevel);
             if (originalLevel != baseLevel) {
+                DynamicDifficulty.LOGGER.debug("{} capped at max level: {} -> {}", 
+                    entity.getType().getDescription().getString(), originalLevel, baseLevel);
             }
         }
         return baseLevel;
@@ -115,12 +129,21 @@ public class LevelingSystem {
 
     private static int calculateBonusLevels(LivingEntity entity) {
         int bonusLevels = 0;
+        int playerBonus = 0;
+        int structureBonus = 0;
 
         if (Config.COMMON.applyPlayerBasedLeveling.get() && entity.level() instanceof ServerLevel serverLevel) {
-            bonusLevels += LevelingAPI.getLevelsFromNearbyPlayers(serverLevel, entity);
+            playerBonus = LevelingAPI.getLevelsFromNearbyPlayers(serverLevel, entity);
+            bonusLevels += playerBonus;
         }
 
-        bonusLevels += LevelingAPI.getStructureLevelBonus(entity);
+        structureBonus = LevelingAPI.getStructureLevelBonus(entity);
+        bonusLevels += structureBonus;
+
+        if (playerBonus > 0 || structureBonus > 0) {
+            DynamicDifficulty.LOGGER.debug("{} bonus levels: player={}, structure={}, total={}", 
+                entity.getType().getDescription().getString(), playerBonus, structureBonus, bonusLevels);
+        }
 
         return bonusLevels;
     }
@@ -237,18 +260,49 @@ public class LevelingSystem {
      * Gets the level contribution from nearby players within configured radius
      */
     public static int getLevelsFromNearbyPlayers(ServerLevel level, LivingEntity entity) {
-        if (!Config.COMMON.applyPlayerBasedLeveling.get()) return 0;
+        if (!Config.COMMON.applyPlayerBasedLeveling.get()) {
+            DynamicDifficulty.LOGGER.debug("Player-based leveling disabled in config");
+            return 0;
+        }
 
         double radius = Config.COMMON.playerLevelRadius.get();
-        List<Player> nearbyPlayers = level.getEntitiesOfClass(Player.class,
+        List<ServerPlayer> nearbyPlayers = level.getEntitiesOfClass(ServerPlayer.class,
                 entity.getBoundingBox().inflate(radius));
 
-        if (nearbyPlayers.isEmpty()) return 0;
+        if (nearbyPlayers.isEmpty()) {
+            DynamicDifficulty.LOGGER.debug("No players within {} blocks of {}", radius, 
+                entity.getType().getDescription().getString());
+            return 0;
+        }
 
-        return PlayerLevelProvider.getProviders().stream()
+        DynamicDifficulty.LOGGER.debug("Found {} players near {}: {}", 
+            nearbyPlayers.size(), 
+            entity.getType().getDescription().getString(),
+            nearbyPlayers.stream().map(p -> p.getName().getString()).toList());
+
+        int total = PlayerLevelProvider.getProviders().stream()
                 .filter(PlayerLevelProvider::isEnabled)
-                .mapToInt(provider -> provider.calculateBonusLevels(nearbyPlayers))
+                .mapToInt(provider -> {
+                    int bonus = provider.calculateBonusLevels(nearbyPlayers);
+                    DynamicDifficulty.LOGGER.debug("Provider {} calculated bonus: {}", 
+                        provider.getClass().getSimpleName(), bonus);
+                    return bonus;
+                })
                 .sum();
+
+        DynamicDifficulty.LOGGER.debug("Total player bonus from {} providers: {}", 
+            PlayerLevelProvider.getProviders().size(), total);
+
+        // Apply global multiplier for tuning difficulty
+        double multiplier = Config.COMMON.playerLevelMultiplier.get();
+        int scaledBonus = (int) (total * multiplier);
+        
+        if (multiplier != 1.0) {
+            DynamicDifficulty.LOGGER.debug("Player bonus scaled: {} * {} = {}", 
+                total, multiplier, scaledBonus);
+        }
+
+        return scaledBonus;
     }
 
     /**

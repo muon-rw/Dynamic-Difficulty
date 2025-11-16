@@ -2,6 +2,7 @@ package dev.muon.dynamic_difficulty.leveling;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
+import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
 import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.data.EntityLevelingSettingsReloader;
@@ -99,31 +100,68 @@ public class LevelingEvents {
 
   @SubscribeEvent
   public static void syncEntityLevel(PlayerEvent.StartTracking event) {
-    if (!(event.getTarget() instanceof LivingEntity trackedEntity) || !LevelingAPI.hasLevel(trackedEntity)) return;
-    if (!(event.getEntity() instanceof ServerPlayer player)) return;
+    if (!(event.getTarget() instanceof LivingEntity trackedEntity)) return;
+    if (!(event.getEntity() instanceof ServerPlayer trackingPlayer)) return;
 
-    PacketDistributor.sendToPlayer(player, new SyncLevelingData(trackedEntity));
+    // Sync player levels to other players who start tracking them
+    if (trackedEntity instanceof ServerPlayer trackedPlayer) {
+      PacketDistributor.sendToPlayer(trackingPlayer, new SyncLevelingData(trackedPlayer));
+      return;
+    }
+
+    // Sync mob/entity levels as normal
+    if (LevelingAPI.hasLevel(trackedEntity)) {
+      PacketDistributor.sendToPlayer(trackingPlayer, new SyncLevelingData(trackedEntity));
+    }
   }
 
   @SubscribeEvent
   public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-    if (!event.getEntity().level().isClientSide()) {
-        NetworkDispatcher.syncLevelToAllPlayers(event.getEntity());
+    if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof ServerPlayer player) {
+      calculateAndSyncPlayerLevel(player);
     }
   }
 
   @SubscribeEvent
   public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
-    if (!event.getEntity().level().isClientSide()) {
-      NetworkDispatcher.syncLevelToAllPlayers(event.getEntity());
+    if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof ServerPlayer player) {
+      calculateAndSyncPlayerLevel(player);
     }
   }
 
   @SubscribeEvent
   public static void onPlayerChangeDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-    if (!event.getEntity().level().isClientSide()) {
-      NetworkDispatcher.syncLevelToAllPlayers(event.getEntity());
+    if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof ServerPlayer player) {
+      calculateAndSyncPlayerLevel(player);
     }
+  }
+
+  @SubscribeEvent
+  public static void onPlayerClone(PlayerEvent.Clone event) {
+    if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof ServerPlayer player) {
+      calculateAndSyncPlayerLevel(player);
+    }
+  }
+
+  @SubscribeEvent
+  public static void onPlayerDeath(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
+    if (event.getEntity() instanceof ServerPlayer player) {
+      calculateAndSyncPlayerLevel(player);
+    }
+  }
+
+
+  /**
+   * Calculates a player's display level from registered providers and syncs it to all clients.
+   * This is called automatically on common player events (login, respawn, dimension change, clone, death, join level).
+   * Providers can also trigger updates manually via PlayerLevelProvider.requestPlayerLevelUpdate().
+   */
+  private static void calculateAndSyncPlayerLevel(ServerPlayer player) {
+    int playerLevel = LevelingAPI.getPlayerDisplayLevel(player);
+    LevelingSystem.setLevel(player, playerLevel);
+    DynamicDifficulty.LOGGER.debug("Syncing player {} level ({}) to clients", 
+        player.getName().getString(), playerLevel);
+    NetworkDispatcher.syncLevelToAllPlayers(player);
   }
 
   @SubscribeEvent
@@ -194,9 +232,31 @@ public class LevelingEvents {
   
   @SubscribeEvent
   public static void onPlayerTick(PlayerTickEvent.Post event) {
-    if (event.getEntity() instanceof ServerPlayer player && event.getEntity().tickCount % 20 == 0) {
+    if (event.getEntity() instanceof ServerPlayer player) {
       // Check every second to reduce performance impact
-      checkPlayerStructure(player);
+      if (event.getEntity().tickCount % 20 == 0) {
+        checkPlayerStructure(player);
+      }
+      
+      // Fallback: Update player level periodically in case provider events are missed
+      // Providers should use PlayerLevelProvider.requestPlayerLevelUpdate() for immediate updates
+      int updateInterval = Config.COMMON.playerLevelUpdateInterval.get();
+      if (updateInterval > 0 && event.getEntity().tickCount % updateInterval == 0) {
+        updatePlayerLevel(player);
+      }
+    }
+  }
+  
+  /**
+   * Recalculates and syncs player level if it has changed
+   */
+  private static void updatePlayerLevel(ServerPlayer player) {
+    int currentLevel = LevelingSystem.getLevel(player);
+    int newLevel = LevelingAPI.getPlayerDisplayLevel(player);
+    
+    if (currentLevel != newLevel) {
+      LevelingSystem.setLevel(player, newLevel);
+      NetworkDispatcher.syncLevelToAllPlayers(player);
     }
   }
   
@@ -239,22 +299,55 @@ public class LevelingEvents {
       
       // Send packet if entering a structure with bonus
       if (currentStructure != null && highestLevelBonus > 0) {
-        // Calculate base level at this position
+        // Calculate base level at this position (environmental factors)
         int baseLevel = calculateBaseEntityLevel(player, playerPos);
         
+        // Calculate player-based bonus (get this player's level from providers)
+        int playerBonus = 0;
+        if (Config.COMMON.applyPlayerBasedLeveling.get()) {
+          // Get the bonus that would apply to mobs from this player being nearby
+          int rawBonus = PlayerLevelProvider.getProviders().stream()
+                  .filter(PlayerLevelProvider::isEnabled)
+                  .mapToInt(provider -> provider.calculateBonusLevels(java.util.List.of(player)))
+                  .sum();
+          
+          // Apply the same multiplier used for mob leveling
+          double multiplier = Config.COMMON.playerLevelMultiplier.get();
+          playerBonus = (int) (rawBonus * multiplier);
+          
+          if (multiplier != 1.0 && rawBonus > 0) {
+            DynamicDifficulty.LOGGER.debug("Structure notification player bonus scaled: {} * {} = {}", 
+                rawBonus, multiplier, playerBonus);
+          }
+        }
+        
+        DynamicDifficulty.LOGGER.debug("Structure notification for {}: base={}, structure={}, player={}", 
+            player.getName().getString(), baseLevel, highestLevelBonus, playerBonus);
+        
         // Send the packet
-        NetworkDispatcher.sendStructureEntry(player, currentStructure, highestLevelBonus, baseLevel);
+        NetworkDispatcher.sendStructureEntry(player, currentStructure, highestLevelBonus, baseLevel, playerBonus);
       }
     }
   }
   
   private static int calculateBaseEntityLevel(ServerPlayer player, BlockPos pos) {
-    // Simple calculation - just using starting level and distance
-    BlockPos spawnPos = player.serverLevel().getSharedSpawnPos();
+    // Calculate base level including all environmental factors
+    ServerLevel level = player.serverLevel();
+    BlockPos spawnPos = level.getSharedSpawnPos();
     double distance = Math.sqrt(spawnPos.distSqr(pos));
     
     int baseLevel = Config.COMMON.startingLevel.get();
+    
+    // Distance scaling
     baseLevel += (int)(distance * Config.COMMON.levelsPerDistance.get());
+    
+    // Depth scaling (below Y=63, sea level)
+    int depth = Math.max(0, 63 - pos.getY());
+    baseLevel += (int)(depth * Config.COMMON.levelsPerDeepness.get());
+    
+    // Day scaling
+    long days = level.getDayTime() / 24000L;
+    baseLevel += (int)(days * Config.COMMON.levelsPerDay.get());
     
     return Math.max(1, baseLevel);
   }

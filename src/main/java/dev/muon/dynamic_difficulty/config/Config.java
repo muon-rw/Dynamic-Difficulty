@@ -1,6 +1,7 @@
 package dev.muon.dynamic_difficulty.config;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
+import dev.muon.dynamic_difficulty.api.PlayerLevelDisplayStrategy;
 import java.util.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -81,8 +82,10 @@ public class Config {
 
     // Player-Based Scaling
     public final ConfigValue<Double> playerLevelRadius;
-    public final ModConfigSpec.DoubleValue levelsPerPoint;
+    public final ModConfigSpec.DoubleValue playerLevelMultiplier;
     public final ConfigValue<Boolean> applyPlayerBasedLeveling;
+    public final ModConfigSpec.EnumValue<PlayerLevelDisplayStrategy> playerLevelDisplayStrategy;
+    public final ConfigValue<Integer> playerLevelUpdateInterval;
 
     // Blacklist / Whitelist
     public final ConfigValue<Boolean> cancelLevelsForPassives;
@@ -134,13 +137,27 @@ public class Config {
       playerLevelRadius = builder
               .comment("Radius to search for players when calculating level bonuses")
               .define("Player search radius", 128.0D);
-      levelsPerPoint = builder
-              .comment("How many levels to add per player skill point",
-                      "Higher values mean faster level scaling with player progression")
-              .defineInRange("Levels per skill point", 0.2D, 0.0D, 10.0D);
+      playerLevelMultiplier = builder
+              .comment("Multiplier for player level bonuses applied to mobs",
+                      "This scales the bonus that nearby players add to mob levels",
+                      "1.0 = normal scaling, 0.5 = half effect, 2.0 = double effect")
+              .defineInRange("Player level multiplier", 1.0D, 0.0D, 10.0D);
       applyPlayerBasedLeveling = builder
               .comment("Whether to factor in player levels when calculating mob levels")
-              .define("Enable player-based leveling", false);
+              .define("Enable player-based leveling", true);
+      playerLevelDisplayStrategy = builder
+              .comment("How to aggregate multiple player level providers for display",
+                      "HIGHEST_PRIORITY: Use the provider with the highest priority (defined by the provider itself)",
+                      "MAX: Use the maximum level from all providers",
+                      "SUM: Add all provider levels together",
+                      "AVERAGE: Average all provider levels",
+                      "FIRST: Use only the first registered provider")
+              .defineEnum("Player level display strategy", PlayerLevelDisplayStrategy.HIGHEST_PRIORITY);
+      playerLevelUpdateInterval = builder
+              .comment("How often (in ticks) to update player levels as a fallback (20 ticks = 1 second)",
+                      "Providers can trigger immediate updates via events, this is just a safety net",
+                      "Set to 0 to disable periodic updates (only event-driven updates will occur)")
+              .defineInRange("Player level update interval", 600, 0, 1200);
       builder.pop();
 
       builder.push("Structure-Based Bonus Scaling");
@@ -198,6 +215,9 @@ public class Config {
     public final ConfigValue<List<String>> hiddenLevelEntities;
     public final ConfigValue<Boolean> showApotheosisWorldTier;
     
+    // Integration Options
+    public final ConfigValue<Boolean> enableJadeIntegration;
+    
     // Structure Title Display
     public final ConfigValue<Boolean> showStructureTitles;
     public final ConfigValue<Integer> structureTitleFadeInTime;
@@ -224,6 +244,13 @@ public class Config {
                       "Tiers: Haven, Frontier, Ascent, Summit, Pinnacle")
               .define("Show Apotheosis World Tier", true);
       builder.pop();
+      
+      builder.push("Integration Options");
+      enableJadeIntegration = builder
+              .comment("Show entity levels in Jade tooltips (requires Jade to be installed)")
+              .define("Enable Jade integration", true);
+      builder.pop();
+      
       builder.push("Entity Settings");
       hiddenLevelEntities = builder.define("Entities with hidden levels", new ArrayList<>());
       builder.pop();

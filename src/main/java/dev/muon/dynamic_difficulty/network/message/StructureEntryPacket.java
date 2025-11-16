@@ -17,13 +17,15 @@ public class StructureEntryPacket implements CustomPacketPayload {
 
     @Nullable
     private final ResourceLocation structureId;
-    private final int levelBonus;
+    private final int structureBonus;
     private final int baseLevel;
+    private final int playerBonus;
 
-    public StructureEntryPacket(@Nullable ResourceLocation structureId, int levelBonus, int baseLevel) {
+    public StructureEntryPacket(@Nullable ResourceLocation structureId, int structureBonus, int baseLevel, int playerBonus) {
         this.structureId = structureId;
-        this.levelBonus = levelBonus;
+        this.structureBonus = structureBonus;
         this.baseLevel = baseLevel;
+        this.playerBonus = playerBonus;
     }
 
     public void write(FriendlyByteBuf buf) {
@@ -31,8 +33,9 @@ public class StructureEntryPacket implements CustomPacketPayload {
         if (structureId != null) {
             buf.writeResourceLocation(structureId);
         }
-        buf.writeInt(levelBonus);
+        buf.writeInt(structureBonus);
         buf.writeInt(baseLevel);
+        buf.writeInt(playerBonus);
     }
 
     public StructureEntryPacket(FriendlyByteBuf buf) {
@@ -41,8 +44,9 @@ public class StructureEntryPacket implements CustomPacketPayload {
         } else {
             this.structureId = null;
         }
-        this.levelBonus = buf.readInt();
+        this.structureBonus = buf.readInt();
         this.baseLevel = buf.readInt();
+        this.playerBonus = buf.readInt();
     }
 
     @Override
@@ -58,11 +62,12 @@ public class StructureEntryPacket implements CustomPacketPayload {
 
     @OnlyIn(Dist.CLIENT)
     private static void handleOnClient(StructureEntryPacket msg) {
-        if (msg.structureId != null && msg.levelBonus > 0) {
+        if (msg.structureId != null && msg.structureBonus > 0) {
             StructureTitleRenderManager.getInstance().displayStructureTitle(
                     msg.structureId, 
-                    msg.levelBonus, 
-                    msg.baseLevel
+                    msg.structureBonus, 
+                    msg.baseLevel,
+                    msg.playerBonus
             );
         }
     }

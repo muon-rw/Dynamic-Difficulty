@@ -5,6 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 
 public class StructureTitleRenderManager {
@@ -52,8 +53,8 @@ public class StructureTitleRenderManager {
     /**
      * Display structure title when notified by server
      */
-    public void displayStructureTitle(ResourceLocation structureId, int levelBonus, int baseLevel) {
-        if (!structureTitleRenderer.enabled || levelBonus <= 0) {
+    public void displayStructureTitle(ResourceLocation structureId, int structureBonus, int baseLevel, int playerBonus) {
+        if (!structureTitleRenderer.enabled || structureBonus <= 0) {
             return;
         }
         
@@ -63,10 +64,15 @@ public class StructureTitleRenderManager {
             Component structureName = getStructureName(structureId);
             
             // Calculate total level
-            int totalLevel = baseLevel + levelBonus;
+            int totalLevel = baseLevel + structureBonus;
             
-            // Create subtitle with level info
-            Component subtitle = Component.literal("Level " + totalLevel);
+            // Create subtitle with level info - show base+structure, then player bonus separately
+            MutableComponent subtitle = Component.translatable("dynamic_difficulty.structure.level_info", totalLevel);
+            
+            // Append player bonus if present
+            if (playerBonus > 0) {
+                subtitle.append(Component.literal(" (+" + playerBonus + ")"));
+            }
             
             // Display the title
             structureTitleRenderer.displayTitle(structureName, subtitle);

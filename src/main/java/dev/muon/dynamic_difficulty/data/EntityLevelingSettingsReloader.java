@@ -20,6 +20,7 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
 public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadListener {
@@ -37,7 +38,7 @@ public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadList
   }
 
   @Override
-  protected void apply(Map<ResourceLocation, JsonElement> map, ResourceManager resourceManager, ProfilerFiller profiler) {
+  protected void apply(Map<ResourceLocation, JsonElement> map, @NotNull ResourceManager resourceManager, @NotNull ProfilerFiller profiler) {
     LOGGER.info("Loading entity leveling settings from 'leveling_settings/entities'");
     SETTINGS.clear();
     map.forEach(this::loadSettings);

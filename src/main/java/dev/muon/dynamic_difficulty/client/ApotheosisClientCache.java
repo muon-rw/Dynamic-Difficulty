@@ -135,5 +135,6 @@ public class ApotheosisClientCache {
     public static void clearCache() {
         TIER_CACHE.clear();
         LAST_SEEN.clear();
+        lastCleanup = 0; // Reset cleanup timer for new world
     }
 } 

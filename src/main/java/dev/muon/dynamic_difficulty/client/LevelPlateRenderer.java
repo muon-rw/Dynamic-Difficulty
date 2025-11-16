@@ -12,7 +12,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderNameTagEvent;
@@ -34,7 +33,8 @@ public class LevelPlateRenderer {
       MutableComponent fullDisplayName = originalName.copy();
       
       // Build level component
-      MutableComponent levelComponent = Component.literal(" Level " + entityLevel)
+      MutableComponent levelComponent = Component.literal(" ")
+          .append(Component.translatable("dynamic_difficulty.level", entityLevel))
           .withStyle(style -> style.withColor(getLevelColor(Minecraft.getInstance().player, entity)));
       
       // Add Apotheosis world tier if available and enabled
@@ -54,8 +54,17 @@ public class LevelPlateRenderer {
     }
   }
 
-  private static int getLevelColor(Player player, LivingEntity entity) {
-    int playerLevel = ClientLevelCache.getLevel(player);
+  /**
+   * Get the color for level display based on player's level relative to the entity.
+   * Uses ARGB format (0xAARRGGBB) for name tag rendering.
+   * Public so other display systems (like Jade) can use the same color logic.
+   *
+   * @param player The player viewing the entity
+   * @param entity The entity being viewed
+   * @return ARGB color value
+   */
+  public static int getLevelColor(Player player, LivingEntity entity) {
+    int playerLevel = player != null ? ClientLevelCache.getLevel(player) : 0;
     int entityLevel = ClientLevelCache.getLevel(entity);
     if (playerLevel > 0) {
       int levelDifference = entityLevel - playerLevel;
@@ -67,6 +76,18 @@ public class LevelPlateRenderer {
       if (entityLevel <= 19) return 0xFFFFFF00; // yellow (ARGB)
       return 0xFFFF0000; // red (ARGB)
     }
+  }
+  
+  /**
+   * Get the RGB color (without alpha) for level display.
+   * Useful for systems that don't use ARGB format.
+   *
+   * @param player The player viewing the entity
+   * @param entity The entity being viewed
+   * @return RGB color value
+   */
+  public static int getLevelColorRGB(Player player, LivingEntity entity) {
+    return getLevelColor(player, entity) & 0x00FFFFFF; // Strip alpha channel
   }
   
   private static int getTierColor(String tier) {

@@ -1,6 +1,8 @@
 {
   "replace": false,
   "values": [
+    {"id":"minecraft:stronghold", "required": false},
+    {"id":"minecraft:ancient_city", "required": false},
     {"id":"irons_spellbooks:catacombs", "required": false},
     {"id":"irons_spellbooks:citadel", "required": false},
     {"id":"betterstrongholds:stronghold", "required": false},

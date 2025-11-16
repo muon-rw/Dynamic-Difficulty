@@ -13,7 +13,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
-@EventBusSubscriber(modid = DynamicDifficulty.MODID, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = DynamicDifficulty.MODID)
 public class NetworkDispatcher {
 
   @SubscribeEvent
@@ -47,7 +47,7 @@ public class NetworkDispatcher {
     PacketDistributor.sendToAllPlayers(new SyncLevelingData(entity));
   }
   
-  public static void sendStructureEntry(ServerPlayer player, ResourceLocation structureId, int levelBonus, int baseLevel) {
-    PacketDistributor.sendToPlayer(player, new StructureEntryPacket(structureId, levelBonus, baseLevel));
+  public static void sendStructureEntry(ServerPlayer player, ResourceLocation structureId, int structureBonus, int baseLevel, int playerBonus) {
+    PacketDistributor.sendToPlayer(player, new StructureEntryPacket(structureId, structureBonus, baseLevel, playerBonus));
   }
 }

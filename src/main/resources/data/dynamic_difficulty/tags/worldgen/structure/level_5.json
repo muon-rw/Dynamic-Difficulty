@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
+    {"id":"minecraft:end_city", "required": false},
     {"id":"dungeons_arise:keep_kayra", "required": false},
     {"id":"aether:gold_dungeon", "required": false},
     {"id":"mes:enderwatch_tower", "required": false},

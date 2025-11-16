@@ -137,6 +137,22 @@ public class LevelingAPI {
      * @param provider The provider to register
      */
     public static void registerPlayerLevelProvider(PlayerLevelProvider provider) {
+        dev.muon.dynamic_difficulty.DynamicDifficulty.LOGGER.info("Registered player level provider: {}", 
+            provider.getClass().getSimpleName());
         PlayerLevelProvider.registerProvider(provider);
+        provider.onRegistered();
+    }
+
+    /**
+     * Gets the display level for a player based on all registered providers
+     * and the configured display strategy. This is used for:
+     * - Displaying the player's level above their head
+     * - Color-coding mob levels relative to the player
+     *
+     * @param player The player to get the level for
+     * @return The calculated display level
+     */
+    public static int getPlayerDisplayLevel(net.minecraft.server.level.ServerPlayer player) {
+        return dev.muon.dynamic_difficulty.leveling.PlayerLevelCalculator.calculatePlayerDisplayLevel(player);
     }
 }

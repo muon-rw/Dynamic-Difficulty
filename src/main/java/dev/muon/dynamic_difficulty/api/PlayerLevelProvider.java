@@ -1,6 +1,6 @@
 package dev.muon.dynamic_difficulty.api;
 
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -14,21 +14,70 @@ public interface PlayerLevelProvider {
 
     /**
      * Determines if this provider is active and should contribute to level calculations.
-     * For example, return false if a required mod is not loaded or a config option disables this provider.
+     * For example, return false if a config option disables this provider.
      *
      * @return true if this provider is enabled, false otherwise.
      */
     boolean isEnabled();
 
     /**
-     * Calculates the bonus levels based on the provided list of nearby players.
-     * This method should aggregate levels from the players according to the provider's logic
-     * and return a single integer representing the level contribution.
+     * Gets the level for a single player from this provider's system.
+     * This is the core method that providers must implement.
+     * 
+     * This is used for:
+     * - Displaying the player's level above their head
+     * - Color-coding mob levels relative to the player
+     * - Contributing to mob level scaling (via calculateBonusLevels)
+     *
+     * @param player The player to get the level for
+     * @return The player's level from this provider
+     */
+    int getPlayerLevel(ServerPlayer player);
+
+    /**
+     * Calculates the bonus levels for mob scaling based on the provided list of nearby players.
+     * 
+     * By default, this averages the levels of all nearby players using getPlayerLevel().
+     * Providers can override this method to implement custom aggregation logic
+     * (e.g., use maximum level, sum levels, or apply distance-based weighting).
      *
      * @param players A list of players near the entity being leveled.
      * @return The calculated level bonus based on the players.
      */
-    int calculateBonusLevels(List<Player> players);
+    default int calculateBonusLevels(List<ServerPlayer> players) {
+        if (players.isEmpty()) {
+            return 0;
+        }
+        
+        int totalLevel = 0;
+        for (ServerPlayer player : players) {
+            totalLevel += getPlayerLevel(player);
+        }
+        
+        return totalLevel / players.size();
+    }
+
+    /**
+     * The priority of this provider for display purposes when multiple providers are registered.
+     * Higher priority providers will be used preferentially based on the configured display strategy.
+     * Default priority is 0. Negative values are allowed.
+     *
+     * @return The priority value (higher = more important)
+     */
+    default int getDisplayPriority() {
+        return 0;
+    }
+
+    /**
+     * Called after this provider is registered. Override this to set up event listeners
+     * or other initialization that requires triggering player level updates.
+     * 
+     * Use {@link #requestPlayerLevelUpdate(ServerPlayer)} within your event listeners
+     * to trigger recalculation when player data changes.
+     */
+    default void onRegistered() {
+        // Default: no-op, providers can override
+    }
 
     /**
      * Registers a player level provider.
@@ -49,5 +98,26 @@ public interface PlayerLevelProvider {
      */
     static List<PlayerLevelProvider> getProviders() {
         return providers;
+    }
+
+    /**
+     * Requests that the specified player's display level be recalculated and synced to clients.
+     * Providers should call this method when they detect a change that would affect the player's level.
+     * 
+     * Example usage in a provider:
+     * <pre>{@code
+     * @SubscribeEvent
+     * public void onSkillLevelUp(SkillLevelUpEvent event) {
+     *     if (event.getPlayer() instanceof ServerPlayer serverPlayer) {
+     *         PlayerLevelProvider.requestPlayerLevelUpdate(serverPlayer);
+     *     }
+     * }
+     * }</pre>
+     *
+     * @param player The player whose level should be recalculated
+     */
+    static void requestPlayerLevelUpdate(ServerPlayer player) {
+        // Trigger internal handler - implementation is in PlayerLevelUpdateHandler
+        dev.muon.dynamic_difficulty.leveling.PlayerLevelUpdateHandler.triggerUpdate(player);
     }
 }

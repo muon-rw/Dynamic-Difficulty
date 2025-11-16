@@ -1,6 +1,8 @@
 {
   "replace": false,
   "values": [
+    {"id":"minecraft:fortress", "required": false},
+    {"id":"minecraft:bastion_remnant", "required": false},
     {"id":"betterfortresses:fortress", "required": false},
     {"id":"eternal_starlight:cursed_garden", "required": false},
     {"id":"frostiful:frostologer_castle", "required": false},
