@@ -100,9 +100,9 @@ publishMods {
 	file = remapJar.archiveFile
 	modLoaders.add("fabric")
 	changelog = new File("$project.rootDir/CHANGELOG.md").getText('UTF-8')
-	version = "${mod_version}+${minecraft_version}"
+	version = "${mod_version}+${minecraft_version}-fabric"
 	type = BETA
-	displayName = "${mod_version}+${minecraft_version}"
+	displayName = "Fabric-${mod_version}+${minecraft_version}"
 
 	curseforge {
 		projectId = "${curseforge_project}"
