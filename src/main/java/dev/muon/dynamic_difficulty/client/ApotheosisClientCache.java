@@ -1,28 +1,23 @@
 package dev.muon.dynamic_difficulty.client;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.ModList;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
-import net.neoforged.neoforge.event.level.LevelEvent;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-@OnlyIn(Dist.CLIENT)
-@EventBusSubscriber(modid = DynamicDifficulty.MODID, value = Dist.CLIENT)
+@Environment(EnvType.CLIENT)
 public class ApotheosisClientCache {
-    private static final boolean APOTHEOSIS_LOADED = ModList.get().isLoaded("apotheosis");
+    private static final boolean APOTHEOSIS_LOADED = FabricLoader.getInstance().isModLoaded("apotheosis");
     private static final Map<Integer, String> TIER_CACHE = new HashMap<>();
     private static final Map<Integer, Long> LAST_SEEN = new HashMap<>();
     private static final long CLEANUP_INTERVAL = 20 * 60; // Every 60 seconds
@@ -79,18 +74,30 @@ public class ApotheosisClientCache {
         return null;
     }
     
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
-        var minecraft = net.minecraft.client.Minecraft.getInstance();
-        if (minecraft.level == null) return;
+    public static void register() {
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (client.level == null) return;
+            
+            long currentTime = client.level.getGameTime();
+            
+            // Periodic cleanup, just in case
+            if (currentTime - lastCleanup > CLEANUP_INTERVAL) {
+                lastCleanup = currentTime;
+                cleanupCache(currentTime);
+            }
+        });
         
-        long currentTime = minecraft.level.getGameTime();
+        ClientEntityEvents.ENTITY_LOAD.register((entity, world) -> {
+            // Entity loaded, cache will be populated on first access
+        });
         
-        // Periodic cleanup, just in case
-        if (currentTime - lastCleanup > CLEANUP_INTERVAL) {
-            lastCleanup = currentTime;
-            cleanupCache(currentTime);
-        }
+        ClientEntityEvents.ENTITY_UNLOAD.register((entity, world) -> {
+            if (entity instanceof LivingEntity) {
+                int entityId = entity.getId();
+                TIER_CACHE.remove(entityId);
+                LAST_SEEN.remove(entityId);
+            }
+        });
     }
     
     private static void cleanupCache(long currentTime) {
@@ -104,31 +111,6 @@ public class ApotheosisClientCache {
                 iterator.remove();
                 removed++;
             }
-        }
-    }
-
-    @SubscribeEvent
-    public static void onEntityDeath(LivingDeathEvent event) {
-        if (event.getEntity().level().isClientSide()) {
-            int entityId = event.getEntity().getId();
-            TIER_CACHE.remove(entityId);
-            LAST_SEEN.remove(entityId);
-        }
-    }
-
-    @SubscribeEvent
-    public static void onEntityUnload(EntityLeaveLevelEvent event) {
-        if (event.getEntity().level().isClientSide()) {
-            int entityId = event.getEntity().getId();
-            TIER_CACHE.remove(entityId);
-            LAST_SEEN.remove(entityId);
-        }
-    }
-
-    @SubscribeEvent
-    public static void onLevelUnload(LevelEvent.Unload event) {
-        if (event.getLevel().isClientSide()) {
-            clearCache();
         }
     }
     

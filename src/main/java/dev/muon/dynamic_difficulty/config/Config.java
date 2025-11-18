@@ -3,11 +3,13 @@ package dev.muon.dynamic_difficulty.config;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.PlayerLevelDisplayStrategy;
 import java.util.*;
+
+import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeConfigRegistry;
+import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeModConfigEvents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforge.common.ModConfigSpec.ConfigValue;
@@ -30,9 +32,27 @@ public class Config {
     LOOKING_AT
   }
 
-  public static void register(ModContainer container) {
-    container.registerConfig(ModConfig.Type.COMMON, COMMON_SPEC);
-    container.registerConfig(ModConfig.Type.CLIENT, CLIENT_SPEC);
+  public static void register() {
+    NeoForgeConfigRegistry.INSTANCE.register(
+        DynamicDifficulty.MODID,
+        ModConfig.Type.COMMON,
+        COMMON_SPEC
+    );
+
+    NeoForgeModConfigEvents.reloading(DynamicDifficulty.MODID).register(config -> {
+      if (config.getType() == ModConfig.Type.COMMON) {
+        reloadAttributeBonuses();
+        reloadStructureBonuses();
+      }
+    });
+  }
+  
+  public static void registerClient() {
+    NeoForgeConfigRegistry.INSTANCE.register(
+        DynamicDifficulty.MODID,
+        ModConfig.Type.CLIENT,
+        CLIENT_SPEC
+    );
   }
 
   public static void reloadAttributeBonuses() {

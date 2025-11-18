@@ -2,18 +2,24 @@ package dev.muon.dynamic_difficulty.network.message;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.client.render.StructureTitleRenderManager;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 public class StructureEntryPacket implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<StructureEntryPacket> TYPE =
             new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, "structure_entry"));
+    
+    public static final StreamCodec<FriendlyByteBuf, StructureEntryPacket> CODEC = CustomPacketPayload.codec(
+        StructureEntryPacket::write,
+        StructureEntryPacket::new
+    );
 
     @Nullable
     private final ResourceLocation structureId;
@@ -54,13 +60,12 @@ public class StructureEntryPacket implements CustomPacketPayload {
         return TYPE;
     }
 
-    public static void handle(final StructureEntryPacket msg, final IPayloadContext context) {
-        context.enqueueWork(() -> {
-            handleOnClient(msg);
-        });
+    public static void handle(final StructureEntryPacket msg, ClientPlayNetworking.Context context) {
+        // Handle on network thread - Fabric's client networking handles thread safety
+        handleOnClient(msg);
     }
 
-    @OnlyIn(Dist.CLIENT)
+    @Environment(EnvType.CLIENT)
     private static void handleOnClient(StructureEntryPacket msg) {
         if (msg.structureId != null && msg.structureBonus > 0) {
             StructureTitleRenderManager.getInstance().displayStructureTitle(

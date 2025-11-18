@@ -5,6 +5,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.config.Config;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.Registry;
@@ -14,18 +15,14 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.levelgen.structure.Structure;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 
-@EventBusSubscriber(modid = DynamicDifficulty.MODID)
 public class ModCommands {
-  @SubscribeEvent
-  public static void onRegisterCommands(RegisterCommandsEvent event) {
+  public static void register() {
+    CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
     LiteralArgumentBuilder<CommandSourceStack> addGlobalLevelCommand =
         Commands.literal("dynamic_difficulty")
             .then(
@@ -36,7 +33,7 @@ public class ModCommands {
                                 Commands.argument("value", IntegerArgumentType.integer())
                                     .executes(ModCommands::executeAddLevelCommand))))
             .requires(ModCommands::hasPermission);
-    event.getDispatcher().register(addGlobalLevelCommand);
+      dispatcher.register(addGlobalLevelCommand);
     LiteralArgumentBuilder<CommandSourceStack> getGlobalLevelCommand =
         Commands.literal("dynamic_difficulty")
             .then(
@@ -45,7 +42,7 @@ public class ModCommands {
                         Commands.literal("get")
                             .executes(ModCommands::executeGetLevelCommand)))
             .requires(ModCommands::hasPermission);
-    event.getDispatcher().register(getGlobalLevelCommand);
+      dispatcher.register(getGlobalLevelCommand);
     
     LiteralArgumentBuilder<CommandSourceStack> dumpStructuresCommand =
         Commands.literal("dynamic_difficulty")
@@ -53,7 +50,8 @@ public class ModCommands {
                 Commands.literal("dumpStructures")
                     .executes(ModCommands::executeDumpStructuresCommand))
             .requires(ModCommands::hasPermission);
-    event.getDispatcher().register(dumpStructuresCommand);
+      dispatcher.register(dumpStructuresCommand);
+    });
   }
 
   private static int executeAddLevelCommand(CommandContext<CommandSourceStack> ctx) {

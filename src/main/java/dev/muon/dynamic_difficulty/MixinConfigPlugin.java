@@ -1,6 +1,6 @@
 package dev.muon.dynamic_difficulty;
 
-import net.neoforged.fml.loading.LoadingModList;
+import net.fabricmc.loader.api.FabricLoader;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -43,7 +43,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
     }
 
     public static boolean isModLoaded (String modId) {
-        return LoadingModList.get().getModFileById(modId) != null;
+        return FabricLoader.getInstance().isModLoaded(modId);
     }
 
     @Override

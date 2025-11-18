@@ -7,11 +7,7 @@ import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.settings.EntityLevelingSettings;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import javax.annotation.Nullable;
-
+import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -21,9 +17,14 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
-public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadListener {
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadListener implements IdentifiableResourceReloadListener {
   private static final Logger LOGGER = LogUtils.getLogger();
   private static final Gson GSON = new Gson();
   private static final Map<ResourceLocation, EntityLevelingSettings> SETTINGS = new HashMap<>();
@@ -35,6 +36,11 @@ public class EntityLevelingSettingsReloader extends SimpleJsonResourceReloadList
   @Nullable
   public static EntityLevelingSettings get(EntityType<?> entityType) {
     return SETTINGS.get(BuiltInRegistries.ENTITY_TYPE.getKey(entityType));
+  }
+
+  @Override
+  public ResourceLocation getFabricId() {
+    return ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, "entity_leveling_settings");
   }
 
   @Override

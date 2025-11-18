@@ -2,22 +2,28 @@ package dev.muon.dynamic_difficulty.network.message;
 
 import dev.muon.dynamic_difficulty.client.ClientLevelCache;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public class SyncLevelingData implements CustomPacketPayload {
   public static final CustomPacketPayload.Type<SyncLevelingData> TYPE =
       new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, "sync_leveling_data"));
+  
+  public static final StreamCodec<FriendlyByteBuf, SyncLevelingData> CODEC = CustomPacketPayload.codec(
+      SyncLevelingData::write,
+      SyncLevelingData::new
+  );
 
   private final int entityId;
   private final int level;
@@ -46,15 +52,12 @@ public class SyncLevelingData implements CustomPacketPayload {
     return TYPE;
   }
 
-  public static void handle(final SyncLevelingData msg, final IPayloadContext context) {
-    context.enqueueWork(() -> {
-      if (context.flow().isClientbound()) {
+    public static void handle(final SyncLevelingData msg, ClientPlayNetworking.Context context) {
+        // Handle on network thread - Fabric's client networking handles thread safety
         handleClient(msg);
-      }
-    });
-  }
+    }
 
-  @OnlyIn(Dist.CLIENT)
+  @Environment(EnvType.CLIENT)
   private static void handleClient(SyncLevelingData msg) {
     Minecraft client = Minecraft.getInstance();
     ClientLevel level = client.level;
@@ -64,8 +67,13 @@ public class SyncLevelingData implements CustomPacketPayload {
     
     Entity entity = level.getEntity(msg.entityId);
       switch (entity) {
-          case null ->
-                  DynamicDifficulty.LOGGER.warn("Entity with ID {} not found on client for SyncLevelingData", msg.entityId);
+          case null -> {
+              // Entity not loaded yet - cache the level data anyway for when it does load
+              // This is normal during world load or when entities are outside render distance
+              ClientLevelCache.updateEntityLevel(msg.entityId, msg.level);
+              DynamicDifficulty.LOGGER.debug("Cached level data for entity ID {} (entity not yet loaded): {}", 
+                      msg.entityId, msg.level);
+          }
           case Player player -> {
               ClientLevelCache.updatePlayerLevel(player.getUUID(), msg.level);
               DynamicDifficulty.LOGGER.debug("Updated client cache: Player {} level = {}",
@@ -77,7 +85,7 @@ public class SyncLevelingData implements CustomPacketPayload {
                       livingEntity.getType().getDescription().getString(), msg.entityId, msg.level);
           }
           default ->
-                  DynamicDifficulty.LOGGER.warn("Received SyncLevelingData for non-living entity ID {}", msg.entityId);
+                  DynamicDifficulty.LOGGER.debug("Received SyncLevelingData for non-living entity ID {} - caching anyway", msg.entityId);
       }
   }
 }

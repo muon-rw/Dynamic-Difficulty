@@ -21,19 +21,21 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 
 // Import ClientLevelCache for client-side checks
 import dev.muon.dynamic_difficulty.client.ClientLevelCache;
+
+import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import net.minecraft.world.entity.Entity;
 
 import java.util.List;
 import java.util.Map;
@@ -59,7 +61,6 @@ import java.util.Optional;
  * - Cannot use setAndUpdateLevel() on players (throws exception)
  */
 public class LevelingSystem {
-    private static final String LEVEL_TAG = (DynamicDifficulty.MODID + ":level").toLowerCase();
     private static final TagKey<EntityType<?>> FIXED_LEVEL_ENTITIES = TagKey.create(Registries.ENTITY_TYPE,
             DynamicDifficulty.loc("fixed_level_entities"));
 
@@ -69,7 +70,7 @@ public class LevelingSystem {
             // The actual level value will come from ClientLevelCache once synced
             return entity instanceof LivingEntity && LevelingUtils.canHaveLevel(entity);
         } else {
-            return entity.getPersistentData().contains(LEVEL_TAG);
+            return entity.hasAttached(EntityLevelAttachment.LEVEL);
         }
     }
 
@@ -89,16 +90,19 @@ public class LevelingSystem {
         if (entity.level().isClientSide()) {
             return ClientLevelCache.getLevel(entity);
         } else {
-            return entity.getPersistentData().getInt(LEVEL_TAG);
+            Integer level = entity.getAttached(EntityLevelAttachment.LEVEL);
+            return level != null ? level : 1;
         }
     }
 
     /**
-     * Internal: Sets the level tag without updating attributes or syncing.
+     * Internal: Sets the level attachment without updating attributes or syncing.
      * Use setAndUpdateLevel() for runtime level changes.
      */
     static void setLevelTag(LivingEntity entity, int level) {
-        entity.getPersistentData().putInt(LEVEL_TAG, level);
+        if (entity instanceof AttachmentTarget target) {
+            target.setAttached(EntityLevelAttachment.LEVEL, level);
+        }
     }
 
     /**

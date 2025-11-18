@@ -2,13 +2,14 @@ package dev.muon.dynamic_difficulty.client.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
+import dev.muon.dynamic_difficulty.config.Config;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import java.util.LinkedList;
 import java.util.function.Predicate;
 
@@ -19,50 +20,20 @@ public class TitleRenderer<T> {
     public int titleTimer = 0;
 
     // User-customizable text effects
-    public int maxRecentListSize;
-    public boolean enabled;
-    public int titleFadeInTicks;
-    public int titleDisplayTime;
-    public int titleFadeOutTicks;
-    public int titleTextColor;
-    public String titleDefaultTextColor;
-    public boolean showTextShadow;
-    public float titleTextSize;
-    public int titleXOffset;
-    public int titleYOffset;
-    public float subTitleScale;
-    public int subTitleSpacing;
-    public boolean isTextCentered;
+    public final int maxRecentListSize;
 
-    public TitleRenderer(
-        int maxRecentListSize,
-        boolean enabled,
-        int fadeInTicks,
-        int displayTicks,
-        int fadeOutTicks,
-        String textColor,
-        boolean showTextShadow,
-        double textSize,
-        int xOffset,
-        int yOffset,
-        float subTitleScale,
-        int subTitleSpacing,
-        boolean centerText
-    ) {
+    public TitleRenderer(int maxRecentListSize) {
         this.maxRecentListSize = maxRecentListSize;
-        this.enabled = enabled;
-        this.titleFadeInTicks = fadeInTicks;
-        this.titleDisplayTime = displayTicks;
-        this.titleFadeOutTicks = fadeOutTicks;
-        this.setColor(textColor);
-        this.titleDefaultTextColor = textColor;
-        this.showTextShadow = showTextShadow;
-        this.titleTextSize = (float)textSize;
-        this.titleXOffset = xOffset;
-        this.titleYOffset = yOffset;
-        this.subTitleScale = subTitleScale;
-        this.subTitleSpacing = subTitleSpacing;
-        this.isTextCentered = centerText;
+    }
+
+    private int getTitleTextColor() {
+        String colorStr = Config.CLIENT.structureTitleTextColor.get();
+        try {
+            return (int) Long.parseLong(colorStr, 16);
+        } catch (Exception e) {
+            DynamicDifficulty.LOGGER.error("Text color {} is not a valid RGB color. Defaulting to white...", colorStr);
+            return 0xFFFFFF;
+        }
     }
 
     public void renderText(float partialTicks, GuiGraphics guiGraphics) {
@@ -71,7 +42,7 @@ public class TitleRenderer<T> {
             if (opacity > 8) {
                 // Set up render system
                 guiGraphics.pose().pushPose();
-                if (this.isTextCentered) {
+                if (Config.CLIENT.structureTitleCenterText.get()) {
                     guiGraphics.pose().translate(Minecraft.getInstance().getWindow().getGuiScaledWidth() / 2D,
                                                  (Minecraft.getInstance().getWindow().getGuiScaledHeight() / 2D), 0);
                 }
@@ -92,16 +63,19 @@ public class TitleRenderer<T> {
     private int getOpacity(float partialTicks) {
         float age = (float) titleTimer - partialTicks;
         int opacity = 255;
+        int fadeOutTicks = Config.CLIENT.structureTitleFadeOutTime.get();
+        int displayTime = Config.CLIENT.structureTitleDisplayTime.get();
+        int fadeInTicks = Config.CLIENT.structureTitleFadeInTime.get();
 
         // Fade in
-        if (titleTimer > titleFadeOutTicks + titleDisplayTime) {
-            float r = (float) (titleFadeInTicks + titleDisplayTime + titleFadeOutTicks) - age;
-            opacity = (int) (r * 255.0F / (float) titleFadeInTicks);
+        if (titleTimer > fadeOutTicks + displayTime) {
+            float r = (float) (fadeInTicks + displayTime + fadeOutTicks) - age;
+            opacity = (int) (r * 255.0F / (float) fadeInTicks);
         }
 
         // Fade out
-        if (titleTimer <= titleFadeOutTicks) {
-            opacity = (int) (age * 255.0F / (float) titleFadeOutTicks);
+        if (titleTimer <= fadeOutTicks) {
+            opacity = (int) (age * 255.0F / (float) fadeOutTicks);
         }
 
         opacity = Mth.clamp(opacity, 0, 255);
@@ -111,14 +85,16 @@ public class TitleRenderer<T> {
     private void renderTitle(GuiGraphics guiGraphics, Font fontRenderer, int alpha) {
         // Render title
         guiGraphics.pose().pushPose();
-        guiGraphics.pose().scale(titleTextSize, titleTextSize, titleTextSize);
+        float textSize = Config.CLIENT.structureTitleTextSize.get().floatValue();
+        guiGraphics.pose().scale(textSize, textSize, textSize);
         int titleWidth = fontRenderer.width(displayedTitle);
 
-        int xOffset = this.isTextCentered
-            ? this.titleXOffset + (-titleWidth / 2)
-            : this.titleXOffset;
+        int xOffset = Config.CLIENT.structureTitleCenterText.get()
+            ? Config.CLIENT.structureTitleXOffset.get() + (-titleWidth / 2)
+            : Config.CLIENT.structureTitleXOffset.get();
 
-        guiGraphics.drawString(fontRenderer, displayedTitle, xOffset, titleYOffset, titleTextColor | alpha, showTextShadow);
+        guiGraphics.drawString(fontRenderer, displayedTitle, xOffset, Config.CLIENT.structureTitleYOffset.get(), 
+            getTitleTextColor() | alpha, Config.CLIENT.structureTitleRenderShadow.get());
         guiGraphics.pose().popPose();
     }
 
@@ -126,17 +102,19 @@ public class TitleRenderer<T> {
         if (displayedSubTitle != null) {
             guiGraphics.pose().pushPose();
 
-            float subTitleTextSize = titleTextSize * subTitleScale;
+            float subTitleTextSize = Config.CLIENT.structureTitleTextSize.get().floatValue() * Config.CLIENT.structureSubtitleScale.get();
             guiGraphics.pose().scale(subTitleTextSize, subTitleTextSize, subTitleTextSize);
 
-            int subtitleWidth = (int) (fontRenderer.width(displayedSubTitle) * subTitleScale);
-            int subXOffset = (int) ((this.isTextCentered
-                    ? this.titleXOffset + ((float) -subtitleWidth / 2)
-                    : this.titleXOffset)
-                    / subTitleScale);
-            int subYOffset = (int) ((titleYOffset + subTitleSpacing) / subTitleScale);
+            float scale = Config.CLIENT.structureSubtitleScale.get();
+            int subtitleWidth = (int) (fontRenderer.width(displayedSubTitle) * scale);
+            int subXOffset = (int) ((Config.CLIENT.structureTitleCenterText.get()
+                    ? Config.CLIENT.structureTitleXOffset.get() + ((float) -subtitleWidth / 2)
+                    : Config.CLIENT.structureTitleXOffset.get())
+                    / scale);
+            int subYOffset = (int) ((Config.CLIENT.structureTitleYOffset.get() + Config.CLIENT.structureSubtitleSpacing.get()) / scale);
 
-            guiGraphics.drawString(fontRenderer, displayedSubTitle, subXOffset, subYOffset, titleTextColor | alpha, showTextShadow);
+            guiGraphics.drawString(fontRenderer, displayedSubTitle, subXOffset, subYOffset, 
+                getTitleTextColor() | alpha, Config.CLIENT.structureTitleRenderShadow.get());
             guiGraphics.pose().popPose();
         }
     }
@@ -153,21 +131,11 @@ public class TitleRenderer<T> {
     public void displayTitle(Component titleText, @Nullable Component subtitleText) {
         displayedTitle = titleText;
         displayedSubTitle = subtitleText;
-        titleTimer = titleFadeInTicks + titleDisplayTime + titleFadeOutTicks;
+        titleTimer = Config.CLIENT.structureTitleFadeInTime.get() + Config.CLIENT.structureTitleDisplayTime.get() + Config.CLIENT.structureTitleFadeOutTime.get();
     }
 
     public void clearTimer() {
         titleTimer = 0;
-    }
-
-    public void setColor(String textColor) {
-        try {
-            this.titleTextColor = (int) Long.parseLong(textColor, 16);
-        } catch (Exception e) {
-            DynamicDifficulty.LOGGER.error("Text color {} is not a valid RGB color. Defaulting to white...", textColor);
-            DynamicDifficulty.LOGGER.error(e.toString());
-            this.titleTextColor = 0xFFFFFF;
-        }
     }
 
     public void addRecentEntry(T entry) {

@@ -7,9 +7,11 @@
   "mixins": [
     "LivingEntityAccessor",
     "LivingEntityMixin",
+    "LootTableMixin",
     "compat.puffish_skills.SkillsModMixin"
   ],
   "client": [
+    "client.EntityRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

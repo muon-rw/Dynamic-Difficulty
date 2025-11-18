@@ -3,6 +3,8 @@ package dev.muon.dynamic_difficulty.client;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.config.Config;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
@@ -11,47 +13,39 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RenderNameTagEvent;
-import net.neoforged.neoforge.common.util.TriState;
 
-@EventBusSubscriber(modid = DynamicDifficulty.MODID, value = Dist.CLIENT)
+@Environment(EnvType.CLIENT)
 public class LevelPlateRenderer {
-
-  @SubscribeEvent
-  public static void renderEntityLevel(RenderNameTagEvent event) {
-    if (!(event.getEntity() instanceof LivingEntity entity)) {
-      return;
+  /**
+   * Modifies the name tag component for an entity to include level information.
+   * This should be called from a mixin or EntityRenderer.
+   */
+  public static Component modifyNameTag(Component originalName, LivingEntity entity) {
+    if (!shouldShowName(entity)) {
+      return originalName;
     }
 
-    if (shouldShowName(entity)) {
-      Component originalName = event.getContent();
-      int entityLevel = ClientLevelCache.getLevel(entity);
-      
-      MutableComponent fullDisplayName = originalName.copy();
-      
-      // Build level component
-      MutableComponent levelComponent = Component.literal(" ")
-          .append(Component.translatable("dynamic_difficulty.level", entityLevel))
-          .withStyle(style -> style.withColor(getLevelColor(Minecraft.getInstance().player, entity)));
-      
-      // Add Apotheosis world tier if available and enabled
-      if (Config.CLIENT.showApotheosisWorldTier.get()) {
-        String worldTier = ApotheosisClientCache.getWorldTier(entity);
-        if (worldTier != null) {
-          MutableComponent tierComponent = Component.literal(" [" + worldTier + "]")
-              .withStyle(style -> style.withColor(getTierColor(worldTier)));
-          levelComponent.append(tierComponent);
-        }
+    int entityLevel = ClientLevelCache.getLevel(entity);
+    
+    MutableComponent fullDisplayName = originalName.copy();
+    
+    // Build level component
+    MutableComponent levelComponent = Component.literal(" ")
+        .append(Component.translatable("dynamic_difficulty.level", entityLevel))
+        .withStyle(style -> style.withColor(getLevelColor(Minecraft.getInstance().player, entity)));
+    
+    // Add Apotheosis world tier if available and enabled
+    if (Config.CLIENT.showApotheosisWorldTier.get()) {
+      String worldTier = ApotheosisClientCache.getWorldTier(entity);
+      if (worldTier != null) {
+        MutableComponent tierComponent = Component.literal(" [" + worldTier + "]")
+            .withStyle(style -> style.withColor(getTierColor(worldTier)));
+        levelComponent.append(tierComponent);
       }
-      
-      fullDisplayName.append(levelComponent);
-
-      event.setContent(fullDisplayName);
-      event.setCanRender(TriState.TRUE);
     }
+    
+    fullDisplayName.append(levelComponent);
+    return fullDisplayName;
   }
 
   /**

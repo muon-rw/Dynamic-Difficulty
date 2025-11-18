@@ -14,21 +14,7 @@ public class StructureTitleRenderManager {
     public final TitleRenderer<ResourceLocation> structureTitleRenderer;
     
     public StructureTitleRenderManager() {
-        this.structureTitleRenderer = new TitleRenderer<>(
-            1, // Only track 1 recent structure
-            Config.CLIENT.showStructureTitles.get(),
-            Config.CLIENT.structureTitleFadeInTime.get(),
-            Config.CLIENT.structureTitleDisplayTime.get(),
-            Config.CLIENT.structureTitleFadeOutTime.get(),
-            Config.CLIENT.structureTitleTextColor.get(),
-            Config.CLIENT.structureTitleRenderShadow.get(),
-            Config.CLIENT.structureTitleTextSize.get(),
-            Config.CLIENT.structureTitleXOffset.get(),
-            Config.CLIENT.structureTitleYOffset.get(),
-            Config.CLIENT.structureSubtitleScale.get(),
-            Config.CLIENT.structureSubtitleSpacing.get(),
-            Config.CLIENT.structureTitleCenterText.get()
-        );
+        this.structureTitleRenderer = new TitleRenderer<>(1); // Only track 1 recent structure
     }
     
     public static StructureTitleRenderManager getInstance() {
@@ -54,7 +40,7 @@ public class StructureTitleRenderManager {
      * Display structure title when notified by server
      */
     public void displayStructureTitle(ResourceLocation structureId, int structureBonus, int baseLevel, int playerBonus) {
-        if (!structureTitleRenderer.enabled || structureBonus <= 0) {
+        if (!Config.CLIENT.showStructureTitles.get() || structureBonus <= 0) {
             return;
         }
         
@@ -107,5 +93,15 @@ public class StructureTitleRenderManager {
         }
         
         return Component.literal(formattedName.toString().trim());
+    }
+    
+    /**
+     * Clear all cached state (called on disconnect)
+     */
+    public void clearCache() {
+        structureTitleRenderer.recentEntries.clear();
+        structureTitleRenderer.displayedTitle = null;
+        structureTitleRenderer.displayedSubTitle = null;
+        structureTitleRenderer.clearTimer();
     }
 }

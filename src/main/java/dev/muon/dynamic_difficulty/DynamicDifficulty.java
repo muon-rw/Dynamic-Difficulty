@@ -5,20 +5,19 @@ import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.compat.PuffishSkillsProvider;
 import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.attribute.ModAttributes;
+import dev.muon.dynamic_difficulty.command.ModCommands;
 import dev.muon.dynamic_difficulty.item.ModItems;
+import dev.muon.dynamic_difficulty.leveling.EntityLevelAttachment;
+import dev.muon.dynamic_difficulty.leveling.LevelingEvents;
 import dev.muon.dynamic_difficulty.leveling.PlayerLevelUpdateHandler;
 import dev.muon.dynamic_difficulty.loot.condition.ModLootConditions;
-import dev.muon.dynamic_difficulty.loot.modifier.ModLootModifiers;
+import dev.muon.dynamic_difficulty.network.NetworkDispatcher;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.event.lifecycle.InterModEnqueueEvent;
-import net.neoforged.fml.loading.LoadingModList;
+import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 
-@Mod(DynamicDifficulty.MODID)
-public class DynamicDifficulty {
+public class DynamicDifficulty implements ModInitializer {
   public static final Logger LOGGER = LogUtils.getLogger();
   public static final String MODID = "dynamic_difficulty";
 
@@ -26,24 +25,24 @@ public class DynamicDifficulty {
     return ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, path);
   }
 
-  public DynamicDifficulty(ModContainer container, IEventBus bus) {
-    ModAttributes.REGISTRY.register(bus);
-    ModItems.REGISTRY.register(bus);
-    ModLootConditions.REGISTRY.register(bus);
-    ModLootModifiers.REGISTRY.register(bus);
-    Config.register(container);
-    bus.addListener(this::onInterMod);
+  @Override
+  public void onInitialize() {
+    ModAttributes.register();
+    ModItems.register();
+    ModLootConditions.register();
+    Config.register();
+    LevelingEvents.register();
+    ModCommands.register();
+    NetworkDispatcher.register();
+
+    if (isModLoaded("puffish_skills")) {
+      LevelingAPI.registerPlayerLevelProvider(new PuffishSkillsProvider());
+    }
 
     PlayerLevelUpdateHandler.registerCallback(PlayerLevelUpdateHandler::handlePlayerLevelUpdate);
   }
 
-  private void onInterMod(InterModEnqueueEvent event) {
-    if (isModLoaded("puffish_skills")) {
-      LevelingAPI.registerPlayerLevelProvider(new PuffishSkillsProvider());
-    }
-  }
-
   public static boolean isModLoaded (String modId) {
-    return LoadingModList.get().getModFileById(modId) != null;
+    return FabricLoader.getInstance().isModLoaded(modId);
   }
 }

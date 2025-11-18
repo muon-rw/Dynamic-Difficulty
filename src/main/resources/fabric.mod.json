@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "dynamic_difficulty",
+  "version": "${version}",
+  "name": "Dynamic Difficulty",
+  "description": "A mod that adds dynamic difficulty scaling based on player progression",
+  "authors": [],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/dynamic_difficulty/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.muon.dynamic_difficulty.DynamicDifficulty"
+    ],
+    "client": [
+      "dev.muon.dynamic_difficulty.client.ClientEventHandler"
+    ],
+    "modmenu": [
+      "dev.muon.dynamic_difficulty.config.ModMenuIntegration"
+    ],
+    "jade": [
+      "dev.muon.dynamic_difficulty.compat.JadePlugin"
+    ]
+  },
+  "mixins": [
+    "dynamic_difficulty.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.17.0",
+    "fabric-api": "*",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "forgeconfigapiport": ">=21.1.3",
+    "modmenu": ">=11.0.0"
+  }
+}
+

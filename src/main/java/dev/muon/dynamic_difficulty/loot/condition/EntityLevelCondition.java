@@ -36,7 +36,7 @@ public record EntityLevelCondition(Optional<Integer> min, Optional<Integer> max,
 
     @Override
     public LootItemConditionType getType() {
-        return ModLootConditions.ENTITY_LEVEL.get();
+        return ModLootConditions.ENTITY_LEVEL;
     }
 
     @Override
@@ -110,6 +110,13 @@ public record EntityLevelCondition(Optional<Integer> min, Optional<Integer> max,
      */
     public static Builder builder() {
         return new Builder();
+    }
+    
+    /**
+     * Creates a condition that checks if an entity has any level (no min/max/exact specified)
+     */
+    public static EntityLevelCondition entityLevel() {
+        return new EntityLevelCondition(Optional.empty(), Optional.empty(), Optional.empty());
     }
 }
 

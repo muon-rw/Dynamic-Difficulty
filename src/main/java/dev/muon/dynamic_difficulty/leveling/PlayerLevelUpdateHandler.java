@@ -34,6 +34,7 @@ public class PlayerLevelUpdateHandler {
     
     /**
      * Default implementation: recalculates and syncs if changed.
+     * Uses syncLevelToClients which will broadcast to all players for player entities.
      */
     public static void handlePlayerLevelUpdate(ServerPlayer player) {
         int currentLevel = LevelingSystem.getLevel(player);
@@ -41,7 +42,7 @@ public class PlayerLevelUpdateHandler {
         
         if (currentLevel != newLevel) {
             LevelingSystem.setLevelTag(player, newLevel);
-            NetworkDispatcher.syncLevelToAllPlayers(player);
+            NetworkDispatcher.syncLevelToClients(player);
         }
     }
 }

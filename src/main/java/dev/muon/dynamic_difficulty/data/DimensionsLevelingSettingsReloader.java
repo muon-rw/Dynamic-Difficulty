@@ -4,11 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
+import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
-import java.util.HashMap;
-import java.util.Map;
-import javax.annotation.Nonnull;
+import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -18,7 +17,10 @@ import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
-public class DimensionsLevelingSettingsReloader extends SimpleJsonResourceReloadListener {
+import java.util.HashMap;
+import java.util.Map;
+
+public class DimensionsLevelingSettingsReloader extends SimpleJsonResourceReloadListener implements IdentifiableResourceReloadListener {
   private static final Logger LOGGER = LogUtils.getLogger();
   private static final Gson GSON = new Gson();
   private static final Map<ResourceLocation, DimensionLevelingSettings> SETTINGS = new HashMap<>();
@@ -27,7 +29,7 @@ public class DimensionsLevelingSettingsReloader extends SimpleJsonResourceReload
     super(GSON, "leveling_settings/dimensions");
   }
 
-  @Nonnull
+  @NotNull
   public static DimensionLevelingSettings get(ResourceKey<Level> dimension) {
     return SETTINGS.getOrDefault(dimension.location(), createDefaultSettings());
   }
@@ -41,6 +43,11 @@ public class DimensionsLevelingSettingsReloader extends SimpleJsonResourceReload
         Config.COMMON.randomLevelBonus.get(),
         null,
         Map.of());
+  }
+
+  @Override
+  public ResourceLocation getFabricId() {
+    return ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, "dimensions_leveling_settings");
   }
 
   @Override
