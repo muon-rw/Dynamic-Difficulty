@@ -56,14 +56,9 @@ public class LevelingEvents {
       addEquipment(living);
     });
 
-    // Experience drop modification
-    // Note: Fabric doesn't have a direct equivalent to LivingExperienceDropEvent
-    // Experience modification should be handled via mixin to LivingEntity.getExperienceReward()
-    // or by modifying the experience value before the entity dies
-    // For now, this is handled via mixin - see LivingEntityMixin
+    // FABRIC NOTE: See LivingEntityMixin##modifyExperienceReward
 
-    // Additional loot drops are handled via LootTableMixin
-    // The mixin intercepts loot generation and checks the context to determine if it's an entity loot table
+    // FABRIC NOTE: See LootTableMixin#modifyLoot
 
     // Reload listeners
     ResourceManagerHelper.get(PackType.SERVER_DATA)

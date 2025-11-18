@@ -19,12 +19,14 @@ import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 
 import java.util.function.Consumer;
 
 @Mixin(LootTable.class)
 public abstract class LootTableMixin {
     // ThreadLocal guard to prevent infinite recursion
+    @Unique
     private static final ThreadLocal<Boolean> PROCESSING = ThreadLocal.withInitial(() -> false);
     
     @WrapMethod(
@@ -91,6 +93,7 @@ public abstract class LootTableMixin {
     /**
      * Comprehensive player search (similar to Apotheosis GenContext.findPlayer, licensed MIT)
      */
+    @Unique
     @Nullable
     private Player findPlayer(LootContext ctx) {
         if (ctx.getParamOrNull(LootContextParams.THIS_ENTITY) instanceof Player p) return p;
