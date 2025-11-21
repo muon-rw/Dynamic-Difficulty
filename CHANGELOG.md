@@ -1,3 +1,6 @@
+## 0.6.1
+- Fix level-up items dropping from non-entities
+
 ## 0.6.0
 - Added 5 new items, used to level up tamed pets (or any mob)
 - Greatly improve player-based scaling framework

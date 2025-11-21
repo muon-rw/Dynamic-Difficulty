@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootContext;
@@ -42,18 +43,23 @@ public class InjectLootTableModifier extends LootModifier {
 
     @Override
     protected @NotNull ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
-        // Check if level-based drops are enabled in config
         if (!Config.COMMON.enableLevelBasedDrops.get()) {
             return generatedLoot;
         }
 
-        // Prevent infinite recursion - this GLM calls a loot table, which triggers GLMs again
+        if (!(context.getParamOrNull(LootContextParams.THIS_ENTITY) instanceof LivingEntity)) {
+            return generatedLoot;
+        }
+
         if (PROCESSING.get()) {
             return generatedLoot;
         }
 
-        // Only apply to player kills (check all possible player parameters)
         if (findPlayer(context) == null) {
+            return generatedLoot;
+        }
+
+        if (!context.getQueriedLootTableId().getPath().startsWith("entit")) {
             return generatedLoot;
         }
 
@@ -65,7 +71,7 @@ public class InjectLootTableModifier extends LootModifier {
             LootTable table = context.getLevel().getServer().reloadableRegistries().getLootTable(tableKey);
             
             if (table == LootTable.EMPTY) {
-                DynamicDifficulty.LOGGER.warn("Level-based drops loot table {} not found or is empty!", lootTable);
+                DynamicDifficulty.LOGGER.warn("Configured inject loot table {} not found or is empty!", lootTable);
                 return generatedLoot;
             }
             
@@ -83,7 +89,6 @@ public class InjectLootTableModifier extends LootModifier {
      */
     @Nullable
     private Player findPlayer(LootContext ctx) {
-        if (ctx.getParamOrNull(LootContextParams.THIS_ENTITY) instanceof Player p) return p;
         if (ctx.getParamOrNull(LootContextParams.ATTACKING_ENTITY) instanceof Player p) return p;
         if (ctx.getParamOrNull(LootContextParams.DIRECT_ATTACKING_ENTITY) instanceof Player p) return p;
         if (ctx.getParamOrNull(LootContextParams.LAST_DAMAGE_PLAYER) != null) return ctx.getParamOrNull(LootContextParams.LAST_DAMAGE_PLAYER);
