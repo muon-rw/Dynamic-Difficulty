@@ -1,16 +1,15 @@
 package dev.muon.dynamic_difficulty.api;
 
-import dev.muon.dynamic_difficulty.leveling.LevelingSystem;
+import dev.muon.dynamic_difficulty.LevelingSystem;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
-import net.minecraft.core.Registry;
-import net.minecraft.resources.ResourceLocation;
+import dev.muon.dynamic_difficulty.util.LocationBonusUtils;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.levelgen.structure.Structure;
 
 import java.util.Map;
 
@@ -132,23 +131,45 @@ public class LevelingAPI {
     }
 
     /**
-     * Gets the structure level bonus for an entity's current position.
+     * Gets the structure bonus for an entity's current position.
      *
      * @param entity The entity to get the structure bonus for
-     * @return The highest level bonus from any structure at the entity's position
+     * @return Structure bonus info including bypassing/non-bypassing bonuses and structure ID
      */
-    public static int getStructureLevelBonus(LivingEntity entity) {
-        return LevelingSystem.getStructureLevelBonus(entity);
+    public static StructureBonus getStructureBonus(LivingEntity entity) {
+        return LevelingSystem.getStructureBonus(entity);
     }
 
     /**
-     * Gets the structure level bonus for a given structure.
+     * Gets the structure bonus at a specific position.
      *
-     * @param structureId The structure's ResourceLocation
-     * @return The level bonus configured for the structure
+     * @param level The server level
+     * @param pos The block position
+     * @return Structure bonus info including bypassing/non-bypassing bonuses and structure ID
      */
-    public static int getStructureLevelBonus(ResourceLocation structureId, Registry<Structure> structureRegistry) {
-        return LevelingUtils.getStructureLevelBonus(structureId, structureRegistry);
+    public static StructureBonus getStructureBonus(ServerLevel level, BlockPos pos) {
+        return LocationBonusUtils.getStructureAt(level, pos, true);
+    }
+
+    /**
+     * Gets the biome bonus for an entity's current position.
+     *
+     * @param entity The entity to get the biome bonus for
+     * @return Biome bonus info including bypassing/non-bypassing bonuses and biome ID
+     */
+    public static BiomeBonus getBiomeBonus(LivingEntity entity) {
+        return LevelingSystem.getBiomeBonus(entity);
+    }
+
+    /**
+     * Gets the biome bonus at a specific position.
+     *
+     * @param level The server level
+     * @param pos The block position
+     * @return Biome bonus info including bypassing/non-bypassing bonuses and biome ID
+     */
+    public static BiomeBonus getBiomeBonus(ServerLevel level, BlockPos pos) {
+        return LocationBonusUtils.getBiomeAt(level, pos);
     }
 
     /**
@@ -172,6 +193,6 @@ public class LevelingAPI {
      * @return The calculated display level
      */
     public static int getPlayerDisplayLevel(net.minecraft.server.level.ServerPlayer player) {
-        return dev.muon.dynamic_difficulty.leveling.PlayerLevelCalculator.calculatePlayerDisplayLevel(player);
+        return dev.muon.dynamic_difficulty.player.PlayerLevelCalculator.calculatePlayerDisplayLevel(player);
     }
 }

@@ -1,4 +1,4 @@
-package dev.muon.dynamic_difficulty.api;
+package dev.muon.dynamic_difficulty.player;
 
 /**
  * Defines how multiple PlayerLevelProviders should be aggregated for display purposes.

@@ -23,6 +23,18 @@ public interface LevelingSettings {
 
   float levelsPerDeepness();
 
+  default float levelsPerHeight() {
+    return 0.0f; // Default: no height scaling
+  }
+
+  default float levelsPerDay() {
+    return Config.COMMON.levelsPerDay.get().floatValue();
+  }
+
+  default float levelsPerLocalDifficulty() {
+    return 0.0f; // Default: no local difficulty scaling
+  }
+
   int randomLevelBonus();
 
   Map<Attribute, AttributeModifier> attributeModifiers();

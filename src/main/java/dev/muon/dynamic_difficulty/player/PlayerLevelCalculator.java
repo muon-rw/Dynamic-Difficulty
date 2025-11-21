@@ -1,6 +1,4 @@
-package dev.muon.dynamic_difficulty.leveling;
-
-import dev.muon.dynamic_difficulty.api.PlayerLevelDisplayStrategy;
+package dev.muon.dynamic_difficulty.player;
 import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
 import dev.muon.dynamic_difficulty.config.Config;
 import net.minecraft.server.level.ServerPlayer;

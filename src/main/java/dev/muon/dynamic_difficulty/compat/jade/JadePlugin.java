@@ -1,4 +1,4 @@
-package dev.muon.dynamic_difficulty.compat;
+package dev.muon.dynamic_difficulty.compat.jade;
 
 import net.minecraft.world.entity.LivingEntity;
 import snownee.jade.api.IWailaClientRegistration;

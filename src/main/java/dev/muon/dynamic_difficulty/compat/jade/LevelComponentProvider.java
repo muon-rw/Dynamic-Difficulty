@@ -1,8 +1,7 @@
-package dev.muon.dynamic_difficulty.compat;
+package dev.muon.dynamic_difficulty.compat.jade;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
-import dev.muon.dynamic_difficulty.client.ClientLevelCache;
 import dev.muon.dynamic_difficulty.client.LevelPlateRenderer;
 import dev.muon.dynamic_difficulty.config.Config;
 import net.minecraft.client.Minecraft;
@@ -38,7 +37,7 @@ public enum LevelComponentProvider implements IEntityComponentProvider {
                     LevelingAPI.hasLevel(living) && LevelingAPI.shouldShowLevel(living);
             if (!showLevel) return;
             
-            int entityLevel = ClientLevelCache.getLevel(living);
+            int entityLevel = LevelingAPI.getLevel(living);
             int color = LevelPlateRenderer.getLevelColorRGB(Minecraft.getInstance().player, living);
             
             tooltip.add(Component.translatable("jade.dynamic_difficulty.tooltip", entityLevel)

@@ -1,7 +1,7 @@
 package dev.muon.dynamic_difficulty.network.message;
 
-import dev.muon.dynamic_difficulty.client.ClientLevelCache;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
+import dev.muon.dynamic_difficulty.EntityLevelAttachment;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -13,7 +13,6 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 
 public class SyncLevelingData implements CustomPacketPayload {
@@ -66,26 +65,15 @@ public class SyncLevelingData implements CustomPacketPayload {
     }
     
     Entity entity = level.getEntity(msg.entityId);
-      switch (entity) {
-          case null -> {
-              // Entity not loaded yet - cache the level data anyway for when it does load
-              // This is normal during world load or when entities are outside render distance
-              ClientLevelCache.updateEntityLevel(msg.entityId, msg.level);
-              DynamicDifficulty.LOGGER.debug("Cached level data for entity ID {} (entity not yet loaded): {}", 
-                      msg.entityId, msg.level);
-          }
-          case Player player -> {
-              ClientLevelCache.updatePlayerLevel(player.getUUID(), msg.level);
-              DynamicDifficulty.LOGGER.debug("Updated client cache: Player {} level = {}",
-                      player.getName().getString(), msg.level);
-          }
-          case LivingEntity livingEntity -> {
-              ClientLevelCache.updateEntityLevel(msg.entityId, msg.level);
-              DynamicDifficulty.LOGGER.debug("Updated client cache: {} (ID {}) level = {}",
-                      livingEntity.getType().getDescription().getString(), msg.entityId, msg.level);
-          }
-          default ->
-                  DynamicDifficulty.LOGGER.debug("Received SyncLevelingData for non-living entity ID {} - caching anyway", msg.entityId);
-      }
+    if (entity instanceof LivingEntity living) {
+      // Update attachment - this is the source of truth
+      ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) living).setAttached(EntityLevelAttachment.LEVEL, msg.level);
+      DynamicDifficulty.LOGGER.debug("Updated client attachment: {} (ID {}) level = {}",
+              living.getType().getDescription().getString(), msg.entityId, msg.level);
+    } else if (entity == null) {
+      // Entity not loaded yet - this is fine, level will be synced when entity loads
+      // or when player starts tracking it. No need to cache separately.
+      DynamicDifficulty.LOGGER.debug("Received SyncLevelingData for entity ID {} (not yet loaded) - will sync when entity loads", msg.entityId);
+    }
   }
 }

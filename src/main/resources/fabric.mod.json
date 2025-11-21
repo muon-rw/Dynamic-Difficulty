@@ -14,7 +14,7 @@
       "dev.muon.dynamic_difficulty.DynamicDifficulty"
     ],
     "client": [
-      "dev.muon.dynamic_difficulty.client.ClientEventHandler"
+      "dev.muon.dynamic_difficulty.client.ClientEvents"
     ],
     "modmenu": [
       "dev.muon.dynamic_difficulty.config.ModMenuIntegration"

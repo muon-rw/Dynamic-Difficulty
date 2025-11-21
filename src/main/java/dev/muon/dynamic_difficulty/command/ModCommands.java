@@ -103,30 +103,17 @@ public class ModCommands {
       
       Set<ResourceLocation> categorizedStructureIds = new HashSet<>();
       
-      // First, show configured individual structure bonuses
-      DynamicDifficulty.LOGGER.info("--- Configured Individual Structure Bonuses ---");
-      Map<ResourceLocation, Integer> individualBonuses = Config.getStructureBonuses();
-      if (individualBonuses.isEmpty()) {
-        DynamicDifficulty.LOGGER.info("No individual structure bonuses configured.");
-      } else {
-        individualBonuses.entrySet().stream()
-            .sorted(Map.Entry.comparingByKey())
-            .forEach(entry -> {
-              DynamicDifficulty.LOGGER.info(entry.getKey() + " (+" + entry.getValue() + " levels)");
-            });
-      }
+      DynamicDifficulty.LOGGER.info("--- Note: Structure level bonuses are now configured via datapacks ---");
+      DynamicDifficulty.LOGGER.info("--- Place structure settings in: data/<namespace>/leveling_settings/structures/<structure_id>.json ---");
+      DynamicDifficulty.LOGGER.info("--- Place structure tag settings in: data/<namespace>/leveling_settings/structure_tags/<tag_id>.json ---");
       
-      DynamicDifficulty.LOGGER.info("--- Dumping Structure IDs by Configured Tags ---");
+      DynamicDifficulty.LOGGER.info("--- Dumping Structure IDs by Tags ---");
       
-      // Get configured structure tags from config
-      Map<ResourceLocation, Integer> configuredTags = Config.getStructureTagBonuses();
-      
-      // Dump structures by configured tags
-      for (ResourceLocation tagLocation : configuredTags.keySet()) {
-        TagKey<Structure> tagKey = TagKey.create(Registries.STRUCTURE, tagLocation);
-        int levelBonus = configuredTags.get(tagLocation);
+      // Dump structures by all available tags (users can configure bonuses via datapacks)
+      for (TagKey<Structure> tagKey : structureRegistry.getTagNames()
+          .sorted((a, b) -> a.location().compareTo(b.location()))
+          .collect(java.util.stream.Collectors.toList())) {
         
-        DynamicDifficulty.LOGGER.info("--- Structures in Tag: " + tagKey.location() + " (+" + levelBonus + " levels) ---");
         List<ResourceLocation> structuresInThisTag = new ArrayList<>();
         
         structureRegistry.getTagOrEmpty(tagKey).forEach(holder -> {
@@ -136,15 +123,14 @@ public class ModCommands {
           }
         });
         
-        structuresInThisTag.stream()
-            .sorted(ResourceLocation::compareTo)
-            .forEach(id -> {
-              DynamicDifficulty.LOGGER.info(id.toString());
-              categorizedStructureIds.add(id);
-            });
-            
-        if (structuresInThisTag.isEmpty()) {
-          DynamicDifficulty.LOGGER.info("No structures found in this tag and target namespaces.");
+        if (!structuresInThisTag.isEmpty()) {
+          DynamicDifficulty.LOGGER.info("--- Structures in Tag: " + tagKey.location() + " ---");
+          structuresInThisTag.stream()
+              .sorted(ResourceLocation::compareTo)
+              .forEach(id -> {
+                DynamicDifficulty.LOGGER.info(id.toString());
+                categorizedStructureIds.add(id);
+              });
         }
       }
       

@@ -1,3 +1,39 @@
+## 0.9.0
+- Add optional individual playtime-based scaling
+- Add optional local difficulty-based scaling
+- More internal reorganization (Almost stable, really!)
+- Various improvements to the debug location command
+- Fix depth-based scaling
+- Add height-based scaling
+- Sea level is now configurable per dimension in datapacks
+- `spawn_pos_override` now only takes an `x` and `z`
+- Add config option to disable restriction for only showing structure titles if they have modified levels 
+- Updated some dimension default settings
+- Now only check bonuses for known nearby structures using StructureManager#startsForStructure and LocationPredicate, making caching unnecessary
+- Add option to disable line of sight checks for performance
+- Optimize location lookups
+- Fix Puffish Skills point allocations not updating instantly
+- Rename methods related to level tag -> level attachment
+- Improve doc accuracy throughout codebase
+- Created a datapack guide, see the README on github!
+- Build in many preset leveling settings
+- Puffish Skills player-based scaling now has a tree blacklist, default `puffish_skills:mining`
+- Add biome-based scaling (none included by default)
+- Add entity tag, biome tag, dimension tag scaling (none included by default)
+- Move structure/structure-tag scaling from config to datapacks (to match entities/biomes/dimensions)
+- Switch modifier operations to use enum (`"add_multiplied_base"`, `"add_value"`, `"add_multiplied_total"`), instead of int (`0`, `1`, `2`)
+- Removed unimplemented "level_power_per" settings
+- Add built-in Traveler's Titles-like dimension/biome announcement (disabled automatically if Traveler's Titles mod is loaded)
+- Always announce structures even if they don't have any bonuses
+- Disable Structure announcement by default if Structure Credits mod is loaded
+- Redo client config title offsets
+- Various internal cleanup
+- Fix attribute bonuses per level not refreshing on config change
+- Removed NBT and manual client cache, replaced with Fabric Attachments
+
+## 0.6.1
+- Fix level-up items dropping from non-entities
+
 ## 0.6.0
 - Added 5 new items, used to level up tamed pets (or any mob)
 - Greatly improve player-based scaling framework

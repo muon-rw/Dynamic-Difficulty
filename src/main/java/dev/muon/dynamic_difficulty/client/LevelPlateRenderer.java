@@ -25,7 +25,7 @@ public class LevelPlateRenderer {
       return originalName;
     }
 
-    int entityLevel = ClientLevelCache.getLevel(entity);
+    int entityLevel = LevelingAPI.getLevel(entity);
     
     MutableComponent fullDisplayName = originalName.copy();
     
@@ -58,8 +58,8 @@ public class LevelPlateRenderer {
    * @return ARGB color value
    */
   public static int getLevelColor(Player player, LivingEntity entity) {
-    int playerLevel = player != null ? ClientLevelCache.getLevel(player) : 0;
-    int entityLevel = ClientLevelCache.getLevel(entity);
+    int playerLevel = player != null ? LevelingAPI.getLevel(player) : 0;
+    int entityLevel = LevelingAPI.getLevel(entity);
     if (playerLevel > 0) {
       int levelDifference = entityLevel - playerLevel;
       if (levelDifference > 10) return 0xFFFF0000; // red (ARGB)

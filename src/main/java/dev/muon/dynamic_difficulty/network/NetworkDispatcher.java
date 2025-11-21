@@ -1,7 +1,7 @@
 package dev.muon.dynamic_difficulty.network;
 
+import dev.muon.dynamic_difficulty.network.message.LocationEntryPacket;
 import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
-import dev.muon.dynamic_difficulty.network.message.StructureEntryPacket;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -17,7 +17,7 @@ public class NetworkDispatcher {
   public static void register() {
     // Register payload types (server-side)
     PayloadTypeRegistry.playS2C().register(SyncLevelingData.TYPE, SyncLevelingData.CODEC);
-    PayloadTypeRegistry.playS2C().register(StructureEntryPacket.TYPE, StructureEntryPacket.CODEC);
+    PayloadTypeRegistry.playS2C().register(LocationEntryPacket.TYPE, LocationEntryPacket.CODEC);
     
     // Client-side handlers are registered in ClientEventHandler
   }
@@ -31,8 +31,8 @@ public class NetworkDispatcher {
     );
     
     ClientPlayNetworking.registerGlobalReceiver(
-        StructureEntryPacket.TYPE,
-        (payload, context) -> StructureEntryPacket.handle(payload, context)
+        LocationEntryPacket.TYPE,
+        (payload, context) -> LocationEntryPacket.handle(payload, context)
     );
   }
 
@@ -81,7 +81,7 @@ public class NetworkDispatcher {
     }
   }
   
-  public static void sendStructureEntry(ServerPlayer player, ResourceLocation structureId, int structureBonus, int baseLevel, int playerBonus) {
-    ServerPlayNetworking.send(player, new StructureEntryPacket(structureId, structureBonus, baseLevel, playerBonus));
+  public static void sendLocationEntry(ServerPlayer player, LocationEntryPacket.EntryType entryType, ResourceLocation locationId, int locationBonus, int baseLevel, int playerBonus, int displayedLevel) {
+    ServerPlayNetworking.send(player, new LocationEntryPacket(entryType, locationId, locationBonus, baseLevel, playerBonus, displayedLevel));
   }
 }
