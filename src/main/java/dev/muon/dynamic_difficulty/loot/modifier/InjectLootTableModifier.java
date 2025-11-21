@@ -59,10 +59,6 @@ public class InjectLootTableModifier extends LootModifier {
             return generatedLoot;
         }
 
-        if (!context.getQueriedLootTableId().getPath().startsWith("entit")) {
-            return generatedLoot;
-        }
-
         try {
             PROCESSING.set(true);
             
