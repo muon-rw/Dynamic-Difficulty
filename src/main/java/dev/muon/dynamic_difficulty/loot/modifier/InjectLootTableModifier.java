@@ -71,7 +71,7 @@ public class InjectLootTableModifier extends LootModifier {
                 return generatedLoot;
             }
             
-            // Generate loot from the injected table
+            // Add loot from the configured table into the original drop table
             table.getRandomItems(context, generatedLoot::add);
 
             return generatedLoot;
