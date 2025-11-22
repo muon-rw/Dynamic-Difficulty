@@ -5,18 +5,28 @@ import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
 import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
+import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
+import dev.muon.dynamic_difficulty.util.LevelingUtils;
+import dev.muon.dynamic_difficulty.data.DimensionTagLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.data.EntityLevelingSettingsReloader;
+import dev.muon.dynamic_difficulty.data.EntityTagLevelingSettingsReloader;
+import dev.muon.dynamic_difficulty.data.StructureLevelingSettingsReloader;
+import dev.muon.dynamic_difficulty.data.StructureTagLevelingSettingsReloader;
+import dev.muon.dynamic_difficulty.data.BiomeLevelingSettingsReloader;
+import dev.muon.dynamic_difficulty.data.BiomeTagLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.network.NetworkDispatcher;
+import dev.muon.dynamic_difficulty.network.message.LocationEntryPacket;
 
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.EntityTrackingEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -24,6 +34,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.*;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.storage.loot.LootParams;
@@ -33,15 +45,22 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 public class LevelingEvents {
+  // Lightweight caches to prevent duplicate notifications (ResourceLocation is just namespace + path strings)
+  // Cleaned up on player disconnect 
   private static final Map<UUID, ResourceLocation> playerStructureMap = new HashMap<>();
+  private static final Map<UUID, ResourceLocation> playerBiomeMap = new HashMap<>();
+  private static final Map<UUID, ResourceLocation> playerDimensionMap = new HashMap<>();
+  // Track last base level sent to client to detect changes
+  private static final Map<UUID, Integer> playerLastBaseLevelMap = new HashMap<>();
 
-  public static void register() {
+  public static void init() {
     // Entity join level - apply level bonuses
     ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
-      if ((!(entity instanceof LivingEntity living)) || !LevelingAPI.canHaveLevel(living) || entity.level().isClientSide) {
+      if ((!(entity instanceof LivingEntity living)) || !LevelingAPI.canHaveLevel(living) || entity.level().isClientSide()) {
         return;
       }
 
@@ -61,10 +80,39 @@ public class LevelingEvents {
     // FABRIC NOTE: See LootTableMixin#modifyLoot
 
     // Reload listeners
-    ResourceManagerHelper.get(PackType.SERVER_DATA)
-        .registerReloadListener(new DimensionsLevelingSettingsReloader());
-    ResourceManagerHelper.get(PackType.SERVER_DATA)
-        .registerReloadListener(new EntityLevelingSettingsReloader());
+    ResourceLoader loader = ResourceLoader.get(PackType.SERVER_DATA);
+    loader.registerReloader(
+        DimensionsLevelingSettingsReloader.getReloaderId(),
+        new DimensionsLevelingSettingsReloader()
+    );
+    loader.registerReloader(
+        DimensionTagLevelingSettingsReloader.getReloaderId(),
+        new DimensionTagLevelingSettingsReloader()
+    );
+    loader.registerReloader(
+        EntityLevelingSettingsReloader.getReloaderId(),
+        new EntityLevelingSettingsReloader()
+    );
+    loader.registerReloader(
+        EntityTagLevelingSettingsReloader.getReloaderId(),
+        new EntityTagLevelingSettingsReloader()
+    );
+    loader.registerReloader(
+        StructureLevelingSettingsReloader.getReloaderId(),
+        new StructureLevelingSettingsReloader()
+    );
+    loader.registerReloader(
+        StructureTagLevelingSettingsReloader.getReloaderId(),
+        new StructureTagLevelingSettingsReloader()
+    );
+    loader.registerReloader(
+        BiomeLevelingSettingsReloader.getReloaderId(),
+        new BiomeLevelingSettingsReloader()
+    );
+    loader.registerReloader(
+        BiomeTagLevelingSettingsReloader.getReloaderId(),
+        new BiomeTagLevelingSettingsReloader()
+    );
 
     // Entity tracking - sync levels
     EntityTrackingEvents.START_TRACKING.register((trackedEntity, trackingPlayer) -> {
@@ -91,8 +139,12 @@ public class LevelingEvents {
     // Player disconnect - cleanup server-side caches
     ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
       ServerPlayer player = handler.player;
-      playerStructureMap.remove(player.getUUID());
-      DynamicDifficulty.LOGGER.debug("Cleaned up structure tracking for disconnected player: {}", 
+      UUID playerId = player.getUUID();
+      playerStructureMap.remove(playerId);
+      playerBiomeMap.remove(playerId);
+      playerDimensionMap.remove(playerId);
+      playerLastBaseLevelMap.remove(playerId);
+      DynamicDifficulty.LOGGER.debug("Cleaned up location tracking for disconnected player: {}", 
           player.getName().getString());
     });
 
@@ -125,6 +177,9 @@ public class LevelingEvents {
         // Check every second to reduce performance impact
         if (player.tickCount % 20 == 0) {
           checkPlayerStructure(player);
+          checkPlayerBiome(player);
+          checkPlayerDimension(player);
+          checkPlayerBaseLevel(player);
         }
         
         // Fallback: Update player level periodically in case provider events are missed
@@ -197,8 +252,8 @@ public class LevelingEvents {
   
   private static void checkPlayerStructure(ServerPlayer player) {
     BlockPos playerPos = player.blockPosition();
-    ServerLevel level = player.serverLevel();
-    Registry<Structure> structureRegistry = level.registryAccess().registryOrThrow(Registries.STRUCTURE);
+    ServerLevel level = player.level();
+    Registry<Structure> structureRegistry = level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
     
     ResourceLocation currentStructure = null;
     int highestLevelBonus = 0;
@@ -207,8 +262,9 @@ public class LevelingEvents {
     for (Structure structure : structureRegistry) {
       StructureStart structureStart = level.structureManager().getStructureAt(playerPos, structure);
       if (structureStart != null && structureStart.isValid()) {
-        ResourceLocation structureId = structureRegistry.getKey(structure);
-        if (structureId != null) {
+        Optional<ResourceKey<Structure>> optKey = structureRegistry.getResourceKey(structure);
+        if (optKey.isPresent()) {
+          ResourceLocation structureId = optKey.get().location();
           int levelBonus = LevelingAPI.getStructureLevelBonus(structureId, structureRegistry);
           if (levelBonus > highestLevelBonus) {
             highestLevelBonus = levelBonus;
@@ -260,30 +316,177 @@ public class LevelingEvents {
             player.getName().getString(), baseLevel, highestLevelBonus, playerBonus);
         
         // Send the packet
-        NetworkDispatcher.sendStructureEntry(player, currentStructure, highestLevelBonus, baseLevel, playerBonus);
+        NetworkDispatcher.sendLocationEntry(player, LocationEntryPacket.EntryType.STRUCTURE, currentStructure, highestLevelBonus, baseLevel, playerBonus);
       }
+    }
+  }
+  
+  private static void checkPlayerBiome(ServerPlayer player) {
+    BlockPos playerPos = player.blockPosition();
+    ServerLevel level = player.level();
+    Registry<net.minecraft.world.level.biome.Biome> biomeRegistry = level.registryAccess().lookupOrThrow(Registries.BIOME);
+    
+    net.minecraft.world.level.biome.Biome currentBiome = level.getBiome(playerPos).value();
+    Optional<ResourceKey<net.minecraft.world.level.biome.Biome>> optBiomeKey = biomeRegistry.getResourceKey(currentBiome);
+    
+    if (optBiomeKey.isEmpty()) {
+      return;
+    }
+    
+    ResourceLocation currentBiomeId = optBiomeKey.get().location();
+    int biomeBonus = LevelingAPI.getBiomeLevelBonus(currentBiomeId, biomeRegistry);
+    
+    // Get the last known biome for this player
+    ResourceLocation lastBiome = playerBiomeMap.get(player.getUUID());
+    
+    // If biome changed (including null -> biome or biome -> null)
+    if ((currentBiomeId != null && !currentBiomeId.equals(lastBiome)) ||
+        (currentBiomeId == null && lastBiome != null)) {
+      
+      // Update the map
+      if (currentBiomeId != null) {
+        playerBiomeMap.put(player.getUUID(), currentBiomeId);
+      } else {
+        playerBiomeMap.remove(player.getUUID());
+      }
+      
+      // Always send packet when biome changes to update level info
+      // (even if biome has no bonus, base level may have changed)
+      if (currentBiomeId != null) {
+        // Calculate base level at this position (environmental factors)
+        int baseLevel = calculateBaseEntityLevel(player, playerPos);
+        
+        // Calculate player-based bonus
+        int playerBonus = 0;
+        if (Config.COMMON.applyPlayerBasedLeveling.get()) {
+          int rawBonus = PlayerLevelProvider.getProviders().stream()
+                  .filter(PlayerLevelProvider::isEnabled)
+                  .mapToInt(provider -> provider.calculateBonusLevels(java.util.List.of(player)))
+                  .sum();
+          
+          double multiplier = Config.COMMON.playerLevelMultiplier.get();
+          playerBonus = (int) (rawBonus * multiplier);
+        }
+        
+        DynamicDifficulty.LOGGER.debug("Biome notification for {}: base={}, biome={}, player={}", 
+            player.getName().getString(), baseLevel, biomeBonus, playerBonus);
+        
+        // Send the packet (even if biomeBonus is 0, we need to update level info)
+        NetworkDispatcher.sendLocationEntry(player, LocationEntryPacket.EntryType.BIOME, currentBiomeId, biomeBonus, baseLevel, playerBonus);
+      }
+    }
+  }
+  
+  private static void checkPlayerDimension(ServerPlayer player) {
+    ServerLevel level = player.level();
+    ResourceLocation currentDimensionId = level.dimension().location();
+    
+    // Get the last known dimension for this player
+    ResourceLocation lastDimensionId = playerDimensionMap.get(player.getUUID());
+    
+    // If dimension changed (including null -> dimension on first check)
+    if (lastDimensionId == null || !currentDimensionId.equals(lastDimensionId)) {
+      // Update the map
+      playerDimensionMap.put(player.getUUID(), currentDimensionId);
+      
+      // Note: Dimensions don't have bonuses in the same way structures/biomes do
+      // They affect base level through their leveling settings, but we can still notify
+      // Calculate base level at this position
+      BlockPos playerPos = player.blockPosition();
+      int baseLevel = calculateBaseEntityLevel(player, playerPos);
+      
+      // Calculate player-based bonus
+      int playerBonus = 0;
+      if (Config.COMMON.applyPlayerBasedLeveling.get()) {
+        int rawBonus = PlayerLevelProvider.getProviders().stream()
+                .filter(PlayerLevelProvider::isEnabled)
+                .mapToInt(provider -> provider.calculateBonusLevels(java.util.List.of(player)))
+                .sum();
+        
+        double multiplier = Config.COMMON.playerLevelMultiplier.get();
+        playerBonus = (int) (rawBonus * multiplier);
+      }
+      
+      DynamicDifficulty.LOGGER.debug("Dimension notification for {}: base={}, player={}", 
+          player.getName().getString(), baseLevel, playerBonus);
+      
+      // Send the packet (dimension bonus is 0, but we still want to show the level info)
+      NetworkDispatcher.sendLocationEntry(player, LocationEntryPacket.EntryType.DIMENSION, currentDimensionId, 0, baseLevel, playerBonus);
     }
   }
   
   private static int calculateBaseEntityLevel(ServerPlayer player, BlockPos pos) {
     // Calculate base level including all environmental factors
-    ServerLevel level = player.serverLevel();
-    BlockPos spawnPos = level.getSharedSpawnPos();
+    // Use dimension-specific settings instead of global config
+    ServerLevel level = player.level();
+    ResourceKey<Level> dimension = level.dimension();
+    DimensionLevelingSettings settings = DimensionsLevelingSettingsReloader.get(dimension, level.registryAccess().lookupOrThrow(Registries.DIMENSION));
+    
+    BlockPos spawnPos = level.getRespawnData().pos();
     double distance = Math.sqrt(spawnPos.distSqr(pos));
     
-    int baseLevel = Config.COMMON.startingLevel.get();
+    int baseLevel = settings.startingLevel();
     
-    // Distance scaling
-    baseLevel += (int)(distance * Config.COMMON.levelsPerDistance.get());
+    // Distance and depth scaling using dimension settings
+    int distanceBonus = LevelingUtils.calculateDistanceFactors(player, distance, settings);
+    baseLevel += distanceBonus;
     
-    // Depth scaling (below Y=63, sea level)
-    int depth = Math.max(0, 63 - pos.getY());
-    baseLevel += (int)(depth * Config.COMMON.levelsPerDeepness.get());
-    
-    // Day scaling
+    // Day scaling (still uses global config as it's not dimension-specific)
     long days = level.getDayTime() / 24000L;
     baseLevel += (int)(days * Config.COMMON.levelsPerDay.get());
     
     return Math.max(1, baseLevel);
+  }
+  
+  /**
+   * Checks if base level has changed significantly and sends update if needed
+   * This ensures level info updates when player moves (distance/deepness changes)
+   */
+  private static void checkPlayerBaseLevel(ServerPlayer player) {
+    BlockPos playerPos = player.blockPosition();
+    int currentBaseLevel = calculateBaseEntityLevel(player, playerPos);
+    UUID playerId = player.getUUID();
+    Integer lastBaseLevel = playerLastBaseLevelMap.get(playerId);
+    
+    // Send update if base level changed by at least 1 level
+    // (to avoid spam from minor distance changes)
+    if (lastBaseLevel == null || Math.abs(currentBaseLevel - lastBaseLevel) >= 1) {
+      playerLastBaseLevelMap.put(playerId, currentBaseLevel);
+      
+      // Get current location info
+      ServerLevel level = player.level();
+      ResourceLocation dimensionId = level.dimension().location();
+      Registry<Biome> biomeRegistry = level.registryAccess().lookupOrThrow(Registries.BIOME);
+      Holder<Biome> biomeHolder = level.getBiome(playerPos);
+      Optional<ResourceKey<Biome>> optBiomeKey = biomeRegistry.getResourceKey(biomeHolder.value());
+      ResourceLocation biomeId = optBiomeKey.isPresent() ? optBiomeKey.get().location() : null;
+      int biomeBonus = biomeId != null ? LevelingAPI.getBiomeLevelBonus(biomeId, biomeRegistry) : 0;
+      
+      int structureBonus = LevelingAPI.getStructureLevelBonus(player);
+      
+      // Calculate player-based bonus
+      int playerBonus = 0;
+      if (Config.COMMON.applyPlayerBasedLeveling.get()) {
+        int rawBonus = PlayerLevelProvider.getProviders().stream()
+                .filter(PlayerLevelProvider::isEnabled)
+                .mapToInt(provider -> provider.calculateBonusLevels(java.util.List.of(player)))
+                .sum();
+        double multiplier = Config.COMMON.playerLevelMultiplier.get();
+        playerBonus = (int) (rawBonus * multiplier);
+      }
+      
+      // Send update using biome entry type (most common case)
+      // This will update level info on the client
+      if (biomeId != null) {
+        NetworkDispatcher.sendLocationEntry(player, LocationEntryPacket.EntryType.BIOME, biomeId, biomeBonus, currentBaseLevel, playerBonus);
+      } else {
+        // Fallback to dimension if biome is unknown
+        NetworkDispatcher.sendLocationEntry(player, LocationEntryPacket.EntryType.DIMENSION, dimensionId, 0, currentBaseLevel, playerBonus);
+      }
+      
+      DynamicDifficulty.LOGGER.debug("Base level update for {}: base={} (was {}), structure={}, biome={}, player={}", 
+          player.getName().getString(), currentBaseLevel, lastBaseLevel != null ? lastBaseLevel : "unknown", 
+          structureBonus, biomeBonus, playerBonus);
+    }
   }
 }

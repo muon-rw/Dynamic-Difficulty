@@ -3,7 +3,7 @@ package dev.muon.dynamic_difficulty.compat;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.client.ClientLevelCache;
-import dev.muon.dynamic_difficulty.client.LevelPlateRenderer;
+import dev.muon.dynamic_difficulty.client.LevelPlateHandler;
 import dev.muon.dynamic_difficulty.config.Config;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -22,7 +22,7 @@ public enum LevelComponentProvider implements IEntityComponentProvider {
 
     @Override
     public ResourceLocation getUid() {
-        return DynamicDifficulty.loc("level");
+        return DynamicDifficulty.id("level");
     }
 
     @Override
@@ -39,7 +39,7 @@ public enum LevelComponentProvider implements IEntityComponentProvider {
             if (!showLevel) return;
             
             int entityLevel = ClientLevelCache.getLevel(living);
-            int color = LevelPlateRenderer.getLevelColorRGB(Minecraft.getInstance().player, living);
+            int color = LevelPlateHandler.getLevelColorRGB(Minecraft.getInstance().player, living);
             
             tooltip.add(Component.translatable("jade.dynamic_difficulty.tooltip", entityLevel)
                     .withStyle(style -> style.withColor(color)));

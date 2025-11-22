@@ -5,7 +5,6 @@
   "package": "dev.muon.dynamic_difficulty.mixin",
   "plugin": "dev.muon.dynamic_difficulty.MixinConfigPlugin",
   "mixins": [
-    "LivingEntityAccessor",
     "LivingEntityMixin",
     "LootTableMixin",
     "compat.puffish_skills.SkillsModMixin"

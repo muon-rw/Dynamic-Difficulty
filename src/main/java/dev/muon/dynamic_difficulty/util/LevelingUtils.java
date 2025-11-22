@@ -3,6 +3,7 @@ package dev.muon.dynamic_difficulty.util;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.settings.LevelingSettings;
+import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -16,6 +17,7 @@ import net.minecraft.core.Registry;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Utility methods for the Dynamic Difficulty mod.
@@ -23,7 +25,7 @@ import java.util.Map;
  */
 public class LevelingUtils {
     private static final TagKey<EntityType<?>> PASSIVE_WHITELIST = TagKey.create(Registries.ENTITY_TYPE,
-            DynamicDifficulty.loc("passive_whitelist"));
+            DynamicDifficulty.id("passive_whitelist"));
 
     /**
      * Checks if an entity type can have levels applied based on configuration and entity properties
@@ -56,32 +58,23 @@ public class LevelingUtils {
     }
 
     /**
-     * Gets the structure level bonus from configuration, checking both individual IDs and tags
+     * Gets the structure level bonus from datapacks, checking both individual IDs and tags
      * @param structureId The resource location of the structure
      * @param structureRegistry The registry to check tags against
      * @return The level bonus for this structure
      */
     public static int getStructureLevelBonus(ResourceLocation structureId, Registry<Structure> structureRegistry) {
-        Map<ResourceLocation, Integer> structureBonuses = Config.getStructureBonuses();
-        Map<ResourceLocation, Integer> tagBonuses = Config.getStructureTagBonuses();
-        
-        // Check individual structure bonuses first (they take precedence)
-        if (structureBonuses.containsKey(structureId)) {
-            return structureBonuses.get(structureId);
-        }
-        
-        // Check structure tags
-        Structure structure = structureRegistry.get(structureId);
-        if (structure != null) {
-            for (Map.Entry<ResourceLocation, Integer> tagEntry : tagBonuses.entrySet()) {
-                TagKey<Structure> structureTag = TagKey.create(Registries.STRUCTURE, tagEntry.getKey());
-                if (structureRegistry.getHolderOrThrow(structureRegistry.getResourceKey(structure).get()).is(structureTag)) {
-                    return tagEntry.getValue();
-                }
-            }
-        }
-        
-        return 0;
+        return dev.muon.dynamic_difficulty.data.StructureLevelingSettingsReloader.getLevelBonus(structureId, structureRegistry);
+    }
+
+    /**
+     * Gets the biome level bonus from datapacks, checking both individual IDs and tags
+     * @param biomeId The resource location of the biome
+     * @param biomeRegistry The registry to check tags against
+     * @return The level bonus for this biome
+     */
+    public static int getBiomeLevelBonus(ResourceLocation biomeId, Registry<net.minecraft.world.level.biome.Biome> biomeRegistry) {
+        return dev.muon.dynamic_difficulty.data.BiomeLevelingSettingsReloader.getLevelBonus(biomeId, biomeRegistry);
     }
 
     /**

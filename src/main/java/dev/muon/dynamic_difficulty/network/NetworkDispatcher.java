@@ -1,7 +1,7 @@
 package dev.muon.dynamic_difficulty.network;
 
 import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
-import dev.muon.dynamic_difficulty.network.message.StructureEntryPacket;
+import dev.muon.dynamic_difficulty.network.message.LocationEntryPacket;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -14,10 +14,10 @@ import net.minecraft.world.entity.LivingEntity;
 
 public class NetworkDispatcher {
 
-  public static void register() {
+  public static void init() {
     // Register payload types (server-side)
     PayloadTypeRegistry.playS2C().register(SyncLevelingData.TYPE, SyncLevelingData.CODEC);
-    PayloadTypeRegistry.playS2C().register(StructureEntryPacket.TYPE, StructureEntryPacket.CODEC);
+    PayloadTypeRegistry.playS2C().register(LocationEntryPacket.TYPE, LocationEntryPacket.CODEC);
     
     // Client-side handlers are registered in ClientEventHandler
   }
@@ -31,8 +31,8 @@ public class NetworkDispatcher {
     );
     
     ClientPlayNetworking.registerGlobalReceiver(
-        StructureEntryPacket.TYPE,
-        (payload, context) -> StructureEntryPacket.handle(payload, context)
+        LocationEntryPacket.TYPE,
+        (payload, context) -> LocationEntryPacket.handle(payload, context)
     );
   }
 
@@ -54,7 +54,6 @@ public class NetworkDispatcher {
       }
     } else {
       // Non-player entities only need to sync to players who can see them
-      // Use Fabric's PlayerLookup.tracking() for efficient entity tracking
       for (ServerPlayer player : PlayerLookup.tracking(entity)) {
         ServerPlayNetworking.send(player, packet);
       }
@@ -69,19 +68,7 @@ public class NetworkDispatcher {
     ServerPlayNetworking.send(player, new SyncLevelingData(entity)); 
   }
 
-  /**
-   * Syncs an entity's level to all players on the server, regardless of tracking.
-   * @deprecated Use syncLevelToClients() instead - it handles player vs non-player entities intelligently.
-   */
-  @Deprecated
-  public static void syncLevelToAllPlayers(LivingEntity entity) {
-    SyncLevelingData packet = new SyncLevelingData(entity);
-    for (ServerPlayer player : entity.level().getServer().getPlayerList().getPlayers()) {
-      ServerPlayNetworking.send(player, packet);
-    }
-  }
-  
-  public static void sendStructureEntry(ServerPlayer player, ResourceLocation structureId, int structureBonus, int baseLevel, int playerBonus) {
-    ServerPlayNetworking.send(player, new StructureEntryPacket(structureId, structureBonus, baseLevel, playerBonus));
+  public static void sendLocationEntry(ServerPlayer player, LocationEntryPacket.EntryType entryType, ResourceLocation locationId, int locationBonus, int baseLevel, int playerBonus) {
+    ServerPlayNetworking.send(player, new LocationEntryPacket(entryType, locationId, locationBonus, baseLevel, playerBonus));
   }
 }

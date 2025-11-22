@@ -48,10 +48,9 @@ public interface LevelingSettings {
   static @Nullable Attribute readAttribute(JsonObject jsonObject) {
     ResourceLocation attributeId = ResourceLocation.tryParse(jsonObject.get("attribute").getAsString());
     if (attributeId == null) return null;
-    Attribute attribute = BuiltInRegistries.ATTRIBUTE.get(attributeId);
+    Attribute attribute = BuiltInRegistries.ATTRIBUTE.getValue(attributeId);
     if (attribute == null) {
-        // Optionally log an error if the attribute isn't found
-        // DynamicDifficulty.LOGGER.warn("Attribute not found: {}", attributeId);
+      DynamicDifficulty.LOGGER.warn("Attribute not found: {}", attributeId);
     }
     return attribute;
   }

@@ -152,6 +152,26 @@ public class LevelingAPI {
     }
 
     /**
+     * Gets the biome level bonus for an entity's current position.
+     *
+     * @param entity The entity to get the biome bonus for
+     * @return The level bonus from the biome at the entity's position
+     */
+    public static int getBiomeLevelBonus(LivingEntity entity) {
+        return LevelingSystem.getBiomeLevelBonus(entity);
+    }
+
+    /**
+     * Gets the biome level bonus for a given biome.
+     *
+     * @param biomeId The biome's ResourceLocation
+     * @return The level bonus configured for the biome
+     */
+    public static int getBiomeLevelBonus(ResourceLocation biomeId, Registry<net.minecraft.world.level.biome.Biome> biomeRegistry) {
+        return LevelingUtils.getBiomeLevelBonus(biomeId, biomeRegistry);
+    }
+
+    /**
      * Registers a new provider for calculating player levels
      * @param provider The provider to register
      */

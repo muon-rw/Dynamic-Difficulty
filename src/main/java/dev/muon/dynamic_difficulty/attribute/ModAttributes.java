@@ -3,9 +3,8 @@ package dev.muon.dynamic_difficulty.attribute;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.RangedAttribute;
@@ -37,8 +36,6 @@ public class ModAttributes {
         return Registry.registerForHolder(BuiltInRegistries.ATTRIBUTE, id, attribute);
     }
 
-    public static void register() {
-        // Attributes are registered above via registerAttribute()
-        // Attribute registration to entities is handled via LivingEntityMixin.createLivingAttributes()
+    public static void init() {
     }
 }

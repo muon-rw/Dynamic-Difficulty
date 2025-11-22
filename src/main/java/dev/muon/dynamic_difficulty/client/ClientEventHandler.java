@@ -1,6 +1,6 @@
 package dev.muon.dynamic_difficulty.client;
 
-import dev.muon.dynamic_difficulty.client.render.StructureTitleRenderManager;
+import dev.muon.dynamic_difficulty.client.render.TitleRenderManager;
 import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.network.NetworkDispatcher;
 import net.fabricmc.api.ClientModInitializer;
@@ -38,16 +38,19 @@ public class ClientEventHandler implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             ClientLevelCache.clearCache();
             ApotheosisClientCache.clearCache();
-            StructureTitleRenderManager.getInstance().clearCache();
+            TitleRenderManager.getInstance().clearCache();
         });
         
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            StructureTitleRenderManager.getInstance().clientTick();
+            TitleRenderManager.getInstance().clientTick();
+            if (client.player != null) {
+                TitleRenderManager.getInstance().playerTick(client.player);
+            }
         });
         
         HudRenderCallback.EVENT.register((guiGraphics, deltaTracker) -> {
             if (Minecraft.getInstance().player != null) {
-                StructureTitleRenderManager.getInstance().renderTitles(guiGraphics, deltaTracker.getGameTimeDeltaTicks());
+                TitleRenderManager.getInstance().renderTitles(guiGraphics, deltaTracker.getGameTimeDeltaTicks());
             }
         });
     }

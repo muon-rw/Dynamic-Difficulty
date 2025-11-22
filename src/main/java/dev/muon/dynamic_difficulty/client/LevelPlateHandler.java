@@ -1,6 +1,5 @@
 package dev.muon.dynamic_difficulty.client;
 
-import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.config.Config;
 import net.fabricmc.api.EnvType;
@@ -15,7 +14,7 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 
 @Environment(EnvType.CLIENT)
-public class LevelPlateRenderer {
+public class LevelPlateHandler {
   /**
    * Modifies the name tag component for an entity to include level information.
    * This should be called from a mixin or EntityRenderer.

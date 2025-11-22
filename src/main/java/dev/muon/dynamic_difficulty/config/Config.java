@@ -4,8 +4,8 @@ import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.PlayerLevelDisplayStrategy;
 import java.util.*;
 
-import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeConfigRegistry;
-import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeModConfigEvents;
+import fuzs.forgeconfigapiport.fabric.api.v5.ConfigRegistry;
+import fuzs.forgeconfigapiport.fabric.api.v5.ModConfigEvents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -23,8 +23,6 @@ public class Config {
   public static final Client CLIENT;
   public static final ModConfigSpec CLIENT_SPEC;
   private static final Map<ResourceKey<Attribute>, AttributeModifier> ATTRIBUTE_BONUSES = new HashMap<>();
-  private static final Map<ResourceLocation, Integer> STRUCTURE_BONUSES = new HashMap<>();
-  private static final Map<ResourceLocation, Integer> STRUCTURE_TAG_BONUSES = new HashMap<>();
 
   public enum RenderBehavior {
     ALWAYS,
@@ -32,23 +30,34 @@ public class Config {
     LOOKING_AT
   }
 
-  public static void register() {
-    NeoForgeConfigRegistry.INSTANCE.register(
+  public enum AnchorPoint {
+    TOP_LEFT,
+    TOP_CENTER,
+    TOP_RIGHT,
+    CENTER_LEFT,
+    CENTER,
+    CENTER_RIGHT,
+    BOTTOM_LEFT,
+    BOTTOM_CENTER,
+    BOTTOM_RIGHT
+  }
+
+  public static void init() {
+    ConfigRegistry.INSTANCE.register(
         DynamicDifficulty.MODID,
         ModConfig.Type.COMMON,
         COMMON_SPEC
     );
 
-    NeoForgeModConfigEvents.reloading(DynamicDifficulty.MODID).register(config -> {
+    ModConfigEvents.reloading(DynamicDifficulty.MODID).register(config -> {
       if (config.getType() == ModConfig.Type.COMMON) {
         reloadAttributeBonuses();
-        reloadStructureBonuses();
       }
     });
   }
   
   public static void registerClient() {
-    NeoForgeConfigRegistry.INSTANCE.register(
+    ConfigRegistry.INSTANCE.register(
         DynamicDifficulty.MODID,
         ModConfig.Type.CLIENT,
         CLIENT_SPEC
@@ -60,19 +69,6 @@ public class Config {
       ATTRIBUTE_BONUSES.clear();
       COMMON.attributesBonuses.get().forEach(Config::readAttributeBonus);
       DynamicDifficulty.LOGGER.info("Reloaded {} attribute bonuses from config", ATTRIBUTE_BONUSES.size());
-    }
-  }
-  
-  public static void reloadStructureBonuses() {
-    synchronized (STRUCTURE_BONUSES) {
-      synchronized (STRUCTURE_TAG_BONUSES) {
-        STRUCTURE_BONUSES.clear();
-        STRUCTURE_TAG_BONUSES.clear();
-        COMMON.structureBonuses.get().forEach(Config::readStructureBonus);
-        COMMON.structureTagBonuses.get().forEach(Config::readStructureTagBonus);
-        DynamicDifficulty.LOGGER.info("Reloaded {} structure bonuses and {} structure tag bonuses from config", 
-                                    STRUCTURE_BONUSES.size(), STRUCTURE_TAG_BONUSES.size());
-      }
     }
   }
 
@@ -114,10 +110,6 @@ public class Config {
 
     // Attribute Bonuses
     public final ConfigValue<List<? extends List<Object>>> attributesBonuses;
-    
-    // Structure Bonuses
-    public final ConfigValue<List<? extends List<Object>>> structureBonuses;
-    public final ConfigValue<List<? extends List<Object>>> structureTagBonuses;
 
     // Level-Up Items
     public final ConfigValue<Integer> potionOfGrowthMaxLevel;
@@ -188,26 +180,6 @@ public class Config {
                       "Providers can trigger immediate updates via events, this is just a safety net",
                       "Set to 0 to disable periodic updates (only event-driven updates will occur)")
               .defineInRange("Player level update interval", 600, 0, 1200);
-      builder.pop();
-
-      builder.push("Structure-Based Bonus Scaling");
-      structureBonuses = builder
-              .comment("List of [structure_id, level_bonus] pairs for individual structures",
-                      "structure_id: The resource location of the structure (e.g., \"minecraft:fortress\")",
-                      "level_bonus: The number of levels to add for entities spawning in this structure",
-                      "Individual structure IDs take precedence over structure tags")
-              .defineList("Structure level bonuses",
-                      Config::getDefaultStructureBonuses,
-                      Config::isValidStructureBonus);
-      structureTagBonuses = builder
-              .comment("List of [structure_tag, level_bonus] pairs for structure tags",
-                      "structure_tag: The tag for structures (e.g., \"minecraft:village\")",
-                      "level_bonus: The number of levels to add for entities spawning in structures with this tag",
-                      "These are overridden by individual structure bonuses if both are present",
-                      "Note that Structure Bonuses apply in addition to scaling from this config, or leveling datapacks" )
-              .defineList("Structure tag level bonuses",
-                      Config::getDefaultStructureTagBonuses,
-                      Config::isValidStructureBonus);
       builder.pop();
 
       builder.push("Entity Filtering");
@@ -282,11 +254,46 @@ public class Config {
     public final ConfigValue<String> structureTitleTextColor;
     public final ConfigValue<Boolean> structureTitleRenderShadow;
     public final ConfigValue<Double> structureTitleTextSize;
+    public final ModConfigSpec.EnumValue<AnchorPoint> structureTitleAnchor;
     public final ConfigValue<Integer> structureTitleXOffset;
     public final ConfigValue<Integer> structureTitleYOffset;
-    public final ConfigValue<Float> structureSubtitleScale;
-    public final ConfigValue<Integer> structureSubtitleSpacing;
-    public final ConfigValue<Boolean> structureTitleCenterText;
+    
+    // Biome Title Display
+    public final ConfigValue<Boolean> showBiomeTitles;
+    public final ConfigValue<Integer> biomeTitleFadeInTime;
+    public final ConfigValue<Integer> biomeTitleDisplayTime;
+    public final ConfigValue<Integer> biomeTitleFadeOutTime;
+    public final ConfigValue<String> biomeTitleTextColor;
+    public final ConfigValue<Boolean> biomeTitleRenderShadow;
+    public final ConfigValue<Double> biomeTitleTextSize;
+    public final ModConfigSpec.EnumValue<AnchorPoint> biomeTitleAnchor;
+    public final ConfigValue<Integer> biomeTitleXOffset;
+    public final ConfigValue<Integer> biomeTitleYOffset;
+    public final ConfigValue<Integer> biomeTitleCooldownTime;
+    public final ConfigValue<Integer> biomeRecentCacheSize;
+    
+    // Dimension Title Display
+    public final ConfigValue<Boolean> showDimensionTitles;
+    public final ConfigValue<Integer> dimensionTitleFadeInTime;
+    public final ConfigValue<Integer> dimensionTitleDisplayTime;
+    public final ConfigValue<Integer> dimensionTitleFadeOutTime;
+    public final ConfigValue<String> dimensionTitleTextColor;
+    public final ConfigValue<Boolean> dimensionTitleRenderShadow;
+    public final ConfigValue<Double> dimensionTitleTextSize;
+    public final ModConfigSpec.EnumValue<AnchorPoint> dimensionTitleAnchor;
+    public final ConfigValue<Integer> dimensionTitleXOffset;
+    public final ConfigValue<Integer> dimensionTitleYOffset;
+    
+    // Level Info Display
+    public final ConfigValue<Integer> levelInfoFadeInTime;
+    public final ConfigValue<Integer> levelInfoDisplayTime;
+    public final ConfigValue<Integer> levelInfoFadeOutTime;
+    public final ConfigValue<String> levelInfoTextColor;
+    public final ConfigValue<Boolean> levelInfoRenderShadow;
+    public final ConfigValue<Double> levelInfoTextSize;
+    public final ModConfigSpec.EnumValue<AnchorPoint> levelInfoAnchor;
+    public final ConfigValue<Integer> levelInfoXOffset;
+    public final ConfigValue<Integer> levelInfoYOffset;
 
     public Client(ModConfigSpec.Builder builder) {
       builder.push("Level Plate Settings");
@@ -333,21 +340,117 @@ public class Config {
       structureTitleTextSize = builder
               .comment("Text size multiplier for structure titles")
               .defineInRange("Text size", 2.0, 0.5, 5.0);
+      structureTitleAnchor = builder
+              .comment("Anchor point for structure title positioning")
+              .defineEnum("Anchor point", AnchorPoint.BOTTOM_CENTER);
       structureTitleXOffset = builder
-              .comment("X offset for structure title position")
+              .comment("X offset from anchor point for structure title position")
               .define("X offset", 0);
       structureTitleYOffset = builder
-              .comment("Y offset for structure title position")
-              .define("Y offset", 20);
-      structureSubtitleScale = builder
-                .comment("Size for structure subtitles, relative to title")
-                .define("Subtitle Scale", 0.7F);
-      structureSubtitleSpacing = builder
-                .comment("Vertical distance between title and subtitle")
-                .define("Subtitle Spacing", 15);
-      structureTitleCenterText = builder
-              .comment("Center structure title text on screen")
-              .define("Center text", true);
+              .comment("Y offset from anchor point for structure title position")
+              .define("Y offset", -82);
+      builder.pop();
+      
+      builder.push("Biome Title Display");
+      showBiomeTitles = builder
+              .comment("Display biome names when entering biomes")
+              .define("Show biome titles", true);
+      biomeTitleFadeInTime = builder
+              .comment("Time in ticks for biome title to fade in")
+              .defineInRange("Fade in time", 10, 0, 100);
+      biomeTitleDisplayTime = builder
+              .comment("Time in ticks to display biome title")
+              .defineInRange("Display time", 60, 0, 600);
+      biomeTitleFadeOutTime = builder
+              .comment("Time in ticks for biome title to fade out")
+              .defineInRange("Fade out time", 20, 0, 100);
+      biomeTitleTextColor = builder
+              .comment("Text color in hex format (e.g., \"FFFFFF\" for white)")
+              .define("Text color", "FFFFFF");
+      biomeTitleRenderShadow = builder
+              .comment("Render text shadow for biome titles")
+              .define("Render shadow", true);
+      biomeTitleTextSize = builder
+              .comment("Text size multiplier for biome titles")
+              .defineInRange("Text size", 1.4, 0.5, 5.0);
+      biomeTitleAnchor = builder
+              .comment("Anchor point for biome title positioning")
+              .defineEnum("Anchor point", AnchorPoint.TOP_CENTER);
+      biomeTitleXOffset = builder
+              .comment("X offset from anchor point for biome title position")
+              .define("X offset", 0);
+      biomeTitleYOffset = builder
+              .comment("Y offset from anchor point for biome title position")
+              .define("Y offset", -60);
+      biomeTitleCooldownTime = builder
+              .comment("Cooldown time in ticks before biome title can be shown again")
+              .defineInRange("Cooldown time", 20, 0, 200);
+      biomeRecentCacheSize = builder
+              .comment("Number of recent biomes to cache (prevents spam)")
+              .defineInRange("Recent biome cache size", 5, 0, 20);
+      builder.pop();
+      
+      builder.push("Dimension Title Display");
+      showDimensionTitles = builder
+              .comment("Display dimension names when entering dimensions")
+              .define("Show dimension titles", true);
+      dimensionTitleFadeInTime = builder
+              .comment("Time in ticks for dimension title to fade in")
+              .defineInRange("Fade in time", 10, 0, 100);
+      dimensionTitleDisplayTime = builder
+              .comment("Time in ticks to display dimension title")
+              .defineInRange("Display time", 60, 0, 600);
+      dimensionTitleFadeOutTime = builder
+              .comment("Time in ticks for dimension title to fade out")
+              .defineInRange("Fade out time", 20, 0, 100);
+      dimensionTitleTextColor = builder
+              .comment("Text color in hex format (e.g., \"FFFFFF\" for white)")
+              .define("Text color", "FFFFFF");
+      dimensionTitleRenderShadow = builder
+              .comment("Render text shadow for dimension titles")
+              .define("Render shadow", true);
+      dimensionTitleTextSize = builder
+              .comment("Text size multiplier for dimension titles")
+              .defineInRange("Text size", 2.0, 0.5, 5.0);
+      dimensionTitleAnchor = builder
+              .comment("Anchor point for dimension title positioning")
+              .defineEnum("Anchor point", AnchorPoint.TOP_CENTER);
+      dimensionTitleXOffset = builder
+              .comment("X offset from anchor point for dimension title position")
+              .define("X offset", 0);
+      dimensionTitleYOffset = builder
+              .comment("Y offset from anchor point for dimension title position")
+              .define("Y offset", -35);
+      builder.pop();
+      
+      builder.push("Level Info Display");
+      levelInfoFadeInTime = builder
+              .comment("Time in ticks for level info to fade in")
+              .defineInRange("Fade in time", 10, 0, 100);
+      levelInfoDisplayTime = builder
+              .comment("Time in ticks to display level info")
+              .defineInRange("Display time", 60, 0, 600);
+      levelInfoFadeOutTime = builder
+              .comment("Time in ticks for level info to fade out")
+              .defineInRange("Fade out time", 20, 0, 100);
+      levelInfoTextColor = builder
+              .comment("Text color in hex format (e.g., \"FFFFFF\" for white)")
+              .define("Text color", "FFFFFF");
+      levelInfoRenderShadow = builder
+              .comment("Render text shadow for level info")
+              .define("Render shadow", true);
+      levelInfoTextSize = builder
+              .comment("Text size multiplier for level info")
+              .defineInRange("Text size", 1.4, 0.5, 5.0);
+      levelInfoAnchor = builder
+              .comment("Anchor point for level info positioning")
+              .defineEnum("Anchor point", AnchorPoint.BOTTOM_CENTER);
+      levelInfoXOffset = builder
+              .comment("X offset from anchor point for level info position")
+              .define("X offset", 0);
+      levelInfoYOffset = builder
+              .comment("Y offset from anchor point for level info position")
+              .define("Y offset", -62);
       builder.pop();
     }
   }
@@ -364,25 +467,6 @@ public class Config {
     return attributeBonuses;
   }
   
-  private static List<List<Object>> getDefaultStructureBonuses() {
-    List<List<Object>> structureBonuses = new ArrayList<>();
-    // Format: [structure_id, level_bonus]
-    structureBonuses.add(Arrays.asList("minecraft:trial_dungeon", 10));
-    return structureBonuses;
-  }
-  
-  private static List<List<Object>> getDefaultStructureTagBonuses() {
-    List<List<Object>> structureTagBonuses = new ArrayList<>();
-    // Format: [structure_tag, level_bonus]
-    // Built-in difficulty tags
-    structureTagBonuses.add(Arrays.asList("dynamic_difficulty:level_1", 5));
-    structureTagBonuses.add(Arrays.asList("dynamic_difficulty:level_2", 10));
-    structureTagBonuses.add(Arrays.asList("dynamic_difficulty:level_3", 15));
-    structureTagBonuses.add(Arrays.asList("dynamic_difficulty:level_4", 20));
-    structureTagBonuses.add(Arrays.asList("dynamic_difficulty:level_5", 25));
-    structureTagBonuses.add(Arrays.asList("dynamic_difficulty:level_6", 30));
-    return structureTagBonuses;
-  }
 
   private static <T> boolean isValidAttributeBonus(T object) {
     if (object instanceof List<?> list) {
@@ -396,14 +480,6 @@ public class Config {
     return false;
   }
   
-  private static <T> boolean isValidStructureBonus(T object) {
-    if (object instanceof List<?> list) {
-      if (list.size() == 2) {
-        return list.get(0) instanceof String && list.get(1) instanceof Integer;
-      }
-    }
-    return false;
-  }
 
   public static Map<ResourceKey<Attribute>, AttributeModifier> getAttributeBonuses() {
     if (ATTRIBUTE_BONUSES.isEmpty()) {
@@ -424,7 +500,7 @@ public class Config {
         DynamicDifficulty.LOGGER.error("Attribute ID '{}' is invalid!", attributeBonusConfig.get(0));
         return;
     }
-    Attribute attribute = BuiltInRegistries.ATTRIBUTE.get(attributeRL);
+    Attribute attribute = BuiltInRegistries.ATTRIBUTE.getValue(attributeRL);
     float attributeBonus = ((Double) attributeBonusConfig.get(1)).floatValue();
 
     if (attribute == null) {
@@ -473,52 +549,4 @@ public class Config {
                                 attributeKey.location(), attribute.getDescriptionId(), attributeBonus, operation, modifierId);
   }
   
-  private static void readStructureBonus(List<Object> structureBonusConfig) {
-    String structureId = (String) structureBonusConfig.get(0);
-    ResourceLocation structureRL = ResourceLocation.tryParse(structureId);
-    if (structureRL == null) {
-      DynamicDifficulty.LOGGER.error("Structure ID '{}' is invalid!", structureId);
-      return;
-    }
-    int levelBonus = ((Integer) structureBonusConfig.get(1));
-    
-    STRUCTURE_BONUSES.put(structureRL, levelBonus);
-    DynamicDifficulty.LOGGER.info("Config: Registered structure bonus for {} with {} levels", structureRL, levelBonus);
-  }
-  
-  private static void readStructureTagBonus(List<Object> structureTagBonusConfig) {
-    String tagId = (String) structureTagBonusConfig.get(0);
-    ResourceLocation tagRL = ResourceLocation.tryParse(tagId);
-    if (tagRL == null) {
-      DynamicDifficulty.LOGGER.error("Structure tag ID '{}' is invalid!", tagId);
-      return;
-    }
-    int levelBonus = ((Integer) structureTagBonusConfig.get(1));
-    
-    STRUCTURE_TAG_BONUSES.put(tagRL, levelBonus);
-    DynamicDifficulty.LOGGER.info("Config: Registered structure tag bonus for {} with {} levels", tagRL, levelBonus);
-  }
-  
-  public static Map<ResourceLocation, Integer> getStructureBonuses() {
-    if (STRUCTURE_BONUSES.isEmpty() && STRUCTURE_TAG_BONUSES.isEmpty()) {
-      synchronized (STRUCTURE_BONUSES) {
-        synchronized (STRUCTURE_TAG_BONUSES) {
-          if (STRUCTURE_BONUSES.isEmpty() && STRUCTURE_TAG_BONUSES.isEmpty()) {
-            COMMON.structureBonuses.get().forEach(Config::readStructureBonus);
-            COMMON.structureTagBonuses.get().forEach(Config::readStructureTagBonus);
-            DynamicDifficulty.LOGGER.info("Initialized {} structure bonuses and {} structure tag bonuses from config", 
-                                        STRUCTURE_BONUSES.size(), STRUCTURE_TAG_BONUSES.size());
-          }
-        }
-      }
-    }
-    return STRUCTURE_BONUSES;
-  }
-  
-  public static Map<ResourceLocation, Integer> getStructureTagBonuses() {
-    if (STRUCTURE_BONUSES.isEmpty() && STRUCTURE_TAG_BONUSES.isEmpty()) {
-      getStructureBonuses(); // This will initialize both maps
-    }
-    return STRUCTURE_TAG_BONUSES;
-  }
 }

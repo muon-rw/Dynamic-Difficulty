@@ -10,9 +10,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -128,16 +129,17 @@ public class LevelUpItem extends Item {
     }
 
     @Override
-    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, List<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
-        tooltipComponents.add(
+    @Deprecated
+    public void appendHoverText(@NotNull ItemStack stack, @NotNull Item.TooltipContext context, @NotNull TooltipDisplay tooltipDisplay, @NotNull Consumer<Component> tooltipAdder, @NotNull TooltipFlag tooltipFlag) {
+        tooltipAdder.accept(
             Component.translatable("item.dynamic_difficulty.level_up.tooltip.levels", levelsToAdd)
                 .withStyle(ChatFormatting.GRAY)
         );
-        tooltipComponents.add(
+        tooltipAdder.accept(
             Component.translatable("item.dynamic_difficulty.level_up.tooltip.max_level", getMaxLevel())
                 .withStyle(ChatFormatting.DARK_GRAY)
         );
-        tooltipComponents.add(
+        tooltipAdder.accept(
             Component.translatable("item.dynamic_difficulty.level_up.tooltip.usage")
                 .withStyle(ChatFormatting.DARK_AQUA)
         );

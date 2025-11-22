@@ -1,26 +1,27 @@
 package dev.muon.dynamic_difficulty.mixin.client;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
-import dev.muon.dynamic_difficulty.client.LevelPlateRenderer;
+import dev.muon.dynamic_difficulty.client.LevelPlateHandler;
 import dev.muon.dynamic_difficulty.config.Config;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 // Replaces RenderNameTagEvent
 @Mixin(EntityRenderer.class)
 public class EntityRendererMixin {
 
     @ModifyExpressionValue(
-        method = "render",
+        method = "extractRenderState",
         at = @At(value = "INVOKE",
-                target = "Lnet/minecraft/client/renderer/entity/EntityRenderer;shouldShowName(Lnet/minecraft/world/entity/Entity;)Z")
+                target = "Lnet/minecraft/client/renderer/entity/EntityRenderer;shouldShowName(Lnet/minecraft/world/entity/Entity;D)Z")
     )
     private boolean modifyShouldShowName(boolean original, Entity entity) {
         if (!(entity instanceof LivingEntity living) || !LevelingAPI.shouldShowLevel(living)) {
@@ -32,21 +33,19 @@ public class EntityRendererMixin {
             return false;
         }
 
-        return LevelPlateRenderer.shouldShowName(living);
+        return LevelPlateHandler.shouldShowName(living);
     }
 
-    @ModifyVariable(
-        method = "renderNameTag",
-        at = @At("HEAD"),
-        argsOnly = true,
-        // `this` is index 0, Entity is index 1
-        index = 2
+    @ModifyReturnValue(
+        method = "getNameTag",
+        at = @At("RETURN")
     )
-    private Component modifyDisplayName(Component displayName, Entity entity) {
-        if (entity instanceof LivingEntity livingEntity) {
-            return LevelPlateRenderer.modifyNameTag(displayName, livingEntity);
+    @Nullable
+    private Component modifyDisplayName(@Nullable Component original, Entity entity) {
+        if (original == null || !(entity instanceof LivingEntity livingEntity)) {
+            return original;
         }
-        return displayName;
+        return LevelPlateHandler.modifyNameTag(original, livingEntity);
     }
 
 }

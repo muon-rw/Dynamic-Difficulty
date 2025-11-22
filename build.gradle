@@ -53,13 +53,13 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-	modRuntimeOnly("me.shedaniel.cloth:cloth-config-fabric:${cloth_config}")
+	//modRuntimeOnly("me.shedaniel.cloth:cloth-config-fabric:${cloth_config}")
 	modLocalRuntime("mezz.jei:jei-${minecraft_version}-fabric:${jei_version}")
-	modImplementation "curse.maven:jade-324717:6738760"
+	modImplementation "curse.maven:jade-324717:7132429"
 
 	modImplementation ("net.puffish:skillsmod:${puffish_skills}:fabric")
-	modLocalRuntime "curse.maven:puffish-attributes-991341:7183596" // fabric only
-	modLocalRuntime "curse.maven:default-skill-trees-1074229:5852412" // monojar
+    modLocalRuntime "curse.maven:puffish-attributes-991341:7183587" // fabric only
+	modLocalRuntime "curse.maven:default-skill-trees-1074229:5946580" // monojar
 	// modLocalRuntime "curse.maven:puffish-attributes-991341:7183595" // neoforge only
 
 	modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${project.forge_config_api_version}")

@@ -7,7 +7,6 @@ import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.attribute.ModAttributes;
 import dev.muon.dynamic_difficulty.command.ModCommands;
 import dev.muon.dynamic_difficulty.item.ModItems;
-import dev.muon.dynamic_difficulty.leveling.EntityLevelAttachment;
 import dev.muon.dynamic_difficulty.leveling.LevelingEvents;
 import dev.muon.dynamic_difficulty.leveling.PlayerLevelUpdateHandler;
 import dev.muon.dynamic_difficulty.loot.condition.ModLootConditions;
@@ -21,19 +20,19 @@ public class DynamicDifficulty implements ModInitializer {
   public static final Logger LOGGER = LogUtils.getLogger();
   public static final String MODID = "dynamic_difficulty";
 
-  public static ResourceLocation loc(String path) {
+  public static ResourceLocation id(String path) {
     return ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, path);
   }
 
   @Override
   public void onInitialize() {
-    ModAttributes.register();
-    ModItems.register();
-    ModLootConditions.register();
-    Config.register();
-    LevelingEvents.register();
-    ModCommands.register();
-    NetworkDispatcher.register();
+    Config.init();
+    ModAttributes.init();
+    ModCommands.init();
+    ModItems.init();
+    ModLootConditions.init();
+    LevelingEvents.init();
+    NetworkDispatcher.init();
 
     if (isModLoaded("puffish_skills")) {
       LevelingAPI.registerPlayerLevelProvider(new PuffishSkillsProvider());
