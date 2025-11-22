@@ -1,3 +1,12 @@
+## 0.7.0
+- Update to 1.21.10
+- Add biome-based scaling
+- Move structure/structure-tag scaling from config to datapacks
+- Add entity tag, biome tag, dimension tag scaling
+- Add built-in Traveler's Titles-like dimension/biome announcement
+- Redo client config title offsets
+- Created a datapack guide, see the README on github!
+
 ## 0.6.0
 - Added 5 new items, used to level up tamed pets (or any mob)
 - Greatly improve player-based scaling framework
