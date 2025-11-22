@@ -93,9 +93,6 @@ public class Config {
     public final ConfigValue<Double> levelsPerDistance;
     public final ConfigValue<Double> levelsPerDeepness;
     public final ConfigValue<Double> levelsPerDay;
-    public final ConfigValue<Double> levelPowerPerDistance;
-    public final ConfigValue<Double> levelPowerPerDeepness;
-
     // Player-Based Scaling
     public final ConfigValue<Double> playerLevelRadius;
     public final ModConfigSpec.DoubleValue playerLevelMultiplier;
@@ -147,12 +144,6 @@ public class Config {
       levelsPerDay = builder
               .comment("How many levels to add per in-game day passed")
               .define("levels_per_day", 0.0D);
-      levelPowerPerDistance = builder
-              .comment("Exponential level scaling with distance from spawn")
-              .define("distance_power_scaling", 0.0D);
-      levelPowerPerDeepness = builder
-              .comment("Exponential level scaling with depth")
-              .define("depth_power_scaling", 0.0D);
       builder.pop();
 
       builder.push("player_based_bonus_scaling");

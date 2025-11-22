@@ -1,3 +1,6 @@
+## 0.7.1
+- Removed unimplemented "level_power_per" settings
+
 ## 0.7.0
 - Update to 1.21.10
 - Add biome-based scaling

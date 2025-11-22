@@ -71,22 +71,4 @@ public interface LevelingSettings {
     int z = posJson.get("z").getAsInt();
     return new BlockPos(x, y, z);
   }
-
-  static float readOptionalFloat(
-      JsonObject jsonObject, String name, ModConfigSpec.ConfigValue<Double> alternative) {
-    if (!jsonObject.has(name)) {
-      return alternative.get().floatValue();
-    }
-    return jsonObject.get(name).getAsFloat();
-  }
-
-  static float readLevelPowerPerDistance(JsonObject jsonObject) {
-    return readOptionalFloat(
-        jsonObject, "level_power_per_distance", Config.COMMON.levelPowerPerDistance);
-  }
-
-  static float readLevelPowerPerDeepness(JsonObject jsonObject) {
-    return readOptionalFloat(
-        jsonObject, "level_power_per_deepness", Config.COMMON.levelPowerPerDeepness);
-  }
 }
