@@ -7,16 +7,16 @@ public class StructureTitleRenderer<T> extends TitleRenderer<T> {
     public StructureTitleRenderer(int maxRecentListSize) {
         super(
             maxRecentListSize,
-            () -> Config.CLIENT.showStructureTitles.get(),
-            () -> Config.CLIENT.structureTitleFadeInTime.get(),
-            () -> Config.CLIENT.structureTitleDisplayTime.get(),
-            () -> Config.CLIENT.structureTitleFadeOutTime.get(),
-            () -> Config.CLIENT.structureTitleTextColor.get(),
-            () -> Config.CLIENT.structureTitleRenderShadow.get(),
-            () -> Config.CLIENT.structureTitleTextSize.get(),
-            () -> Config.CLIENT.structureTitleAnchor.get(),
-            () -> Config.CLIENT.structureTitleXOffset.get(),
-            () -> Config.CLIENT.structureTitleYOffset.get()
+                Config.CLIENT.showStructureTitles,
+                Config.CLIENT.structureTitleFadeInTime,
+                Config.CLIENT.structureTitleDisplayTime,
+                Config.CLIENT.structureTitleFadeOutTime,
+                Config.CLIENT.structureTitleTextColor,
+                Config.CLIENT.structureTitleRenderShadow,
+                Config.CLIENT.structureTitleTextSize,
+                Config.CLIENT.structureTitleAnchor,
+                Config.CLIENT.structureTitleXOffset,
+                Config.CLIENT.structureTitleYOffset
         );
     }
 }

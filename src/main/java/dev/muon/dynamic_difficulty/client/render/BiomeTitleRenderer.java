@@ -15,18 +15,18 @@ public class BiomeTitleRenderer extends TitleRenderer<Biome> {
     public BiomeTitleRenderer() {
         super(
             Config.CLIENT.biomeRecentCacheSize.get(), // Initial value, but we'll use supplier for dynamic updates
-            () -> Config.CLIENT.showBiomeTitles.get(),
-            () -> Config.CLIENT.biomeTitleFadeInTime.get(),
-            () -> Config.CLIENT.biomeTitleDisplayTime.get(),
-            () -> Config.CLIENT.biomeTitleFadeOutTime.get(),
-            () -> Config.CLIENT.biomeTitleTextColor.get(),
-            () -> Config.CLIENT.biomeTitleRenderShadow.get(),
-            () -> Config.CLIENT.biomeTitleTextSize.get(),
-            () -> Config.CLIENT.biomeTitleAnchor.get(),
-            () -> Config.CLIENT.biomeTitleXOffset.get(),
-            () -> Config.CLIENT.biomeTitleYOffset.get()
+            Config.CLIENT.showBiomeTitles,
+            Config.CLIENT.biomeTitleFadeInTime,
+            Config.CLIENT.biomeTitleDisplayTime,
+            Config.CLIENT.biomeTitleFadeOutTime,
+            Config.CLIENT.biomeTitleTextColor,
+            Config.CLIENT.biomeTitleRenderShadow,
+            Config.CLIENT.biomeTitleTextSize,
+            Config.CLIENT.biomeTitleAnchor,
+            Config.CLIENT.biomeTitleXOffset,
+            Config.CLIENT.biomeTitleYOffset
         );
-        this.maxRecentListSizeSupplier = () -> Config.CLIENT.biomeRecentCacheSize.get();
+        this.maxRecentListSizeSupplier = Config.CLIENT.biomeRecentCacheSize;
     }
 
     @Override

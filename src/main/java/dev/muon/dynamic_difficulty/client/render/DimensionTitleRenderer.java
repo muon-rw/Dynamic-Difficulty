@@ -8,16 +8,16 @@ public class DimensionTitleRenderer extends TitleRenderer<DimensionType> {
     public DimensionTitleRenderer() {
         super(
             1, // Only track 1 recent dimension
-            () -> Config.CLIENT.showDimensionTitles.get(),
-            () -> Config.CLIENT.dimensionTitleFadeInTime.get(),
-            () -> Config.CLIENT.dimensionTitleDisplayTime.get(),
-            () -> Config.CLIENT.dimensionTitleFadeOutTime.get(),
-            () -> Config.CLIENT.dimensionTitleTextColor.get(),
-            () -> Config.CLIENT.dimensionTitleRenderShadow.get(),
-            () -> Config.CLIENT.dimensionTitleTextSize.get(),
-            () -> Config.CLIENT.dimensionTitleAnchor.get(),
-            () -> Config.CLIENT.dimensionTitleXOffset.get(),
-            () -> Config.CLIENT.dimensionTitleYOffset.get()
+            Config.CLIENT.showDimensionTitles,
+            Config.CLIENT.dimensionTitleFadeInTime,
+            Config.CLIENT.dimensionTitleDisplayTime,
+            Config.CLIENT.dimensionTitleFadeOutTime,
+            Config.CLIENT.dimensionTitleTextColor,
+            Config.CLIENT.dimensionTitleRenderShadow,
+            Config.CLIENT.dimensionTitleTextSize,
+            Config.CLIENT.dimensionTitleAnchor,
+            Config.CLIENT.dimensionTitleXOffset,
+            Config.CLIENT.dimensionTitleYOffset
         );
     }
 }
