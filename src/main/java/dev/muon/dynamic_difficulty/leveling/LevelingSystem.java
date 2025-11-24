@@ -32,7 +32,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 
-// Import ClientLevelCache for client-side checks
 import dev.muon.dynamic_difficulty.client.ClientLevelCache;
 
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
@@ -67,8 +66,6 @@ public class LevelingSystem {
 
     public static boolean hasLevel(Entity entity) {
         if (entity.level().isClientSide()) {
-            // On client, we consider an entity to have a level if it's a living entity that can have levels
-            // The actual level value will come from ClientLevelCache once synced
             return entity instanceof LivingEntity && LevelingUtils.canHaveLevel(entity);
         } else {
             return entity.hasAttached(EntityLevelAttachment.LEVEL);
@@ -130,10 +127,8 @@ public class LevelingSystem {
         int oldLevel = getLevel(entity);
         setLevelTag(entity, newLevel);
         
-        // Reapply all attribute bonuses with new level
         applyAllLevelAttributes(entity);
         
-        // Sync to tracking clients if on server
         if (entity.level() instanceof ServerLevel) {
             NetworkDispatcher.syncLevelToClients(entity);
         }
@@ -170,11 +165,10 @@ public class LevelingSystem {
 
         int baseLevel = calculateInitialLevel(entity);
         
-        // Add non-bypassing bonuses (biome bonuses that don't bypass cap)
+        // Non-bypassing bonuses are applied before the cap, so they can be limited
         int nonBypassingBonuses = calculateNonBypassingBonuses(entity);
         baseLevel += nonBypassingBonuses;
         
-        // Apply max level cap
         LevelingSettings settings = getLevelingSettings(entity);
         int maxLevel = settings.maxLevel();
         if (maxLevel > 1) {
@@ -186,7 +180,7 @@ public class LevelingSystem {
             }
         }
         
-        // Add bypassing bonuses (structure bonuses, player bonuses)
+        // Bypassing bonuses are applied after the cap, allowing them to exceed max level
         int bypassingBonuses = calculateBypassingBonuses(entity);
         int finalLevel = Math.max(1, baseLevel + bypassingBonuses);
 
@@ -225,12 +219,13 @@ public class LevelingSystem {
 
         baseLevel = Math.max(1, baseLevel);
         
-        // Note: Max level cap is now applied after non-bypassing bonuses in createLevelForEntity()
         return baseLevel;
     }
 
     /**
-     * Calculates bonuses that do NOT bypass the max level cap (e.g., biome bonuses with bypasses_cap=false)
+     * Calculates bonuses that do NOT bypass the max level cap.
+     * These are applied before the cap check, so they can be limited by maxLevel.
+     * Example: biome bonuses with bypasses_cap=false
      */
     private static int calculateNonBypassingBonuses(LivingEntity entity) {
         if (!(entity.level() instanceof ServerLevel serverLevel)) return 0;
@@ -260,7 +255,9 @@ public class LevelingSystem {
     }
 
     /**
-     * Calculates bonuses that DO bypass the max level cap (e.g., structure bonuses, player bonuses)
+     * Calculates bonuses that DO bypass the max level cap.
+     * These are applied after the cap check, allowing them to exceed maxLevel.
+     * Examples: structure bonuses, player bonuses, biome bonuses with bypasses_cap=true
      */
     private static int calculateBypassingBonuses(LivingEntity entity) {
         int bonusLevels = 0;
@@ -273,11 +270,8 @@ public class LevelingSystem {
             bonusLevels += playerBonus;
         }
 
-        // Structure bonuses (by default bypass cap)
         structureBonus = LevelingAPI.getStructureLevelBonus(entity);
         bonusLevels += structureBonus;
-
-        // Biome bonuses that bypass cap
         if (entity.level() instanceof ServerLevel serverLevel) {
             Registry<net.minecraft.world.level.biome.Biome> biomeRegistry = serverLevel.registryAccess()
                     .lookupOrThrow(Registries.BIOME);
@@ -316,17 +310,21 @@ public class LevelingSystem {
         });
     }
 
+    /**
+     * Gets attribute modifiers for an entity, following priority:
+     * 1. Entity-specific settings (if non-empty)
+     * 2. Dimension settings (if non-empty, fallback from entity settings)
+     * 3. Global config (final fallback)
+     */
     public static Map<ResourceKey<Attribute>, AttributeModifier> getAttributeBonuses(LivingEntity entity) {
         LevelingSettings settings = getLevelingSettings(entity);
         Map<ResourceKey<Attribute>, AttributeModifier> modifiersToUse;
 
-        // Check if we have entity-specific settings with non-empty modifiers
         if (settings instanceof EntityLevelingSettings entitySettings) {
             Map<Attribute, AttributeModifier> entityModifiers = entitySettings.attributeModifiers();
             if (entityModifiers != null && !entityModifiers.isEmpty()) {
                 modifiersToUse = convertAttributeMapToKeyMap(entityModifiers);
             } else {
-                // Entity settings exist but modifiers are empty/null, check dimension settings
                 ResourceKey<Level> dimension = entity.level().dimension();
                 DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension);
                 Map<Attribute, AttributeModifier> dimModifiers = dimSettings.attributeModifiers();
@@ -334,7 +332,6 @@ public class LevelingSystem {
                 if (dimModifiers != null && !dimModifiers.isEmpty()) {
                     modifiersToUse = convertAttributeMapToKeyMap(dimModifiers);
                 } else {
-                    // Fall back to global config
                     modifiersToUse = Config.getAttributeBonuses();
                 }
             }
@@ -343,18 +340,15 @@ public class LevelingSystem {
             if (dimModifiers != null && !dimModifiers.isEmpty()) {
                 modifiersToUse = convertAttributeMapToKeyMap(dimModifiers);
             } else {
-                // Dimension settings exist but modifiers are empty/null, use global config
                 modifiersToUse = Config.getAttributeBonuses();
             }
         } else {
-            // No specific settings, use global config
             modifiersToUse = Config.getAttributeBonuses();
         }
         
         return modifiersToUse;
     }
 
-    // Helper method to convert Map<Attribute, AttributeModifier> to Map<ResourceKey<Attribute>, AttributeModifier>
     private static Map<ResourceKey<Attribute>, AttributeModifier> convertAttributeMapToKeyMap(Map<Attribute, AttributeModifier> attributeMap) {
         Map<ResourceKey<Attribute>, AttributeModifier> keyMap = new HashMap<>();
         for (Map.Entry<Attribute, AttributeModifier> entry : attributeMap.entrySet()) {
@@ -364,6 +358,11 @@ public class LevelingSystem {
         return keyMap;
     }
 
+    /**
+     * Applies a level-scaled attribute modifier to an entity.
+     * Removes any existing modifier with the same ID before applying the new one.
+     * The modifier amount is multiplied by the entity's level.
+     */
     private static void applyAttributeBonus(
             LivingEntity entity,
             Holder<Attribute> attributeHolder,
@@ -388,6 +387,7 @@ public class LevelingSystem {
 
         instance.addPermanentModifier(newModifier);
 
+        // Update health to match new max health if health attribute changed
         if (attributeHolder == Attributes.MAX_HEALTH) {
             entity.setHealth(entity.getMaxHealth());
         }
@@ -450,7 +450,6 @@ public class LevelingSystem {
         DynamicDifficulty.LOGGER.debug("Total player bonus from {} providers: {}", 
             PlayerLevelProvider.getProviders().size(), total);
 
-        // Apply global multiplier for tuning difficulty
         double multiplier = Config.COMMON.playerLevelMultiplier.get();
         int scaledBonus = (int) (total * multiplier);
         

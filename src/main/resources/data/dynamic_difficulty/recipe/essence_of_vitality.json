@@ -7,9 +7,7 @@
     "DDD"
   ],
   "key": {
-    "D": {
-      "item": "dynamic_difficulty:draught_of_ascension"
-    }
+    "D": "dynamic_difficulty:draught_of_ascension"
   },
   "result": {
     "id": "dynamic_difficulty:essence_of_vitality",

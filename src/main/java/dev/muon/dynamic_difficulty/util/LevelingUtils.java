@@ -2,8 +2,9 @@ package dev.muon.dynamic_difficulty.util;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.data.BiomeLevelingSettingsReloader;
+import dev.muon.dynamic_difficulty.data.StructureLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.settings.LevelingSettings;
-import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -16,8 +17,6 @@ import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.core.Registry;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Utility methods for the Dynamic Difficulty mod.
@@ -44,7 +43,7 @@ public class LevelingUtils {
             }
         }
 
-        return isEntityAllowed(entity);
+        return checkWhitelistBlacklist(entity);
     }
 
     /**
@@ -64,7 +63,7 @@ public class LevelingUtils {
      * @return The level bonus for this structure
      */
     public static int getStructureLevelBonus(ResourceLocation structureId, Registry<Structure> structureRegistry) {
-        return dev.muon.dynamic_difficulty.data.StructureLevelingSettingsReloader.getLevelBonus(structureId, structureRegistry);
+        return StructureLevelingSettingsReloader.getLevelBonus(structureId, structureRegistry);
     }
 
     /**
@@ -74,7 +73,7 @@ public class LevelingUtils {
      * @return The level bonus for this biome
      */
     public static int getBiomeLevelBonus(ResourceLocation biomeId, Registry<net.minecraft.world.level.biome.Biome> biomeRegistry) {
-        return dev.muon.dynamic_difficulty.data.BiomeLevelingSettingsReloader.getLevelBonus(biomeId, biomeRegistry);
+        return BiomeLevelingSettingsReloader.getLevelBonus(biomeId, biomeRegistry);
     }
 
     /**
@@ -92,7 +91,7 @@ public class LevelingUtils {
     /**
      * Checks if an entity is allowed to have levels based on whitelist/blacklist configuration
      */
-    private static boolean isEntityAllowed(Entity entity) {
+    private static boolean checkWhitelistBlacklist(Entity entity) {
         ResourceLocation entityId = EntityType.getKey(entity.getType());
         String namespace = entityId.getNamespace();
 

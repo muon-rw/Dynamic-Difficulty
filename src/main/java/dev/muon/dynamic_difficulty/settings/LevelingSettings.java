@@ -58,9 +58,36 @@ public interface LevelingSettings {
   static @Nullable AttributeModifier readAttributeModifier(JsonObject jsonObject) {
     ResourceLocation modifierId = ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, "autoleveling_settings_bonus");
     double amount = jsonObject.get("amount").getAsDouble();
-    AttributeModifier.Operation operation =
-        AttributeModifier.Operation.BY_ID.apply(jsonObject.get("operation").getAsInt());
+    
+    // Support both legacy numeric IDs and new enum serialized names for backwards compatibility
+    AttributeModifier.Operation operation;
+    if (jsonObject.get("operation").isJsonPrimitive()) {
+      var operationElement = jsonObject.get("operation");
+      if (operationElement.getAsJsonPrimitive().isNumber()) {
+        // Legacy numeric ID support
+        DynamicDifficulty.LOGGER.warn("Numeric operation IDs are deprecated. Please use enum serialized names (add_value, add_multiplied_base, add_multiplied_total) instead.");
+        operation = AttributeModifier.Operation.BY_ID.apply(operationElement.getAsInt());
+      } else {
+        // New enum serialized name
+        String operationStr = operationElement.getAsString();
+        operation = parseOperation(operationStr);
+      }
+    } else {
+      DynamicDifficulty.LOGGER.warn("Invalid operation format. Defaulting to add_value.");
+      operation = AttributeModifier.Operation.ADD_VALUE;
+    }
+    
     return new AttributeModifier(modifierId, amount, operation);
+  }
+  
+  static AttributeModifier.Operation parseOperation(String operationStr) {
+    for (AttributeModifier.Operation op : AttributeModifier.Operation.values()) {
+      if (op.getSerializedName().equals(operationStr)) {
+        return op;
+      }
+    }
+    DynamicDifficulty.LOGGER.warn("Invalid operation '{}'. Must be one of: add_value, add_multiplied_base, add_multiplied_total. Defaulting to add_value.", operationStr);
+    return AttributeModifier.Operation.ADD_VALUE;
   }
 
   static @Nullable BlockPos readSpawnPosOverride(JsonObject jsonObject) {

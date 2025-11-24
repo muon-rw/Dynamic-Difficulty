@@ -19,7 +19,6 @@ public class TitleRenderer<T> {
     public int titleTimer = 0;
     public int cooldownTimer = 0;
     
-    // Config suppliers
     protected final int maxRecentListSize;
     protected final Supplier<Boolean> enabled;
     protected final Supplier<Integer> fadeInTime;
@@ -78,7 +77,6 @@ public class TitleRenderer<T> {
             guiGraphics.nextStratum();
             guiGraphics.pose().pushMatrix();
             
-            // Calculate anchor position
             float[] anchorPos = getAnchorPosition(guiGraphics, anchor.get());
             guiGraphics.pose().translate(anchorPos[0], anchorPos[1]);
             
@@ -157,13 +155,11 @@ public class TitleRenderer<T> {
         int displayTimeTicks = displayTime.get();
         int fadeInTicks = fadeInTime.get();
 
-        // Fade in
         if (titleTimer > fadeOutTicks + displayTimeTicks) {
             float r = (float) (fadeInTicks + displayTimeTicks + fadeOutTicks) - age;
             opacity = (int) (r * 255.0F / (float) fadeInTicks);
         }
 
-        // Fade out
         if (titleTimer <= fadeOutTicks) {
             opacity = (int) (age * 255.0F / (float) fadeOutTicks);
         }
@@ -178,9 +174,8 @@ public class TitleRenderer<T> {
         guiGraphics.pose().scale(textSizeValue, textSizeValue);
         int titleWidth = fontRenderer.width(displayedTitle);
 
-        // Derive alignment from anchor point
-        // Note: alignmentOffset needs to account for scaled width
         Config.AnchorPoint anchorPoint = anchor.get();
+        // Alignment offset must account for scaled width since we're rendering in scaled space
         float alignmentOffset = getAlignmentOffset(anchorPoint, titleWidth) * textSizeValue;
         
         int xOffsetValue = (int) ((alignmentOffset + xOffset.get()) / textSizeValue);

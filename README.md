@@ -76,9 +76,9 @@ data/<namespace>/leveling_settings/dimension_tags/<tag_id>.json
   "random_level_bonus": 0,
   "attribute_modifiers": [
     {
-      "attribute": "minecraft:generic.attack_damage",
+      "attribute": "minecraft:attack_damage",
       "amount": 0.3,
-      "operation": 0
+      "operation": "add_value"
     }
   ]
 }
@@ -142,14 +142,14 @@ data/<namespace>/leveling_settings/entity_tags/<tag_id>.json
   "random_level_bonus": 0,
   "attribute_modifiers": [
     {
-      "attribute": "minecraft:generic.attack_damage",
+      "attribute": "minecraft:attack_damage",
       "amount": 0.2,
-      "operation": 0
+      "operation": "add_value"
     },
     {
-      "attribute": "minecraft:generic.max_health",
+      "attribute": "minecraft:max_health",
       "amount": 0.05,
-      "operation": 1
+      "operation": "add_multiplied_base"
     }
   ]
 }
@@ -188,35 +188,38 @@ Optional array of attribute bonuses applied per entity level:
 ```json
 "attribute_modifiers": [
   {
-    "attribute": "minecraft:generic.attack_damage",
+    "attribute": "minecraft:attack_damage",
     "amount": 0.2,
-    "operation": 0
+    "operation": "add_value"
   },
   {
-    "attribute": "minecraft:generic.max_health",
+    "attribute": "minecraft:max_health",
     "amount": 0.05,
-    "operation": 1
+    "operation": "add_multiplied_base"
   },
   {
     "attribute": "dynamic_difficulty:projectile_damage_bonus",
     "amount": 0.2,
-    "operation": 0
+    "operation": "add_value"
   }
 ]
 ```
 
 **Operation Types:**
-- `0` = `ADD_VALUE` - Flat addition (e.g., +0.2 damage per level)
-- `1` = `ADD_MULTIPLIED_BASE` - Add percentage of entity's base value (`0.05`: +5% health per level)
-- `2` = `ADD_MULTIPLIED_TOTAL` - Same as `ADD_MULTIPLIED_BASE`, but multiply the "total" including all other modifiers
+- `"add_value"` - Flat addition (e.g., +0.2 damage per level)
+- `"add_multiplied_base"` - Add percentage of entity's base value (`0.05`: +5% health per level)
+- `"add_multiplied_total"` - Same as `add_multiplied_base`, but multiply the "total" including all other modifiers
+
+**Note:** Legacy numeric operation IDs (`0`, `1`, `2`) are deprecated but still functional for backwards compatibility. They will log a deprecation warning and may be removed in a future version. Please use the enum serialized names shown above.
 
 **Common Attributes:**
-- `minecraft:generic.attack_damage` - Attack damage
-- `minecraft:generic.max_health` - Maximum health
-- `minecraft:generic.armor` - Armor points
-- `minecraft:generic.armor_toughness` - Armor toughness
-- `minecraft:generic.knockback_resistance` - Knockback resistance
-- `minecraft:generic.movement_speed` - Movement speed
+*Note: These Attribute names are specific to 1.21.10+!* 
+- `minecraft:attack_damage` - Attack damage
+- `minecraft:max_health` - Maximum health
+- `minecraft:armor` - Armor points
+- `minecraft:armor_toughness` - Armor toughness
+- `minecraft:knockback_resistance` - Knockback resistance
+- `minecraft:movement_speed` - Movement speed
 
 **Built-in Mod Attributes:**
 - `dynamic_difficulty:projectile_damage_bonus` - Bonus projectile damage

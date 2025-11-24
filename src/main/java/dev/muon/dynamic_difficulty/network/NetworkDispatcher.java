@@ -15,16 +15,12 @@ import net.minecraft.world.entity.LivingEntity;
 public class NetworkDispatcher {
 
   public static void init() {
-    // Register payload types (server-side)
     PayloadTypeRegistry.playS2C().register(SyncLevelingData.TYPE, SyncLevelingData.CODEC);
     PayloadTypeRegistry.playS2C().register(LocationEntryPacket.TYPE, LocationEntryPacket.CODEC);
-    
-    // Client-side handlers are registered in ClientEventHandler
   }
   
   @Environment(EnvType.CLIENT)
   public static void registerClient() {
-    // Register client-side handlers
     ClientPlayNetworking.registerGlobalReceiver(
         SyncLevelingData.TYPE, 
         (payload, context) -> SyncLevelingData.handle(payload, context)
@@ -47,13 +43,13 @@ public class NetworkDispatcher {
     SyncLevelingData packet = new SyncLevelingData(entity);
     
     if (entity instanceof ServerPlayer) {
-      // Player levels might be displayed globally (tablist, scoreboards, TextPlaceholderAPI, etc.)
-      // Send to all players so the data is available for client-side UI
+      // Player levels are displayed globally (tablist, scoreboards, TextPlaceholderAPI, etc.)
+      // so sync to all players for client-side UI
       for (ServerPlayer player : entity.level().getServer().getPlayerList().getPlayers()) {
         ServerPlayNetworking.send(player, packet);
       }
     } else {
-      // Non-player entities only need to sync to players who can see them
+      // Non-player entities only sync to players tracking them (more efficient)
       for (ServerPlayer player : PlayerLookup.tracking(entity)) {
         ServerPlayNetworking.send(player, packet);
       }

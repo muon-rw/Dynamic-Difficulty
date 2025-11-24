@@ -7,9 +7,7 @@
     "VVV"
   ],
   "key": {
-    "V": {
-      "item": "dynamic_difficulty:essence_of_vitality"
-    }
+    "V": "dynamic_difficulty:essence_of_vitality"
   },
   "result": {
     "id": "dynamic_difficulty:crystal_of_awakening",

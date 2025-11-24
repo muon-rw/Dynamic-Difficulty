@@ -71,14 +71,14 @@ public class LocationEntryPacket implements CustomPacketPayload {
     }
 
     public static void handle(final LocationEntryPacket msg, ClientPlayNetworking.Context context) {
-        // Handle on network thread - Fabric's client networking handles thread safety
+        // Fabric's client networking handles thread safety automatically
         handleOnClient(msg);
     }
 
     @Environment(EnvType.CLIENT)
     private static void handleOnClient(LocationEntryPacket msg) {
         // Always process packets - level info should update even if locationBonus is 0
-        // (e.g., dimensions affect base level, not bonuses)
+        // (dimensions affect base level, not bonuses)
         if (msg.locationId == null) {
             return;
         }
@@ -87,25 +87,15 @@ public class LocationEntryPacket implements CustomPacketPayload {
         
         switch (msg.entryType) {
             case STRUCTURE:
-                // Only show structure title if it has a bonus
-                if (msg.locationBonus > 0) {
-                    manager.displayStructureTitle(msg.locationId, msg.locationBonus, msg.baseLevel, msg.playerBonus);
-                } else {
-                    // Still update level info even if structure has no bonus
-                    manager.displayStructureTitle(msg.locationId, 0, msg.baseLevel, msg.playerBonus);
-                }
+                // Always update level info, but only show title if bonus > 0
+                manager.displayStructureTitle(msg.locationId, msg.locationBonus, msg.baseLevel, msg.playerBonus);
                 break;
             case BIOME:
-                // Only show biome title if it has a bonus
-                if (msg.locationBonus > 0) {
-                    manager.displayBiomeTitle(msg.locationId, msg.locationBonus, msg.baseLevel, msg.playerBonus);
-                } else {
-                    // Still update level info even if biome has no bonus
-                    manager.displayBiomeTitle(msg.locationId, 0, msg.baseLevel, msg.playerBonus);
-                }
+                // Always update level info, but only show title if bonus > 0
+                manager.displayBiomeTitle(msg.locationId, msg.locationBonus, msg.baseLevel, msg.playerBonus);
                 break;
             case DIMENSION:
-                // Dimensions always update level info (they affect base level, not bonuses)
+                // Dimensions affect base level, not bonuses
                 manager.displayDimensionTitle(msg.locationId, 0, msg.baseLevel, msg.playerBonus);
                 break;
         }

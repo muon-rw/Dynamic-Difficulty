@@ -83,13 +83,11 @@ public class Config {
   }
 
   public static class Common {
-    // Base Leveling
+    // Leveling System
     public final ConfigValue<Integer> startingLevel;
     public final ConfigValue<Integer> maxLevel;
     public final ConfigValue<Integer> randomLevelBonus;
     public final ConfigValue<Double> expBonus;
-
-    // Environmental Scaling
     public final ConfigValue<Double> levelsPerDistance;
     public final ConfigValue<Double> levelsPerDeepness;
     public final ConfigValue<Double> levelsPerDay;
@@ -132,9 +130,6 @@ public class Config {
       expBonus = builder
               .comment("Additional experience multiplier per level")
               .define("experience_bonus_per_level", 0.1D);
-      builder.pop();
-
-      builder.push("environmental_leveling");
       levelsPerDistance = builder
               .comment("How many levels to add per block from world spawn")
               .define("levels_per_block_from_spawn", 0.01D);
@@ -188,13 +183,13 @@ public class Config {
 
       builder.push("attribute_bonuses");
       attributesBonuses = builder
-              .comment("List of [attribute_id, bonus_per_level, operation_type] triplets",
-                      "attribute_id: The resource location of the attribute (e.g., \"minecraft:generic.attack_damage\")",
+              .comment("List of [attribute_id, bonus_per_level, operation] triplets",
+                      "attribute_id: The resource location of the attribute (e.g., \"minecraft:attack_damage\")",
                       "bonus_per_level: The amount to add per entity level",
-                      "operation_type: 0 = ADD_VALUE (flat addition), 1 = ADD_MULTIPLIED_BASE (percentage), 2 = ADD_MULTIPLIED_TOTAL (percentage of final value)",
-                      "If operation_type is omitted, ADD_VALUE is used (except for max_health which defaults to ADD_MULTIPLIED_BASE)")
+                      "operation: add_value (flat addition), add_multiplied_base (percentage of base), or add_multiplied_total (percentage of final value)")
               .defineList("level_bonus_per_attribute",
                       Config::getDefaultAttributeBonuses,
+                      () -> Arrays.asList("minecraft:attack_damage", 0.2, "add_value"),
                       Config::isValidAttributeBonus);
       builder.pop();
 
@@ -292,17 +287,17 @@ public class Config {
               .comment("Determines when entity levels are rendered: ALWAYS, NEVER, or LOOKING_AT (only when the player is looking directly at/near the entity).")
               .defineEnum("render_behavior", RenderBehavior.LOOKING_AT);
       renderDistance = builder.define("maximum_render_distance", 64.0D);
-      showApotheosisWorldTier = builder
-              .comment("Show Apotheosis world tier in entity level display (if Apotheosis is installed)",
-                      "This will scan entity attributes for Apotheosis tier modifiers",
-                      "Tiers: Haven, Frontier, Ascent, Summit, Pinnacle")
-              .define("show_apotheosis_world_tier", true);
       builder.pop();
       
       builder.push("integration_options");
       enableJadeIntegration = builder
               .comment("Show entity levels in Jade tooltips (requires Jade to be installed)")
               .define("enable_jade_integration", true);
+      showApotheosisWorldTier = builder
+              .comment("Show Apotheosis world tier in entity level display (if Apotheosis is installed)",
+                      "This will scan entity attributes for Apotheosis tier modifiers",
+                      "Tiers: Haven, Frontier, Ascent, Summit, Pinnacle")
+              .define("show_apotheosis_world_tier", true);
       builder.pop();
       
       builder.push("entity_settings");
@@ -448,33 +443,46 @@ public class Config {
 
   private static List<List<Object>> getDefaultAttributeBonuses() {
     List<List<Object>> attributeBonuses = new ArrayList<>();
-    // Format: [attribute_id, bonus_per_level, operation_type]
-    // operation_type: 0 = ADD_VALUE, 1 = ADD_MULTIPLIED_BASE, 2 = ADD_MULTIPLIED_TOTAL
-    attributeBonuses.add(Arrays.asList("minecraft:attack_damage", 0.2, 0)); // ADD_VALUE
-    attributeBonuses.add(Arrays.asList("minecraft:armor", 0.2, 0)); // ADD_VALUE
-    attributeBonuses.add(Arrays.asList("minecraft:max_health", 0.05, 1)); // ADD_MULTIPLIED_BASE
-    attributeBonuses.add(Arrays.asList("dynamic_difficulty:projectile_damage_bonus", 0.2, 0)); // ADD_VALUE
-    attributeBonuses.add(Arrays.asList("dynamic_difficulty:explosion_damage_bonus", 0.2, 0)); // ADD_VALUE
+    // Format: [attribute_id, bonus_per_level, operation]
+    // Operation uses serialized names: add_value, add_multiplied_base, add_multiplied_total
+    attributeBonuses.add(Arrays.asList("minecraft:attack_damage", 0.2, "add_value"));
+    attributeBonuses.add(Arrays.asList("minecraft:armor", 0.2, "add_value"));
+    attributeBonuses.add(Arrays.asList("minecraft:max_health", 0.05, "add_multiplied_base"));
+    attributeBonuses.add(Arrays.asList("dynamic_difficulty:projectile_damage_bonus", 0.2, "add_value"));
+    attributeBonuses.add(Arrays.asList("dynamic_difficulty:explosion_damage_bonus", 0.2, "add_value"));
     return attributeBonuses;
   }
   
 
+  /**
+   * Validates attribute bonus config format.
+   * Format: [attribute_id (String), bonus_per_level (Double), operation (String)]
+   * Operation must be a valid AttributeModifier.Operation serialized name.
+   */
   private static <T> boolean isValidAttributeBonus(T object) {
     if (object instanceof List<?> list) {
-      // Support both old format (2 elements) and new format (3 elements)
-      if (list.size() == 2) {
-        return list.get(0) instanceof String && list.get(1) instanceof Double;
-      } else if (list.size() == 3) {
-        return list.get(0) instanceof String && list.get(1) instanceof Double && list.get(2) instanceof Integer;
+      if (list.size() == 3) {
+        Object opObj = list.get(2);
+        if (opObj instanceof String opStr) {
+          // Validate operation string matches AttributeModifier.Operation serialized names
+          for (AttributeModifier.Operation op : AttributeModifier.Operation.values()) {
+            if (op.getSerializedName().equals(opStr)) {
+              return list.get(0) instanceof String && list.get(1) instanceof Double;
+            }
+          }
+          return false;
+        }
       }
     }
     return false;
   }
   
 
+  /**
+   * Gets attribute bonuses from config, initializing lazily to avoid triggering config reloads.
+   */
   public static Map<ResourceKey<Attribute>, AttributeModifier> getAttributeBonuses() {
     if (ATTRIBUTE_BONUSES.isEmpty()) {
-      // Only initialize once to avoid triggering config reloads
       synchronized (ATTRIBUTE_BONUSES) {
         if (ATTRIBUTE_BONUSES.isEmpty()) {
           COMMON.attributesBonuses.get().forEach(Config::readAttributeBonus);
@@ -509,27 +517,20 @@ public class Config {
     String uniqueModifierName = "config_bonus_" + attributeRL.getNamespace().replace(":", "_") + "_" + attributeRL.getPath().replace("/", "_");
     ResourceLocation modifierId = ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, uniqueModifierName);
 
-    AttributeModifier.Operation operation;
-    
-    // Check if operation is specified (new format with 3 elements)
-    if (attributeBonusConfig.size() >= 3) {
-      int operationId = ((Integer) attributeBonusConfig.get(2));
-      operation = switch (operationId) {
-        case 0 -> AttributeModifier.Operation.ADD_VALUE;
-        case 1 -> AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
-        case 2 -> AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
-        default -> {
-          DynamicDifficulty.LOGGER.warn("Unknown operation ID: {}. Defaulting to ADD_VALUE", operationId);
-          yield AttributeModifier.Operation.ADD_VALUE;
-        }
-      };
-    } else {
-      // Legacy format - use old behavior
-      if (attributeKey.location().equals(Attributes.MAX_HEALTH.unwrapKey().orElse(null).location())) {
-        operation = AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
-      } else {
-        operation = AttributeModifier.Operation.ADD_VALUE;
+    // Parse operation enum from serialized name
+    String operationStr = (String) attributeBonusConfig.get(2);
+    AttributeModifier.Operation operation = null;
+    for (AttributeModifier.Operation op : AttributeModifier.Operation.values()) {
+      if (op.getSerializedName().equals(operationStr)) {
+        operation = op;
+        break;
       }
+    }
+    
+    if (operation == null) {
+      DynamicDifficulty.LOGGER.error("Invalid operation '{}' for attribute {}. Must be one of: add_value, add_multiplied_base, add_multiplied_total. Defaulting to add_value.", 
+          operationStr, attributeRL);
+      operation = AttributeModifier.Operation.ADD_VALUE;
     }
 
     AttributeModifier modifier =

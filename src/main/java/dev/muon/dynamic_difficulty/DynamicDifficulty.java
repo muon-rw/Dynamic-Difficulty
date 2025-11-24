@@ -7,6 +7,7 @@ import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.attribute.ModAttributes;
 import dev.muon.dynamic_difficulty.command.ModCommands;
 import dev.muon.dynamic_difficulty.item.ModItems;
+import dev.muon.dynamic_difficulty.leveling.EntityLevelAttachment;
 import dev.muon.dynamic_difficulty.leveling.LevelingEvents;
 import dev.muon.dynamic_difficulty.leveling.PlayerLevelUpdateHandler;
 import dev.muon.dynamic_difficulty.loot.condition.ModLootConditions;
@@ -26,6 +27,12 @@ public class DynamicDifficulty implements ModInitializer {
 
   @Override
   public void onInitialize() {
+    // Force initialization of attachment types before world data loads
+    // This ensures the attachment type is registered before entities are loaded
+    // Accessing the field triggers class initialization, which registers the attachment type
+    @SuppressWarnings("unused")
+    var unused = EntityLevelAttachment.LEVEL;
+    
     Config.init();
     ModAttributes.init();
     ModCommands.init();

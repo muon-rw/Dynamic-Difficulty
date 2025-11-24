@@ -33,7 +33,6 @@ public abstract class LootTableMixin {
         method = "getRandomItemsRaw(Lnet/minecraft/world/level/storage/loot/LootContext;Ljava/util/function/Consumer;)V"
     )
     private void modifyLoot(LootContext context, Consumer<ItemStack> output, Operation<Void> original) {
-        // Prevent infinite recursion - Just a fallback
         if (PROCESSING.get()) {
             original.call(context, output);
             return;
@@ -70,8 +69,7 @@ public abstract class LootTableMixin {
             original.call(context, collector);
 
             if (context.getLevel() instanceof ServerLevel serverLevel) {
-                ResourceLocation levelDropsTable = ResourceLocation.fromNamespaceAndPath(
-                    DynamicDifficulty.MODID, "inject/level_based_drops");
+                ResourceLocation levelDropsTable = DynamicDifficulty.id( "inject/level_based_drops");
                 ResourceKey<LootTable> levelDropsKey = ResourceKey.create(
                     Registries.LOOT_TABLE, levelDropsTable);
                 
@@ -91,7 +89,8 @@ public abstract class LootTableMixin {
     }
     
     /**
-     * Comprehensive player search (similar to Apotheosis GenContext.findPlayer, licensed MIT)
+     * Searches for player in loot context using multiple parameters.
+     * Similar to Apotheosis GenContext.findPlayer (licensed MIT).
      */
     @Unique
     @Nullable
