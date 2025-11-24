@@ -1,6 +1,6 @@
 ## 0.7.2
 - Various internal cleanup
-- Switch modifier operations to use enum (`"add_multiplied_base"`, `"add_value"`, `"add_multiplied_total"`)
+- Switch modifier operations to use enum (`"add_multiplied_base"`, `"add_value"`, `"add_multiplied_total"`), instead of int (`0`, `1`, `2`) 
 - Fix crafting recipes
 - Fix outdated format of vanilla attributes (`generic.attack_damage`->`attack_damage`)
 ## 0.7.1
