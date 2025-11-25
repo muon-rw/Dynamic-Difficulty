@@ -1,10 +1,11 @@
 package dev.muon.dynamic_difficulty.network.message;
 
-import dev.muon.dynamic_difficulty.client.ClientLevelCache;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
+import dev.muon.dynamic_difficulty.leveling.EntityLevelAttachment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
@@ -17,7 +18,12 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public class SyncLevelingData implements CustomPacketPayload {
   public static final CustomPacketPayload.Type<SyncLevelingData> TYPE =
-      new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, "sync_leveling_data"));
+      new CustomPacketPayload.Type<>(DynamicDifficulty.loc("sync_leveling_data"));
+  
+  public static final StreamCodec<FriendlyByteBuf, SyncLevelingData> CODEC = CustomPacketPayload.codec(
+      SyncLevelingData::write,
+      SyncLevelingData::new
+  );
 
   private final int entityId;
   private final int level;
@@ -63,21 +69,15 @@ public class SyncLevelingData implements CustomPacketPayload {
     }
     
     Entity entity = level.getEntity(msg.entityId);
-      switch (entity) {
-          case null ->
-                  DynamicDifficulty.LOGGER.warn("Entity with ID {} not found on client for SyncLevelingData", msg.entityId);
-          case Player player -> {
-              ClientLevelCache.updatePlayerLevel(player.getUUID(), msg.level);
-              DynamicDifficulty.LOGGER.debug("Updated client cache: Player {} level = {}",
-                      player.getName().getString(), msg.level);
-          }
-          case LivingEntity livingEntity -> {
-              ClientLevelCache.updateEntityLevel(msg.entityId, msg.level);
-              DynamicDifficulty.LOGGER.debug("Updated client cache: {} (ID {}) level = {}",
-                      livingEntity.getType().getDescription().getString(), msg.entityId, msg.level);
-          }
-          default ->
-                  DynamicDifficulty.LOGGER.warn("Received SyncLevelingData for non-living entity ID {}", msg.entityId);
-      }
+    if (entity instanceof LivingEntity living) {
+      // Update attachment - this is the source of truth
+      living.setData(EntityLevelAttachment.LEVEL, msg.level);
+      DynamicDifficulty.LOGGER.debug("Updated client attachment: {} (ID {}) level = {}",
+              living.getType().getDescription().getString(), msg.entityId, msg.level);
+    } else if (entity == null) {
+      // Entity not loaded yet - this is fine, level will be synced when entity loads
+      // or when player starts tracking it. No need to cache separately.
+      DynamicDifficulty.LOGGER.debug("Received SyncLevelingData for entity ID {} (not yet loaded) - will sync when entity loads", msg.entityId);
+    }
   }
 }

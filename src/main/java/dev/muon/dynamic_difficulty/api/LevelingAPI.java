@@ -10,6 +10,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.structure.Structure;
 
 import java.util.Map;
@@ -149,6 +150,26 @@ public class LevelingAPI {
      */
     public static int getStructureLevelBonus(ResourceLocation structureId, Registry<Structure> structureRegistry) {
         return LevelingUtils.getStructureLevelBonus(structureId, structureRegistry);
+    }
+
+    /**
+     * Gets the biome level bonus for an entity's current position.
+     *
+     * @param entity The entity to get the biome bonus for
+     * @return The level bonus from the biome at the entity's position
+     */
+    public static int getBiomeLevelBonus(LivingEntity entity) {
+        return LevelingSystem.getBiomeLevelBonus(entity);
+    }
+
+    /**
+     * Gets the biome level bonus for a given biome.
+     *
+     * @param biomeId The biome's ResourceLocation
+     * @return The level bonus configured for the biome
+     */
+    public static int getBiomeLevelBonus(ResourceLocation biomeId, Registry<Biome> biomeRegistry) {
+        return LevelingUtils.getBiomeLevelBonus(biomeId, biomeRegistry);
     }
 
     /**

@@ -2,7 +2,7 @@ package dev.muon.dynamic_difficulty.network;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
-import dev.muon.dynamic_difficulty.network.message.StructureEntryPacket;
+import dev.muon.dynamic_difficulty.network.message.LocationEntryPacket;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -23,31 +23,52 @@ public class NetworkDispatcher {
 
     registrar.playToClient(
             SyncLevelingData.TYPE,
-            CustomPacketPayload.codec(SyncLevelingData::write, SyncLevelingData::new),
+            SyncLevelingData.CODEC,
             SyncLevelingData::handle
     );
     
     registrar.playToClient(
-            StructureEntryPacket.TYPE,
-            CustomPacketPayload.codec(StructureEntryPacket::write, StructureEntryPacket::new),
-            StructureEntryPacket::handle
+            LocationEntryPacket.TYPE,
+            LocationEntryPacket.CODEC,
+            LocationEntryPacket::handle
     );
   }
 
+  /**
+   * Syncs an entity's level to clients. 
+   * For player entities, syncs to all players (needed for global UI like tablist, placeholders).
+   * For other entities, only syncs to players tracking the entity (efficient for mobs).
+   */
   public static void syncLevelToClients(LivingEntity entity) {
     if (entity.level().isClientSide()) return;
-    PacketDistributor.sendToPlayersTrackingEntity(entity, new SyncLevelingData(entity));
+    
+    SyncLevelingData packet = new SyncLevelingData(entity);
+    
+    if (entity instanceof ServerPlayer) {
+      // Player levels are displayed globally (tablist, scoreboards, TextPlaceholderAPI, etc.)
+      // so sync to all players for client-side UI
+      for (ServerPlayer player : entity.level().getServer().getPlayerList().getPlayers()) {
+        PacketDistributor.sendToPlayer(player, packet);
+      }
+    } else {
+      // Non-player entities only sync to players tracking them (more efficient)
+      PacketDistributor.sendToPlayersTrackingEntity(entity, packet);
+    }
   }
 
+  /**
+   * Syncs an entity's level to a specific player.
+   * Used when a player starts tracking an entity.
+   */
   public static void syncLevelToPlayer(LivingEntity entity, ServerPlayer player) {
     PacketDistributor.sendToPlayer(player, new SyncLevelingData(entity)); 
   }
-
+  
   public static void syncLevelToAllPlayers(LivingEntity entity) {
     PacketDistributor.sendToAllPlayers(new SyncLevelingData(entity));
   }
   
-  public static void sendStructureEntry(ServerPlayer player, ResourceLocation structureId, int structureBonus, int baseLevel, int playerBonus) {
-    PacketDistributor.sendToPlayer(player, new StructureEntryPacket(structureId, structureBonus, baseLevel, playerBonus));
+  public static void sendLocationEntry(ServerPlayer player, LocationEntryPacket.EntryType entryType, ResourceLocation locationId, int locationBonus, int baseLevel, int playerBonus) {
+    PacketDistributor.sendToPlayer(player, new LocationEntryPacket(entryType, locationId, locationBonus, baseLevel, playerBonus));
   }
 }

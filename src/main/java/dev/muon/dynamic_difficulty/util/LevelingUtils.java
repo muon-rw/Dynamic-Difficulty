@@ -2,20 +2,22 @@ package dev.muon.dynamic_difficulty.util;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.data.BiomeLevelingSettingsReloader;
+import dev.muon.dynamic_difficulty.data.StructureLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.settings.LevelingSettings;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.tags.TagKey;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.structure.Structure;
-import net.minecraft.core.Registry;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Utility methods for the Dynamic Difficulty mod.
@@ -36,13 +38,13 @@ public class LevelingUtils {
             if (entity.getType().is(PASSIVE_WHITELIST)) {
                 return true;
             }
-            if (animal.getAttribute(Attributes.ATTACK_DAMAGE) == null ||
-                    animal.getAttribute(Attributes.ATTACK_DAMAGE).getValue() <= 0) {
+            var attackDamage = animal.getAttribute(Attributes.ATTACK_DAMAGE);
+            if (attackDamage == null || attackDamage.getValue() <= 0) {
                 return false;
             }
         }
 
-        return isEntityAllowed(entity);
+        return checkWhitelistBlacklist(entity);
     }
 
     /**
@@ -56,32 +58,23 @@ public class LevelingUtils {
     }
 
     /**
-     * Gets the structure level bonus from configuration, checking both individual IDs and tags
+     * Gets the structure level bonus from datapacks, checking both individual IDs and tags
      * @param structureId The resource location of the structure
      * @param structureRegistry The registry to check tags against
      * @return The level bonus for this structure
      */
     public static int getStructureLevelBonus(ResourceLocation structureId, Registry<Structure> structureRegistry) {
-        Map<ResourceLocation, Integer> structureBonuses = Config.getStructureBonuses();
-        Map<ResourceLocation, Integer> tagBonuses = Config.getStructureTagBonuses();
-        
-        // Check individual structure bonuses first (they take precedence)
-        if (structureBonuses.containsKey(structureId)) {
-            return structureBonuses.get(structureId);
-        }
-        
-        // Check structure tags
-        Structure structure = structureRegistry.get(structureId);
-        if (structure != null) {
-            for (Map.Entry<ResourceLocation, Integer> tagEntry : tagBonuses.entrySet()) {
-                TagKey<Structure> structureTag = TagKey.create(Registries.STRUCTURE, tagEntry.getKey());
-                if (structureRegistry.getHolderOrThrow(structureRegistry.getResourceKey(structure).get()).is(structureTag)) {
-                    return tagEntry.getValue();
-                }
-            }
-        }
-        
-        return 0;
+        return StructureLevelingSettingsReloader.getLevelBonus(structureId, structureRegistry);
+    }
+    
+    /**
+     * Gets the biome level bonus from datapacks, checking both individual IDs and tags
+     * @param biomeId The resource location of the biome
+     * @param biomeRegistry The registry to check tags against
+     * @return The level bonus for this biome
+     */
+    public static int getBiomeLevelBonus(ResourceLocation biomeId, Registry<Biome> biomeRegistry) {
+        return BiomeLevelingSettingsReloader.getLevelBonus(biomeId, biomeRegistry);
     }
 
     /**
@@ -99,7 +92,7 @@ public class LevelingUtils {
     /**
      * Checks if an entity is allowed to have levels based on whitelist/blacklist configuration
      */
-    private static boolean isEntityAllowed(Entity entity) {
+    private static boolean checkWhitelistBlacklist(Entity entity) {
         ResourceLocation entityId = EntityType.getKey(entity.getType());
         String namespace = entityId.getNamespace();
 

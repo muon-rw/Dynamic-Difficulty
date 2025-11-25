@@ -3,14 +3,12 @@ package dev.muon.dynamic_difficulty.settings;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
-import dev.muon.dynamic_difficulty.config.Config;
 import java.util.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.neoforged.neoforge.common.ModConfigSpec;
 import org.jetbrains.annotations.Nullable;
 
 public interface LevelingSettings {
@@ -50,18 +48,44 @@ public interface LevelingSettings {
     if (attributeId == null) return null;
     Attribute attribute = BuiltInRegistries.ATTRIBUTE.get(attributeId);
     if (attribute == null) {
-        // Optionally log an error if the attribute isn't found
-        // DynamicDifficulty.LOGGER.warn("Attribute not found: {}", attributeId);
+      DynamicDifficulty.LOGGER.warn("Attribute not found: {}", attributeId);
     }
     return attribute;
   }
 
   static @Nullable AttributeModifier readAttributeModifier(JsonObject jsonObject) {
-    ResourceLocation modifierId = ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, "autoleveling_settings_bonus");
+    ResourceLocation modifierId = DynamicDifficulty.loc("autoleveling_settings_bonus");
     double amount = jsonObject.get("amount").getAsDouble();
-    AttributeModifier.Operation operation =
-        AttributeModifier.Operation.BY_ID.apply(jsonObject.get("operation").getAsInt());
+    
+    // Support both legacy numeric IDs and new enum serialized names for backwards compatibility
+    AttributeModifier.Operation operation;
+    if (jsonObject.get("operation").isJsonPrimitive()) {
+      var operationElement = jsonObject.get("operation");
+      if (operationElement.getAsJsonPrimitive().isNumber()) {
+        // Legacy numeric ID support
+        DynamicDifficulty.LOGGER.warn("Numeric operation IDs are deprecated. Please use enum serialized names (add_value, add_multiplied_base, add_multiplied_total) instead.");
+        operation = AttributeModifier.Operation.BY_ID.apply(operationElement.getAsInt());
+      } else {
+        // New enum serialized name
+        String operationStr = operationElement.getAsString();
+        operation = parseOperation(operationStr);
+      }
+    } else {
+      DynamicDifficulty.LOGGER.warn("Invalid operation format. Defaulting to add_value.");
+      operation = AttributeModifier.Operation.ADD_VALUE;
+    }
+    
     return new AttributeModifier(modifierId, amount, operation);
+  }
+  
+  static AttributeModifier.Operation parseOperation(String operationStr) {
+    for (AttributeModifier.Operation op : AttributeModifier.Operation.values()) {
+      if (op.getSerializedName().equals(operationStr)) {
+        return op;
+      }
+    }
+    DynamicDifficulty.LOGGER.warn("Invalid operation '{}'. Must be one of: add_value, add_multiplied_base, add_multiplied_total. Defaulting to add_value.", operationStr);
+    return AttributeModifier.Operation.ADD_VALUE;
   }
 
   static @Nullable BlockPos readSpawnPosOverride(JsonObject jsonObject) {
@@ -71,23 +95,5 @@ public interface LevelingSettings {
     int y = posJson.get("y").getAsInt();
     int z = posJson.get("z").getAsInt();
     return new BlockPos(x, y, z);
-  }
-
-  static float readOptionalFloat(
-      JsonObject jsonObject, String name, ModConfigSpec.ConfigValue<Double> alternative) {
-    if (!jsonObject.has(name)) {
-      return alternative.get().floatValue();
-    }
-    return jsonObject.get(name).getAsFloat();
-  }
-
-  static float readLevelPowerPerDistance(JsonObject jsonObject) {
-    return readOptionalFloat(
-        jsonObject, "level_power_per_distance", Config.COMMON.levelPowerPerDistance);
-  }
-
-  static float readLevelPowerPerDeepness(JsonObject jsonObject) {
-    return readOptionalFloat(
-        jsonObject, "level_power_per_deepness", Config.COMMON.levelPowerPerDeepness);
   }
 }
