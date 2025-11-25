@@ -5,7 +5,8 @@ Highly configurable and compatible mob leveling system
 ---
 
 # Datapack Guide
-### NOTE: This guide is for 1.21.1!
+### NOTE: This guide is for 1.21.1 Neoforge!
+*1.21.1 Fabric does not yet have all of these features, though they will be ported in the next few days!*
 *For information on 1.21.10, make sure to select the 1.21.10 branch!*
 
 ### How are levels calculated?
