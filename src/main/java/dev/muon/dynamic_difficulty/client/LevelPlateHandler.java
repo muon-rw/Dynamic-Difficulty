@@ -17,7 +17,7 @@ import net.minecraft.world.phys.HitResult;
 public class LevelPlateHandler {
   /**
    * Modifies the name tag component for an entity to include level information.
-   * This should be called from a mixin or EntityRenderer.
+   * Called via mixin into EntityRenderer.
    */
   public static Component modifyNameTag(Component originalName, LivingEntity entity) {
     if (!shouldShowName(entity)) {
