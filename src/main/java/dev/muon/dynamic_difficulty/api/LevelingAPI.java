@@ -1,10 +1,13 @@
 package dev.muon.dynamic_difficulty.api;
 
+import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.leveling.LevelingSystem;
+import dev.muon.dynamic_difficulty.leveling.PlayerLevelCalculator;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -42,7 +45,8 @@ public class LevelingAPI {
      * 
      * IMPORTANT DISTINCTION:
      * - For mobs/entities: Level grants attribute bonuses (health, damage, etc.)
-     * - For players: Level is DISPLAY ONLY (shown above head, used for color-coding mob difficulty)
+     * - For players: Level is used for display (shown above head, color-coding mob difficulty)
+     *   and for calculating mob level bonuses based on nearby player proximity.
      * 
      * Players do NOT receive attribute bonuses from levels. Instead, they use the
      * PlayerLevelProvider system to contribute to nearby mob difficulty scaling.
@@ -177,22 +181,28 @@ public class LevelingAPI {
      * @param provider The provider to register
      */
     public static void registerPlayerLevelProvider(PlayerLevelProvider provider) {
-        dev.muon.dynamic_difficulty.DynamicDifficulty.LOGGER.info("Registered player level provider: {}", 
+        DynamicDifficulty.LOGGER.info("Registered player level provider: {}",
             provider.getClass().getSimpleName());
         PlayerLevelProvider.registerProvider(provider);
-        provider.onRegistered();
     }
 
     /**
      * Gets the display level for a player based on all registered providers
-     * and the configured display strategy. This is used for:
+     * and the configured display strategy. This aggregated level is used for:
      * - Displaying the player's level above their head
      * - Color-coding mob levels relative to the player
+     * 
+     * Note: The display level returned by this method may not equal the player bonus
+     * applied to mob scaling. For mob scaling, providers use calculateBonusLevels(),
+     * which defaults to averaging player levels but can be overridden by providers
+     * to implement custom aggregation logic (e.g., distance-based weighting, maximum level, etc.).
+     * Providers using the default averaging behavior will have identical display and scaling values.
+     * The display strategy only affects what level is shown to players, not how mobs are scaled.
      *
      * @param player The player to get the level for
      * @return The calculated display level
      */
-    public static int getPlayerDisplayLevel(net.minecraft.server.level.ServerPlayer player) {
-        return dev.muon.dynamic_difficulty.leveling.PlayerLevelCalculator.calculatePlayerDisplayLevel(player);
+    public static int getPlayerDisplayLevel(ServerPlayer player) {
+        return PlayerLevelCalculator.calculatePlayerDisplayLevel(player);
     }
 }

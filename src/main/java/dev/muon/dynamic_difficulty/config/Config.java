@@ -152,7 +152,9 @@ public class Config {
               .comment("Whether to factor in player levels when calculating mob levels")
               .define("enable_player_based_leveling", true);
       playerLevelDisplayStrategy = builder
-              .comment("How to aggregate multiple player level providers for display",
+              .comment("How to aggregate multiple player level providers for display purposes",
+                      "This only affects what level is shown above the player's head.",
+                      "Mob scaling uses each provider's calculateBonusLevels() method instead.",
                       "HIGHEST_PRIORITY: Use the provider with the highest priority (defined by the provider itself)",
                       "MAX: Use the maximum level from all providers",
                       "SUM: Add all provider levels together",

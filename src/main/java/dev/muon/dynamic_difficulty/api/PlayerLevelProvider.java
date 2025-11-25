@@ -97,6 +97,7 @@ public interface PlayerLevelProvider {
      */
     static void registerProvider(PlayerLevelProvider provider) {
         providers.add(provider);
+        provider.onRegistered();
     }
 
     /**

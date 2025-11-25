@@ -1,3 +1,8 @@
+## 0.7.1
+- Fix Puffish Skills point allocations not updating instantly
+- Rename methods related to level tag -> level attachment
+- Improve doc accuracy throughout codebase
+
 ## 0.7.0
 - Created a datapack guide, see the README on github!
 - Build in many preset leveling settings

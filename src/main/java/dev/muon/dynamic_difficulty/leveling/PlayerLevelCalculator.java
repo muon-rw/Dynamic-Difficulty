@@ -9,13 +9,18 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Helper class for calculating player display levels from registered providers
+ * Helper class for calculating player display levels from registered providers.
+ * 
+ * Note: Player levels are used for both display (via this class) and mob scaling
+ * (via PlayerLevelProvider.calculateBonusLevels()). The display strategy configured
+ * here only affects what level is shown to players, not how mobs are scaled.
  */
 public class PlayerLevelCalculator {
     
     /**
      * Calculates the display level for a player based on all enabled providers
-     * and the configured display strategy.
+     * and the configured display strategy. This aggregated level is used for
+     * displaying above the player's head and color-coding mob difficulty.
      *
      * @param player The player to calculate the level for
      * @return The calculated display level

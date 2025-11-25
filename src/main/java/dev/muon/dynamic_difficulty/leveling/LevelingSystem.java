@@ -55,10 +55,10 @@ import java.util.Optional;
  * - Level can be changed at runtime via setAndUpdateLevel() or addLevels()
  * 
  * PLAYERS:
- * - Level is for DISPLAY ONLY (shown above head, used for color-coding mob difficulty)
+ * - Level is used for display (shown above head, color-coding mob difficulty) and
+ *   for calculating mob level bonuses based on nearby player proximity
  * - Player levels do NOT grant attribute bonuses
  * - Player levels are calculated from PlayerLevelProvider implementations (e.g., skill points)
- * - Players affect mob difficulty through proximity, not by gaining personal power
  * - Cannot use setAndUpdateLevel() on players (throws exception)
  */
 public class LevelingSystem {
@@ -77,7 +77,8 @@ public class LevelingSystem {
     /**
      * Gets the level of any living entity, including players.
      * 
-     * IMPORTANT: Player levels are for DISPLAY ONLY (name tags, color-coding difficulty).
+     * IMPORTANT: Player levels are used for display (name tags, color-coding difficulty)
+     * and for calculating mob level bonuses based on nearby player proximity.
      * Player levels do NOT grant attribute bonuses - players use the PlayerLevelProvider
      * system to contribute to mob difficulty, not to gain power themselves.
      * 
@@ -96,7 +97,7 @@ public class LevelingSystem {
      * Internal: Sets the level attachment without updating attributes or syncing.
      * Use setAndUpdateLevel() for runtime level changes.
      */
-    static void setLevelTag(LivingEntity entity, int level) {
+    static void setLevelAttachment(LivingEntity entity, int level) {
         entity.setData(EntityLevelAttachment.LEVEL, level);
     }
 
@@ -122,7 +123,7 @@ public class LevelingSystem {
         }
         
         int oldLevel = getLevel(entity);
-        setLevelTag(entity, newLevel);
+        setLevelAttachment(entity, newLevel);
         
         // Reapply all attribute bonuses with new level
         applyAllLevelAttributes(entity);

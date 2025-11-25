@@ -62,7 +62,6 @@ import java.util.UUID;
 
 @EventBusSubscriber(modid = DynamicDifficulty.MODID)
 public class LevelingEvents {
-    private static final String LEVEL_TAG = "LEVEL";
     private static final Map<UUID, ResourceLocation> playerStructureMap = new HashMap<>();
     private static final Map<UUID, ResourceLocation> playerBiomeMap = new HashMap<>();
     private static final Map<UUID, ResourceKey<Level>> playerDimensionMap = new HashMap<>();
@@ -83,7 +82,7 @@ public class LevelingEvents {
         }
 
         int level = LevelingAPI.calculateLevelForEntity(living);
-        LevelingSystem.setLevelTag(living, level);
+        LevelingSystem.setLevelAttachment(living, level);
         LevelingAPI.applyAllLevelAttributes(living);
         addEquipment(living);
     }
@@ -205,10 +204,13 @@ public class LevelingEvents {
      * Calculates a player's display level from registered providers and syncs it to all clients.
      * This is called automatically on common player events (login, respawn, dimension change, clone, death, join level).
      * Providers can also trigger updates manually via PlayerLevelProvider.requestPlayerLevelUpdate().
+     * 
+     * Note: The calculated level is used for display purposes. Player levels also contribute
+     * to mob scaling via PlayerLevelProvider.calculateBonusLevels() when mobs spawn nearby.
      */
     private static void calculateAndSyncPlayerLevel(ServerPlayer player) {
         int playerLevel = LevelingAPI.getPlayerDisplayLevel(player);
-        LevelingSystem.setLevelTag(player, playerLevel);
+        LevelingSystem.setLevelAttachment(player, playerLevel);
         DynamicDifficulty.LOGGER.debug("Syncing player {} level ({}) to clients",
                 player.getName().getString(), playerLevel);
         NetworkDispatcher.syncLevelToAllPlayers(player);
@@ -308,7 +310,7 @@ public class LevelingEvents {
         int newLevel = LevelingAPI.getPlayerDisplayLevel(player);
 
         if (currentLevel != newLevel) {
-            LevelingSystem.setLevelTag(player, newLevel);
+            LevelingSystem.setLevelAttachment(player, newLevel);
             NetworkDispatcher.syncLevelToAllPlayers(player);
         }
     }
