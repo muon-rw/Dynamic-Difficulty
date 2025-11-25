@@ -214,7 +214,6 @@ Optional array of attribute bonuses applied per entity level:
 **Note:** Legacy numeric operation IDs (`0`, `1`, `2`) are deprecated but still functional for backwards compatibility. They will log a deprecation warning and may be removed in a future version. Please use the enum serialized names shown above.
 
 **Common Attributes:**
-*Note: These Attribute names are specific to 1.21.10+!*
 - `minecraft:generic.attack_damage` - Attack damage
 - `minecraft:generic.max_health` - Maximum health
 - `minecraft:generic.armor` - Armor points
