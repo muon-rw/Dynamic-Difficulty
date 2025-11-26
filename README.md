@@ -405,8 +405,9 @@ Configure player-based scaling in `dynamic_difficulty-common.toml`:
 
 ### Player Level Providers
 
-Some player level provider support is built-in. Additional providers can be added via the API
-Suggestions for new built-in providers are also welcome - Submit a GitHub issue! 
+Some player level provider support is built-in. 
+- Additional providers can be added via the API
+- Suggestions for new built-in providers are also welcome - Submit a GitHub issue! 
 
 **Current Providers:**
 - Pufferfish's Skills
