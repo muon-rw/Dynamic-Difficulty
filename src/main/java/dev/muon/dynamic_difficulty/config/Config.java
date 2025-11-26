@@ -239,6 +239,7 @@ public class Config {
     public final ConfigValue<Double> renderDistance;
     public final ConfigValue<List<String>> hiddenLevelEntities;
     public final ConfigValue<Boolean> showApotheosisWorldTier;
+    public final ConfigValue<Boolean> enableLineOfSightCheck;
     
     // Integration Options
     public final ConfigValue<Boolean> enableJadeIntegration;
@@ -306,6 +307,11 @@ public class Config {
                       "This will scan entity attributes for Apotheosis tier modifiers",
                       "Tiers: Haven, Frontier, Ascent, Summit, Pinnacle")
               .define("show_apotheosis_world_tier", true);
+      enableLineOfSightCheck = builder
+              .comment("Enable line of sight checks for entity level rendering",
+                      "When enabled, levels are only shown for entities the player can see (requires raycast)",
+                      "When disabled, levels are shown based on distance and render behavior only (better performance)")
+              .define("enable_line_of_sight_check", true);
       builder.pop();
       
       builder.push("integration_options");

@@ -1,6 +1,7 @@
 package dev.muon.dynamic_difficulty.client;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -23,13 +24,17 @@ import java.util.Map;
 @EventBusSubscriber(modid = DynamicDifficulty.MODID, value = Dist.CLIENT)
 public class ApotheosisClientCache {
     private static final boolean APOTHEOSIS_LOADED = ModList.get().isLoaded("apotheosis");
+    // Cache both positive (tier found) and negative (no tier) results
+    // null value means "no tier" (cached negative result), non-null means tier name
     private static final Map<Integer, String> TIER_CACHE = new HashMap<>();
     private static final Map<Integer, Long> LAST_SEEN = new HashMap<>();
+    // Special marker to distinguish "not cached" from "cached as null"
+    private static final String NO_TIER_MARKER = "";
     private static final long CLEANUP_INTERVAL = 20 * 60; // Every 60 seconds
     private static final long ENTITY_TIMEOUT = 5 * 60 * 20; // 5 minutes
     private static long lastCleanup = 0;
 
-    // lol
+    // Tier name mapping - ordered by tier progression for potential early exit optimization
     private static final Map<String, String> TIER_NAMES = Map.of(
         "haven", "Haven",
         "frontier", "Frontier", 
@@ -43,31 +48,45 @@ public class ApotheosisClientCache {
         
         int entityId = entity.getId();
         
-        // Check cache first
+        // Check cache first - includes both positive and negative results
         if (TIER_CACHE.containsKey(entityId)) {
             LAST_SEEN.put(entityId, entity.level().getGameTime());
-            return TIER_CACHE.get(entityId);
+            String cached = TIER_CACHE.get(entityId);
+            // Return null if cached as "no tier", otherwise return the tier name
+            return cached.equals(NO_TIER_MARKER) ? null : cached;
         }
         
-        // Scan for Apotheosis modifiers
-        // Expensive! But should only happen once-ish per entity
+        // Scan for Apotheosis modifiers - expensive operation
+        // Only happens once per entity (result is cached)
         String tier = scanForApotheosisModifiers(entity);
-        if (tier != null) {
-            TIER_CACHE.put(entityId, tier);
-            LAST_SEEN.put(entityId, entity.level().getGameTime());
-        }
+        
+        // Cache the result (both positive and negative)
+        // Use NO_TIER_MARKER for null to distinguish from "not cached"
+        TIER_CACHE.put(entityId, tier != null ? tier : NO_TIER_MARKER);
+        LAST_SEEN.put(entityId, entity.level().getGameTime());
         
         return tier;
     }
     
+    /**
+     * Invalidates the cache for a specific entity.
+     * Call if ever updating the world tier of a mob dynamically
+     * Apotheosis doesn't, so this is not hooked anywhere
+     */
+    public static void invalidateEntity(int entityId) {
+        TIER_CACHE.remove(entityId);
+        LAST_SEEN.remove(entityId);
+    }
+    
     private static String scanForApotheosisModifiers(LivingEntity entity) {
         // Iterate through all attributes and their modifiers
+        // Early return when tier is found to avoid unnecessary iteration
         for (AttributeInstance instance : entity.getAttributes().getSyncableAttributes()) {
             for (AttributeModifier modifier : instance.getModifiers()) {
                 ResourceLocation id = modifier.id();
                 if (id != null && "apotheosis".equals(id.getNamespace())) {
                     String path = id.getPath();
-                    // Check each tier pattern
+                    // Check each tier pattern - return immediately when found
                     for (Map.Entry<String, String> entry : TIER_NAMES.entrySet()) {
                         if (path.startsWith(entry.getKey() + "/")) {
                             return entry.getValue();
@@ -81,7 +100,7 @@ public class ApotheosisClientCache {
     
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
-        var minecraft = net.minecraft.client.Minecraft.getInstance();
+        var minecraft = Minecraft.getInstance();
         if (minecraft.level == null) return;
         
         long currentTime = minecraft.level.getGameTime();

@@ -306,7 +306,7 @@ public class ModCommands {
     source.sendSystemMessage(Component.literal("§7Day Bonus: §f+" + dayBonus));
     source.sendSystemMessage(Component.literal("§7§lBase Level: §f§l" + (baseLevel + distanceBonus + dayBonus)));
     
-    // Calculate bonuses
+    // Calculate bonuses and get IDs
     int biomeBonus = LevelingAPI.getBiomeLevelBonus(player);
     int structureBonus = LevelingAPI.getStructureLevelBonus(player);
     int playerBonus = 0;
@@ -319,19 +319,28 @@ public class ModCommands {
       playerBonus = (int) (rawBonus * multiplier);
     }
     
+    // Get biome ID
+    ResourceLocation biomeId = null;
+    if (biomeKey.isPresent()) {
+      biomeId = biomeKey.get().location();
+    }
+    
     source.sendSystemMessage(Component.literal("§e--- Bonuses ---"));
     source.sendSystemMessage(Component.literal("§7Structure Bonus: §f" + (structureBonus > 0 ? "+" : "") + structureBonus));
     source.sendSystemMessage(Component.literal("§7Biome Bonus: §f" + (biomeBonus > 0 ? "+" : "") + biomeBonus));
     source.sendSystemMessage(Component.literal("§7Player Bonus: §f" + (playerBonus > 0 ? "+" : "") + playerBonus));
     
-    // Final level calculation (simulate what would be applied to an entity)
+    // Final level calculation using proper logic (max level cap + bypassing bonuses)
     int finalBaseLevel = baseLevel + distanceBonus + dayBonus;
-    int finalLevel = finalBaseLevel + structureBonus + biomeBonus + playerBonus;
+    int finalLevel = LevelingUtils.calculateFinalDisplayLevel(
+        finalBaseLevel, currentStructureId, biomeId, playerBonus,
+        dimSettings, structureRegistry, biomeRegistry);
     
     source.sendSystemMessage(Component.literal("§e--- Final Level (for entities) ---"));
     source.sendSystemMessage(Component.literal("§7Base Level: §f" + finalBaseLevel));
+    source.sendSystemMessage(Component.literal("§7Max Level Cap: §f" + (dimSettings.maxLevel() > 1 ? dimSettings.maxLevel() : "Unlimited")));
     source.sendSystemMessage(Component.literal("§7+ All Bonuses: §f+" + (structureBonus + biomeBonus + playerBonus)));
-    source.sendSystemMessage(Component.literal("§7§lFinal Level: §f§l" + Math.max(1, finalLevel)));
+    source.sendSystemMessage(Component.literal("§7§lFinal Level: §f§l" + finalLevel));
     
     source.sendSystemMessage(Component.literal("§6====================================="));
     

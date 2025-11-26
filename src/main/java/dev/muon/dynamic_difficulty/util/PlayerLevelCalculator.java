@@ -1,4 +1,4 @@
-package dev.muon.dynamic_difficulty.leveling;
+package dev.muon.dynamic_difficulty.util;
 
 import dev.muon.dynamic_difficulty.api.PlayerLevelDisplayStrategy;
 import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;

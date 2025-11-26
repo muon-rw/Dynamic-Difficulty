@@ -155,6 +155,9 @@ dependencies {
     // Dev Env
     localRuntime("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}")
     implementation("snownee.jade:Jade-NeoForge:${minecraft_version}-${jade_version}")
+    // I think this needs some other dependency or we need to resolve from proper lucko maven
+    // Will fix later
+    // localRuntime "curse.maven:spark-361579:6225208"
 
     // Optional Compats:
     implementation("dev.shadowsoffire:Placebo:${minecraft_version}-${placebo}")

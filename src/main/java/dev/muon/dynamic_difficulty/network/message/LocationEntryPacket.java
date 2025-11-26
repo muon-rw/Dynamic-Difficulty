@@ -32,13 +32,15 @@ public class LocationEntryPacket implements CustomPacketPayload {
     private final int locationBonus;
     private final int baseLevel;
     private final int playerBonus;
+    private final int displayedLevel; // Final calculated level without player bonus (accounts for max level cap and bypassing bonuses)
     
-    public LocationEntryPacket(EntryType entryType, @Nullable ResourceLocation locationId, int locationBonus, int baseLevel, int playerBonus) {
+    public LocationEntryPacket(EntryType entryType, @Nullable ResourceLocation locationId, int locationBonus, int baseLevel, int playerBonus, int displayedLevel) {
         this.entryType = entryType;
         this.locationId = locationId;
         this.locationBonus = locationBonus;
         this.baseLevel = baseLevel;
         this.playerBonus = playerBonus;
+        this.displayedLevel = displayedLevel;
     }
     
     public void write(FriendlyByteBuf buf) {
@@ -50,6 +52,7 @@ public class LocationEntryPacket implements CustomPacketPayload {
         buf.writeInt(locationBonus);
         buf.writeInt(baseLevel);
         buf.writeInt(playerBonus);
+        buf.writeInt(displayedLevel);
     }
     
     public LocationEntryPacket(FriendlyByteBuf buf) {
@@ -62,8 +65,9 @@ public class LocationEntryPacket implements CustomPacketPayload {
         this.locationBonus = buf.readInt();
         this.baseLevel = buf.readInt();
         this.playerBonus = buf.readInt();
+        this.displayedLevel = buf.readInt();
     }
-    
+
     @Override
     public CustomPacketPayload.Type<LocationEntryPacket> type() {
         return TYPE;
@@ -88,15 +92,15 @@ public class LocationEntryPacket implements CustomPacketPayload {
         switch (msg.entryType) {
             case STRUCTURE:
                 // Always update level info, but only show title if bonus > 0
-                manager.displayStructureTitle(msg.locationId, msg.locationBonus, msg.baseLevel, msg.playerBonus);
+                manager.displayStructureTitle(msg.locationId, msg.locationBonus, msg.baseLevel, msg.playerBonus, msg.displayedLevel);
                 break;
             case BIOME:
                 // Always update level info, but only show title if bonus > 0
-                manager.displayBiomeTitle(msg.locationId, msg.locationBonus, msg.baseLevel, msg.playerBonus);
+                manager.displayBiomeTitle(msg.locationId, msg.locationBonus, msg.baseLevel, msg.playerBonus, msg.displayedLevel);
                 break;
             case DIMENSION:
                 // Dimensions affect base level through settings, not bonuses
-                manager.displayDimensionTitle(msg.locationId, msg.baseLevel, msg.playerBonus);
+                manager.displayDimensionTitle(msg.locationId, msg.baseLevel, msg.playerBonus, msg.displayedLevel);
                 break;
         }
     }

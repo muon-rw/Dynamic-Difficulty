@@ -1,3 +1,9 @@
+## 0.7.2
+- Fix potential performance issues caused by scanning for Apotheosis modifiers
+- Add option to disable line of sight checks for performance
+- Optimize location lookups
+- More internal reorganization
+
 ## 0.7.1
 - Fix Puffish Skills point allocations not updating instantly
 - Rename methods related to level tag -> level attachment

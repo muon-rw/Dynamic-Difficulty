@@ -68,7 +68,7 @@ public class NetworkDispatcher {
     PacketDistributor.sendToAllPlayers(new SyncLevelingData(entity));
   }
   
-  public static void sendLocationEntry(ServerPlayer player, LocationEntryPacket.EntryType entryType, ResourceLocation locationId, int locationBonus, int baseLevel, int playerBonus) {
-    PacketDistributor.sendToPlayer(player, new LocationEntryPacket(entryType, locationId, locationBonus, baseLevel, playerBonus));
+  public static void sendLocationEntry(ServerPlayer player, LocationEntryPacket.EntryType entryType, ResourceLocation locationId, int locationBonus, int baseLevel, int playerBonus, int displayedLevel) {
+    PacketDistributor.sendToPlayer(player, new LocationEntryPacket(entryType, locationId, locationBonus, baseLevel, playerBonus, displayedLevel));
   }
 }

@@ -6,8 +6,7 @@ import dev.muon.dynamic_difficulty.compat.PuffishSkillsProvider;
 import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.attribute.ModAttributes;
 import dev.muon.dynamic_difficulty.item.ModItems;
-import dev.muon.dynamic_difficulty.leveling.EntityLevelAttachment;
-import dev.muon.dynamic_difficulty.leveling.PlayerLevelUpdateHandler;
+import dev.muon.dynamic_difficulty.util.PlayerLevelUpdateHandler;
 import dev.muon.dynamic_difficulty.loot.condition.ModLootConditions;
 import dev.muon.dynamic_difficulty.loot.modifier.ModLootModifiers;
 import net.minecraft.resources.ResourceLocation;
@@ -36,7 +35,7 @@ public class DynamicDifficulty {
     Config.register(container);
     bus.addListener(this::onInterMod);
 
-    PlayerLevelUpdateHandler.registerCallback(PlayerLevelUpdateHandler::handlePlayerLevelUpdate);
+    PlayerLevelUpdateHandler.registerCallback(PlayerLevelUpdateHandler::updatePlayerLevel);
   }
 
   private void onInterMod(InterModEnqueueEvent event) {

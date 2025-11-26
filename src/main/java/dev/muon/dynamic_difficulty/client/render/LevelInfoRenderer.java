@@ -88,13 +88,16 @@ public class LevelInfoRenderer extends TitleRenderer<Void> {
         guiGraphics.pose().popPose();
     }
 
-    public void displayLevelInfo(int baseLevel, int structureBonus, int biomeBonus, int playerBonus) {
-        // Calculate base level (everything except player bonus)
-        // Note: Dimensions affect base level through settings, not bonuses
-        int displayLevel = baseLevel + structureBonus + biomeBonus;
-
+    /**
+     * Display level info using the calculated displayed level from the server.
+     * The server calculates this with proper max level cap and bypassing bonus handling.
+     * 
+     * @param displayedLevel The final calculated level without player bonus (from server)
+     * @param playerBonus The player bonus to show separately
+     */
+    public void displayLevelInfo(int displayedLevel, int playerBonus) {
         // Build level info: "Lv. n (+ p)" format where n includes all bonuses except player
-        MutableComponent levelInfo = Component.literal("Lv. " + displayLevel);
+        MutableComponent levelInfo = Component.literal("Lv. " + displayedLevel);
 
         // Only show player bonus separately if it exists
         if (playerBonus > 0) {

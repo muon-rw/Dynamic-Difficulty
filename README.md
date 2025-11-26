@@ -2,6 +2,9 @@
 
 Highly configurable and compatible mob leveling system
 
+___
+# Mod Developers: 
+- **No Maven yet! For now, use Cursemaven!**
 ---
 
 # Datapack Guide

@@ -1,7 +1,6 @@
-package dev.muon.dynamic_difficulty.leveling;
+package dev.muon.dynamic_difficulty;
 
 import com.mojang.serialization.Codec;
-import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;

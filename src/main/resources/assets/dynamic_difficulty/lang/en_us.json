@@ -55,6 +55,7 @@
   "dynamic_difficulty.configuration.render_behavior": "Render Behavior",
   "dynamic_difficulty.configuration.maximum_render_distance": "Maximum render distance",
   "dynamic_difficulty.configuration.show_apotheosis_world_tier": "Show Apotheosis World Tier",
+  "dynamic_difficulty.configuration.enable_line_of_sight_check": "Enable Line of Sight Check",
   "dynamic_difficulty.configuration.enable_jade_integration": "Enable Jade integration",
   "dynamic_difficulty.configuration.entities_with_hidden_levels": "Entities with hidden levels",
   "dynamic_difficulty.configuration.show_structure_titles": "Show structure titles",

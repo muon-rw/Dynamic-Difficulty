@@ -1,8 +1,8 @@
 package dev.muon.dynamic_difficulty.api;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
-import dev.muon.dynamic_difficulty.leveling.LevelingSystem;
-import dev.muon.dynamic_difficulty.leveling.PlayerLevelCalculator;
+import dev.muon.dynamic_difficulty.LevelingSystem;
+import dev.muon.dynamic_difficulty.util.PlayerLevelCalculator;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
@@ -28,11 +28,21 @@ import java.util.Map;
  * - Nearby structure bonuses
  * - Nearby player levels
  * - Random variation
+ * 
+ * <p><b>Side Usage:</b>
+ * <ul>
+ *   <li><b>Both:</b> Methods that work on both client and server (typically read-only operations)</li>
+ *   <li><b>Server:</b> Methods that require server-side logic (entity modification, world access)</li>
+ *   <li><b>Client:</b> Methods that require client-side logic (currently none in this API)</li>
+ * </ul>
  */
 public class LevelingAPI {
 
     /**
      * Checks if an entity has a level assigned
+     * 
+     * <p><b>Side:</b> Both (client & server)
+     * 
      * @param entity The entity to check
      * @return true if the entity has a level, false otherwise
      */
@@ -43,10 +53,14 @@ public class LevelingAPI {
     /**
      * Gets the current level of any living entity, including players.
      * 
-     * IMPORTANT DISTINCTION:
-     * - For mobs/entities: Level grants attribute bonuses (health, damage, etc.)
-     * - For players: Level is used for display (shown above head, color-coding mob difficulty)
-     *   and for calculating mob level bonuses based on nearby player proximity.
+     * <p><b>Side:</b> Both (client & server)
+     * 
+     * <p><b>IMPORTANT DISTINCTION:</b>
+     * <ul>
+     *   <li>For mobs/entities: Level grants attribute bonuses (health, damage, etc.)</li>
+     *   <li>For players: Level is used for display (shown above head, color-coding mob difficulty)
+     *       and for calculating mob level bonuses based on nearby player proximity.</li>
+     * </ul>
      * 
      * Players do NOT receive attribute bonuses from levels. Instead, they use the
      * PlayerLevelProvider system to contribute to nearby mob difficulty scaling.
@@ -62,6 +76,9 @@ public class LevelingAPI {
      * Sets an entity's level, updates attributes, and syncs to clients.
      * This is the proper way to change an entity's level at runtime (e.g., from items).
      * 
+     * <p><b>Side:</b> Server only
+     * <p>Requires server-side world access to modify entity attributes and sync to clients.
+     * 
      * @param entity The entity to level up/down (must NOT be a player)
      * @param newLevel The new level to set (must be >= 1)
      * @throws IllegalArgumentException if entity is a player, level is invalid, or entity can't have levels
@@ -74,6 +91,9 @@ public class LevelingAPI {
      * Adds levels to an entity (can be negative to subtract).
      * Minimum level is 1. Updates attributes and syncs to clients.
      * 
+     * <p><b>Side:</b> Server only
+     * <p>Requires server-side world access to modify entity attributes and sync to clients.
+     * 
      * @param entity The entity to level up/down (must NOT be a player)
      * @param levelsToAdd How many levels to add (negative to subtract)
      * @throws IllegalArgumentException if entity is a player or entity can't have levels
@@ -84,6 +104,9 @@ public class LevelingAPI {
 
     /**
      * Checks if an entity type can have levels applied
+     * 
+     * <p><b>Side:</b> Both (client & server)
+     * 
      * @param entity The entity to check
      * @return true if the entity can have levels, false otherwise
      */
@@ -93,6 +116,10 @@ public class LevelingAPI {
 
     /**
      * Checks if an entity's level should be displayed
+     * 
+     * <p><b>Side:</b> Both (client & server)
+     * <p>Typically used on client-side for rendering decisions, but safe to call on server.
+     * 
      * @param entity The entity to check
      * @return true if the entity's level should be shown, false otherwise
      */
@@ -101,7 +128,13 @@ public class LevelingAPI {
     }
 
     /**
-     * Calculates what level an entity should be based on various factors
+     * Calculates what level an entity should be based on various factors.
+     * This includes distance, depth, structure/biome bonuses, nearby players, and random variation.
+     * 
+     * <p><b>Side:</b> Server only
+     * <p>Requires server-side world access for structure detection, biome checks, and player proximity.
+     * Also uses random number generation which should be deterministic on server.
+     * 
      * @param entity The entity to calculate level for
      * @return The calculated level for the entity
      */
@@ -111,6 +144,10 @@ public class LevelingAPI {
 
     /**
      * Applies level-based attribute modifiers to an entity
+     * 
+     * <p><b>Side:</b> Server only
+     * <p>Modifies entity attributes, which must be done on the server.
+     * 
      * @param entity The entity to apply attributes to
      */
     public static void applyAllLevelAttributes(LivingEntity entity) {
@@ -118,7 +155,12 @@ public class LevelingAPI {
     }
 
     /**
-     * Gets the attribute modifiers for a given entity's level
+     * Gets the attribute modifiers for a given entity's level.
+     * This returns the modifiers that would be applied, but does not apply them.
+     * 
+     * <p><b>Side:</b> Both (client & server)
+     * <p>Read-only operation that queries leveling settings.
+     * 
      * @param entity The entity to get modifiers for
      * @return Map of attributes to their modifiers
      */
@@ -128,6 +170,10 @@ public class LevelingAPI {
 
     /**
      * Gets the level contribution from nearby players
+     * 
+     * <p><b>Side:</b> Server only
+     * <p>Requires ServerLevel parameter to search for nearby players and access player level data.
+     * 
      * @param level The server level to check in
      * @param entity The entity to calculate nearby player levels for
      * @return The total level contribution from nearby players
@@ -138,6 +184,9 @@ public class LevelingAPI {
 
     /**
      * Gets the structure level bonus for an entity's current position.
+     * 
+     * <p><b>Side:</b> Server only
+     * <p>Requires server-side world access to check structure manager for structures at position.
      *
      * @param entity The entity to get the structure bonus for
      * @return The highest level bonus from any structure at the entity's position
@@ -147,9 +196,13 @@ public class LevelingAPI {
     }
 
     /**
-     * Gets the structure level bonus for a given structure.
+     * Gets the structure level bonus for a given structure from datapack settings.
+     * 
+     * <p><b>Side:</b> Both (client & server)
+     * <p>Read-only operation that queries datapack settings. Requires a registry to check structure tags.
      *
      * @param structureId The structure's ResourceLocation
+     * @param structureRegistry The structure registry (can be obtained from world.registryAccess())
      * @return The level bonus configured for the structure
      */
     public static int getStructureLevelBonus(ResourceLocation structureId, Registry<Structure> structureRegistry) {
@@ -158,6 +211,9 @@ public class LevelingAPI {
 
     /**
      * Gets the biome level bonus for an entity's current position.
+     * 
+     * <p><b>Side:</b> Server only
+     * <p>Requires server-side world access to get biome at entity's position.
      *
      * @param entity The entity to get the biome bonus for
      * @return The level bonus from the biome at the entity's position
@@ -167,9 +223,13 @@ public class LevelingAPI {
     }
 
     /**
-     * Gets the biome level bonus for a given biome.
+     * Gets the biome level bonus for a given biome from datapack settings.
+     * 
+     * <p><b>Side:</b> Both (client & server)
+     * <p>Read-only operation that queries datapack settings. Requires a registry to check biome tags.
      *
      * @param biomeId The biome's ResourceLocation
+     * @param biomeRegistry The biome registry (can be obtained from world.registryAccess())
      * @return The level bonus configured for the biome
      */
     public static int getBiomeLevelBonus(ResourceLocation biomeId, Registry<Biome> biomeRegistry) {
@@ -177,7 +237,13 @@ public class LevelingAPI {
     }
 
     /**
-     * Registers a new provider for calculating player levels
+     * Registers a new provider for calculating player levels.
+     * Should be called during mod initialization (e.g., in FMLCommonSetupEvent).
+     * 
+     * <p><b>Side:</b> Both (typically called during common setup)
+     * <p>Registration is shared between client and server, but providers are typically
+     * registered during mod initialization before side distinction matters.
+     * 
      * @param provider The provider to register
      */
     public static void registerPlayerLevelProvider(PlayerLevelProvider provider) {
@@ -192,7 +258,11 @@ public class LevelingAPI {
      * - Displaying the player's level above their head
      * - Color-coding mob levels relative to the player
      * 
-     * Note: The display level returned by this method may not equal the player bonus
+     * <p><b>Side:</b> Server only
+     * <p>Requires ServerPlayer parameter to access player data and calculate from providers.
+     * The calculated level is synced to clients automatically.
+     * 
+     * <p><b>Note:</b> The display level returned by this method may not equal the player bonus
      * applied to mob scaling. For mob scaling, providers use calculateBonusLevels(),
      * which defaults to averaging player levels but can be overridden by providers
      * to implement custom aggregation logic (e.g., distance-based weighting, maximum level, etc.).

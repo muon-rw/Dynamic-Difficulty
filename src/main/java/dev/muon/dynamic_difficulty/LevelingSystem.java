@@ -1,27 +1,21 @@
-package dev.muon.dynamic_difficulty.leveling;
+package dev.muon.dynamic_difficulty;
 
-import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
 import dev.muon.dynamic_difficulty.config.Config;
-import dev.muon.dynamic_difficulty.data.BiomeLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.data.EntityLevelingSettingsReloader;
-import dev.muon.dynamic_difficulty.data.StructureLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.network.NetworkDispatcher;
-import dev.muon.dynamic_difficulty.settings.BiomeBonusSettings;
 import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
 import dev.muon.dynamic_difficulty.settings.EntityLevelingSettings;
 import dev.muon.dynamic_difficulty.settings.LevelingSettings;
-import dev.muon.dynamic_difficulty.settings.StructureBonusSettings;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
+import dev.muon.dynamic_difficulty.util.LocationBonusCache;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
-import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
@@ -33,14 +27,11 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.levelgen.structure.Structure;
-import net.minecraft.world.level.levelgen.structure.StructureStart;
+import org.jetbrains.annotations.ApiStatus;
 
-
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.Optional;
 
 /**
@@ -97,7 +88,8 @@ public class LevelingSystem {
      * Internal: Sets the level attachment without updating attributes or syncing.
      * Use setAndUpdateLevel() for runtime level changes.
      */
-    static void setLevelAttachment(LivingEntity entity, int level) {
+    @ApiStatus.Internal
+    public static void setLevelAttachment(LivingEntity entity, int level) {
         entity.setData(EntityLevelAttachment.LEVEL, level);
     }
 
@@ -229,17 +221,14 @@ public class LevelingSystem {
         if (!(entity.level() instanceof ServerLevel serverLevel)) return 0;
         
         BlockPos pos = entity.blockPosition();
+        BonusResults results = calculateLocationBonuses(serverLevel, pos);
         
-        // Calculate biome and structure bonuses
-        int biomeBonus = calculateBiomeBonus(serverLevel, pos, false);
-        int structureBonus = calculateStructureBonus(serverLevel, pos, false);
-        
-        if (biomeBonus > 0 || structureBonus > 0) {
+        if (results.structureNonBypassing > 0 || results.biomeNonBypassing > 0) {
             DynamicDifficulty.LOGGER.debug("{} non-bypassing bonuses: biome={}, structure={}", 
-                entity.getType().getDescription().getString(), biomeBonus, structureBonus);
+                entity.getType().getDescription().getString(), results.biomeNonBypassing, results.structureNonBypassing);
         }
         
-        return biomeBonus + structureBonus;
+        return results.biomeNonBypassing + results.structureNonBypassing;
     }
 
     /**
@@ -250,8 +239,6 @@ public class LevelingSystem {
     private static int calculateBypassingBonuses(LivingEntity entity) {
         int bonusLevels = 0;
         int playerBonus = 0;
-        int structureBonus = 0;
-        int biomeBonus = 0;
         
         if (Config.COMMON.applyPlayerBasedLeveling.get() && entity.level() instanceof ServerLevel serverLevel) {
             playerBonus = LevelingAPI.getLevelsFromNearbyPlayers(serverLevel, entity);
@@ -261,75 +248,43 @@ public class LevelingSystem {
         // Calculate structure and biome bonuses
         if (entity.level() instanceof ServerLevel serverLevel) {
             BlockPos pos = entity.blockPosition();
+            BonusResults results = calculateLocationBonuses(serverLevel, pos);
+            bonusLevels += results.structureBypassing + results.biomeBypassing;
             
-            // Structure and biome bonuses (only bypassing ones)
-            structureBonus = calculateStructureBonus(serverLevel, pos, true);
-            biomeBonus = calculateBiomeBonus(serverLevel, pos, true);
-            bonusLevels += structureBonus + biomeBonus;
-        }
-        
-        if (playerBonus > 0 || structureBonus > 0 || biomeBonus > 0) {
-            DynamicDifficulty.LOGGER.debug("{} bypassing bonuses: player={}, structure={}, biome={}, total={}", 
-                entity.getType().getDescription().getString(), playerBonus, structureBonus, biomeBonus, bonusLevels);
+            if (playerBonus > 0 || results.structureBypassing > 0 || results.biomeBypassing > 0) {
+                DynamicDifficulty.LOGGER.debug("{} bypassing bonuses: player={}, structure={}, biome={}, total={}", 
+                    entity.getType().getDescription().getString(), playerBonus, results.structureBypassing, results.biomeBypassing, bonusLevels);
+            }
         }
         
         return bonusLevels;
     }
     
     /**
-     * Calculates the biome bonus at a given position.
-     * 
-     * @param serverLevel The server level
-     * @param pos The position to check
-     * @param bypassingOnly If true, only returns bonuses with bypassesCap=true. If false, only returns bonuses with bypassesCap=false.
-     * @return The biome bonus, or 0 if none found or doesn't match the bypassing criteria
+     * Calculates both structure and biome bonuses using the shared cache.
+     * The cache handles computation and caching internally with proper granularity
+     * (chunk-level for structures, 4x4x4 for biomes) and LRU eviction with TTL.
      */
-    private static int calculateBiomeBonus(ServerLevel serverLevel, BlockPos pos, boolean bypassingOnly) {
-        Registry<Biome> biomeRegistry = serverLevel.registryAccess()
-                .registryOrThrow(Registries.BIOME);
-        Biome biome = serverLevel.getBiome(pos).value();
-        Optional<ResourceKey<Biome>> optKey = biomeRegistry.getResourceKey(biome);
+    private static BonusResults calculateLocationBonuses(ServerLevel serverLevel, BlockPos pos) {
+        LocationBonusCache.StructureBonusResult structureResult = LocationBonusCache.getStructureBonuses(serverLevel, pos);
+        LocationBonusCache.BiomeBonusResult biomeResult = LocationBonusCache.getBiomeBonuses(serverLevel, pos);
         
-        if (optKey.isPresent()) {
-            ResourceLocation biomeId = optKey.get().location();
-            BiomeBonusSettings settings = BiomeLevelingSettingsReloader.get(biomeId, biomeRegistry);
-            if (settings != null && settings.bypassesCap() == bypassingOnly) {
-                return settings.levelBonus();
-            }
-        }
-        
-        return 0;
+        return new BonusResults(
+            structureResult.nonBypassingBonus(), structureResult.bypassingBonus(),
+            biomeResult.nonBypassingBonus(), biomeResult.bypassingBonus()
+        );
     }
     
     /**
-     * Calculates the highest structure bonus at a given position.
-     * 
-     * @param serverLevel The server level
-     * @param pos The position to check
-     * @param bypassingOnly If true, only returns bonuses with bypassesCap=true. If false, only returns bonuses with bypassesCap=false.
-     * @return The highest matching structure bonus, or 0 if none found
+     * Helper record to hold bonus calculation results.
      */
-    private static int calculateStructureBonus(ServerLevel serverLevel, BlockPos pos, boolean bypassingOnly) {
-        Registry<Structure> structureRegistry = serverLevel.registryAccess()
-                .registryOrThrow(Registries.STRUCTURE);
-        
-        int highestBonus = 0;
-        for (Structure structure : structureRegistry) {
-            StructureStart start = serverLevel.structureManager().getStructureAt(pos, structure);
-            if (start != null && start.isValid()) {
-                ResourceLocation structureId = structureRegistry.getKey(structure);
-                if (structureId != null) {
-                    StructureBonusSettings settings = StructureLevelingSettingsReloader.get(structureId, structureRegistry);
-                    if (settings != null && settings.bypassesCap() == bypassingOnly) {
-                        int bonus = settings.levelBonus();
-                        highestBonus = Math.max(highestBonus, bonus);
-                    }
-                }
-            }
-        }
-        
-        return highestBonus;
-    }
+    private record BonusResults(
+        int structureNonBypassing,
+        int structureBypassing,
+        int biomeNonBypassing,
+        int biomeBypassing
+    ) {}
+    
 
     public static void applyAllLevelAttributes(LivingEntity entity) {
         getAttributeBonuses(entity).forEach((attributeKey, modifier) -> {
@@ -440,7 +395,7 @@ public class LevelingSystem {
     }
 
     /**
-     * Gets the level contribution from nearby players within configured radius
+     * Gets the level contribution from nearby players within configured radius.
      */
     public static int getLevelsFromNearbyPlayers(ServerLevel level, LivingEntity entity) {
         if (!Config.COMMON.applyPlayerBasedLeveling.get()) {
@@ -489,48 +444,22 @@ public class LevelingSystem {
     }
 
     /**
-     * Gets the structure level bonus for an entity's current position
+     * Gets the structure level bonus for an entity's current position.
      */
     public static int getStructureLevelBonus(LivingEntity entity) {
         if (!(entity.level() instanceof ServerLevel serverLevel)) return 0;
-
-        BlockPos pos = entity.blockPosition();
-        Registry<Structure> structureRegistry = serverLevel.registryAccess()
-                .registryOrThrow(Registries.STRUCTURE);
-
-        int highestBonus = 0;
-        for (Structure structure : structureRegistry) {
-            StructureStart start = serverLevel.structureManager().getStructureAt(pos, structure);
-            if (start != null && start.isValid()) {
-                ResourceLocation structureId = structureRegistry.getKey(structure);
-                if (structureId != null) {
-                    int bonus = LevelingAPI.getStructureLevelBonus(structureId, structureRegistry);
-                    highestBonus = Math.max(highestBonus, bonus);
-                }
-            }
-        }
-
-        return highestBonus;
+        
+        LocationBonusCache.StructureBonusResult result = LocationBonusCache.getStructureBonuses(serverLevel, entity.blockPosition());
+        return result.totalBonus();
     }
 
     /**
-     * Gets the biome level bonus for an entity's current position
+     * Gets the biome level bonus for an entity's current position.
      */
     public static int getBiomeLevelBonus(LivingEntity entity) {
         if (!(entity.level() instanceof ServerLevel serverLevel)) return 0;
         
-        BlockPos pos = entity.blockPosition();
-        Registry<Biome> biomeRegistry = serverLevel.registryAccess()
-                .registryOrThrow(Registries.BIOME);
-        
-        Biome biome = serverLevel.getBiome(pos).value();
-        Optional<ResourceKey<Biome>> optKey = biomeRegistry.getResourceKey(biome);
-        
-        if (optKey.isPresent()) {
-            ResourceLocation biomeId = optKey.get().location();
-            return LevelingAPI.getBiomeLevelBonus(biomeId, biomeRegistry);
-        }
-        
-        return 0;
+        LocationBonusCache.BiomeBonusResult result = LocationBonusCache.getBiomeBonuses(serverLevel, entity.blockPosition());
+        return result.totalBonus();
     }
 }

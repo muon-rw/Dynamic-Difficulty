@@ -29,10 +29,15 @@ public class TitleRenderManager {
 
     private DimensionType currentDimension = null;
 
-    // Track last displayed level bonuses (excluding player bonus) to detect changes
-    private int lastBaseLevel = -1;
+    // Track final displayed values to detect actual changes (avoids retriggering on location change with same level)
+    private int lastDisplayedLevel = -1;
+    private int lastPlayerBonus = -1;
+    
+    // Track component values for title display purposes
     private int lastStructureBonus = -1;
     private int lastBiomeBonus = -1;
+    private ResourceLocation lastStructureId = null;
+    private ResourceLocation lastBiomeId = null;
 
     public TitleRenderManager() {
         this.structureTitleRenderer = new StructureTitleRenderer<>(1); // Only track 1 recent structure
@@ -101,12 +106,17 @@ public class TitleRenderManager {
     /**
      * Display structure title when notified by server
      */
-    public void displayStructureTitle(ResourceLocation structureId, int structureBonus, int baseLevel, int playerBonus) {
-        int biomeBonus = lastBiomeBonus >= 0 ? lastBiomeBonus : 0;
-        if (shouldUpdateLevelInfo(baseLevel, structureBonus, biomeBonus)) {
-            levelInfoRenderer.displayLevelInfo(baseLevel, structureBonus, biomeBonus, playerBonus);
-            updateTrackedLevelValues(baseLevel, structureBonus, biomeBonus);
+    public void displayStructureTitle(ResourceLocation structureId, int structureBonus, int baseLevel, int playerBonus, int displayedLevel) {
+        // Update level info only if displayed values changed
+        if (shouldUpdateLevelInfo(displayedLevel, playerBonus)) {
+            levelInfoRenderer.displayLevelInfo(displayedLevel, playerBonus);
+            lastDisplayedLevel = displayedLevel;
+            lastPlayerBonus = playerBonus;
         }
+        
+        // Always update tracked component values for title display purposes
+        lastStructureId = structureId;
+        lastStructureBonus = structureBonus;
 
         if (Config.CLIENT.showStructureTitles.get()) {
             boolean shouldDisplay = !Config.CLIENT.structureTitleOnlyAnnounceIfModified.get() || structureBonus > 0;
@@ -121,12 +131,17 @@ public class TitleRenderManager {
     /**
      * Display biome title when notified by server
      */
-    public void displayBiomeTitle(ResourceLocation biomeId, int biomeBonus, int baseLevel, int playerBonus) {
-        int structureBonus = lastStructureBonus >= 0 ? lastStructureBonus : 0;
-        if (shouldUpdateLevelInfo(baseLevel, structureBonus, biomeBonus)) {
-            levelInfoRenderer.displayLevelInfo(baseLevel, structureBonus, biomeBonus, playerBonus);
-            updateTrackedLevelValues(baseLevel, structureBonus, biomeBonus);
+    public void displayBiomeTitle(ResourceLocation biomeId, int biomeBonus, int baseLevel, int playerBonus, int displayedLevel) {
+        // Update level info only if displayed values changed
+        if (shouldUpdateLevelInfo(displayedLevel, playerBonus)) {
+            levelInfoRenderer.displayLevelInfo(displayedLevel, playerBonus);
+            lastDisplayedLevel = displayedLevel;
+            lastPlayerBonus = playerBonus;
         }
+        
+        // Always update tracked component values for title display purposes
+        lastBiomeId = biomeId;
+        lastBiomeBonus = biomeBonus;
 
         if (Config.CLIENT.showBiomeTitles.get()) {
             boolean shouldDisplay = !Config.CLIENT.biomeTitleOnlyAnnounceIfModified.get() || biomeBonus > 0;
@@ -155,13 +170,19 @@ public class TitleRenderManager {
      * Display dimension title when notified by server
      * Note: Dimensions affect base level through settings, not bonuses
      */
-    public void displayDimensionTitle(ResourceLocation dimensionId, int baseLevel, int playerBonus) {
-        int structureBonus = lastStructureBonus >= 0 ? lastStructureBonus : 0;
-        int biomeBonus = lastBiomeBonus >= 0 ? lastBiomeBonus : 0;
-        if (shouldUpdateLevelInfo(baseLevel, structureBonus, biomeBonus)) {
-            levelInfoRenderer.displayLevelInfo(baseLevel, structureBonus, biomeBonus, playerBonus);
-            updateTrackedLevelValues(baseLevel, structureBonus, biomeBonus);
+    public void displayDimensionTitle(ResourceLocation dimensionId, int baseLevel, int playerBonus, int displayedLevel) {
+        // Update level info only if displayed values changed
+        if (shouldUpdateLevelInfo(displayedLevel, playerBonus)) {
+            levelInfoRenderer.displayLevelInfo(displayedLevel, playerBonus);
+            lastDisplayedLevel = displayedLevel;
+            lastPlayerBonus = playerBonus;
         }
+        
+        // Dimension change resets structure/biome tracking (player is in a new world)
+        lastStructureId = null;
+        lastStructureBonus = -1;
+        lastBiomeId = null;
+        lastBiomeBonus = -1;
 
         if (Config.CLIENT.showDimensionTitles.get()) {
             boolean shouldDisplay = true;
@@ -249,12 +270,18 @@ public class TitleRenderManager {
     }
 
     /**
-     * Check if level info should be updated based on non-player bonuses
+     * Check if level info should be updated based on the final displayed values.
+     * Only triggers when the actual displayed level or player bonus changes,
+     * avoiding unnecessary updates when location changes but level stays the same.
      */
-    private boolean shouldUpdateLevelInfo(int baseLevel, int structureBonus, int biomeBonus) {
-        return lastBaseLevel != baseLevel ||
-                lastStructureBonus != structureBonus ||
-                lastBiomeBonus != biomeBonus;
+    private boolean shouldUpdateLevelInfo(int displayedLevel, int playerBonus) {
+        // Always update on first call
+        if (lastDisplayedLevel == -1) {
+            return true;
+        }
+        
+        // Only update if the displayed values actually changed
+        return lastDisplayedLevel != displayedLevel || lastPlayerBonus != playerBonus;
     }
 
     private Component getStructureName(ResourceLocation structureId) {
@@ -338,15 +365,6 @@ public class TitleRenderManager {
     }
 
     /**
-     * Update tracked level values
-     */
-    private void updateTrackedLevelValues(int baseLevel, int structureBonus, int biomeBonus) {
-        lastBaseLevel = baseLevel;
-        lastStructureBonus = structureBonus;
-        lastBiomeBonus = biomeBonus;
-    }
-
-    /**
      * Clear all cached state (called on disconnect)
      */
     public void clearCache() {
@@ -364,9 +382,12 @@ public class TitleRenderManager {
 
         levelInfoRenderer.clearTimer();
 
-        lastBaseLevel = -1;
+        lastDisplayedLevel = -1;
+        lastPlayerBonus = -1;
         lastStructureBonus = -1;
         lastBiomeBonus = -1;
+        lastStructureId = null;
+        lastBiomeId = null;
     }
 }
 
