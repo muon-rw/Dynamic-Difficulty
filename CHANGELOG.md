@@ -4,6 +4,7 @@
 - Add height-based scaling
 - Sea level is now configurable per dimension in datapacks
 - `spawn_pos_override` now only takes an `x` and `z`
+- Add config option to disable restriction for only showing structure titles if they have modified levels 
 - Updated some dimension default settings
 - Some more internal reorganization
 
