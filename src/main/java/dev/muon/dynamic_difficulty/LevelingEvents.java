@@ -13,16 +13,13 @@ import dev.muon.dynamic_difficulty.data.StructureTagLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.network.NetworkDispatcher;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
 import dev.muon.dynamic_difficulty.util.LootUtils;
-import dev.muon.dynamic_difficulty.util.LocationBonusCache;
 import dev.muon.dynamic_difficulty.util.PlayerLevelUpdateHandler;
 import dev.muon.dynamic_difficulty.util.PlayerLocationTracker;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.storage.loot.LootParams;
@@ -37,7 +34,6 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
@@ -100,9 +96,6 @@ public class LevelingEvents {
         event.addListener(new StructureTagLevelingSettingsReloader());
         event.addListener(new BiomeLevelingSettingsReloader());
         event.addListener(new BiomeTagLevelingSettingsReloader());
-        
-        // Clear location bonus cache when settings reload (structure/biome bonuses may have changed)
-        LocationBonusCache.clearCache();
     }
 
     @SubscribeEvent
@@ -222,18 +215,6 @@ public class LevelingEvents {
                     .collect(Collectors.toSet());
             
             PlayerLocationTracker.cleanupStaleEntries(onlinePlayerIds);
-        }
-    }
-
-    /**
-     * Clears location bonus cache for a dimension when it unloads.
-     * Prevents stale cache entries from accumulating for unloaded dimensions.
-     */
-    @SubscribeEvent
-    public static void onLevelUnload(LevelEvent.Unload event) {
-        if (event.getLevel() instanceof ServerLevel serverLevel) {
-            ResourceKey<Level> dimension = serverLevel.dimension();
-            LocationBonusCache.clearCacheForDimension(dimension);
         }
     }
 

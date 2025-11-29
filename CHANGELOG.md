@@ -1,3 +1,7 @@
+## 0.7.3
+- Removed structure/biome cache from 0.7.2
+- Now only check bonuses for known nearby structures using StructureManager#startsForStructure and LocationPredicate, making caching unnecessary
+
 ## 0.7.2
 - Fix potential performance issues caused by scanning for Apotheosis modifiers
 - Add option to disable line of sight checks for performance

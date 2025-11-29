@@ -10,7 +10,7 @@ import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
 import dev.muon.dynamic_difficulty.settings.EntityLevelingSettings;
 import dev.muon.dynamic_difficulty.settings.LevelingSettings;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
-import dev.muon.dynamic_difficulty.util.LocationBonusCache;
+import dev.muon.dynamic_difficulty.util.LocationBonusUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -261,13 +261,13 @@ public class LevelingSystem {
     }
     
     /**
-     * Calculates both structure and biome bonuses using the shared cache.
-     * The cache handles computation and caching internally with proper granularity
-     * (chunk-level for structures, 4x4x4 for biomes) and LRU eviction with TTL.
+     * Calculates both structure and biome bonuses using direct lookups.
+     * Structure detection uses startsForStructure + LocationPredicate for efficiency.
+     * Biome lookups use Minecraft's internal caching.
      */
     private static BonusResults calculateLocationBonuses(ServerLevel serverLevel, BlockPos pos) {
-        LocationBonusCache.StructureBonusResult structureResult = LocationBonusCache.getStructureBonuses(serverLevel, pos);
-        LocationBonusCache.BiomeBonusResult biomeResult = LocationBonusCache.getBiomeBonuses(serverLevel, pos);
+        LocationBonusUtils.StructureResult structureResult = LocationBonusUtils.getStructureAt(serverLevel, pos, true);
+        LocationBonusUtils.BiomeResult biomeResult = LocationBonusUtils.getBiomeAt(serverLevel, pos);
         
         return new BonusResults(
             structureResult.nonBypassingBonus(), structureResult.bypassingBonus(),
@@ -449,7 +449,7 @@ public class LevelingSystem {
     public static int getStructureLevelBonus(LivingEntity entity) {
         if (!(entity.level() instanceof ServerLevel serverLevel)) return 0;
         
-        LocationBonusCache.StructureBonusResult result = LocationBonusCache.getStructureBonuses(serverLevel, entity.blockPosition());
+        LocationBonusUtils.StructureResult result = LocationBonusUtils.getStructureAt(serverLevel, entity.blockPosition(), true);
         return result.totalBonus();
     }
 
@@ -459,7 +459,7 @@ public class LevelingSystem {
     public static int getBiomeLevelBonus(LivingEntity entity) {
         if (!(entity.level() instanceof ServerLevel serverLevel)) return 0;
         
-        LocationBonusCache.BiomeBonusResult result = LocationBonusCache.getBiomeBonuses(serverLevel, entity.blockPosition());
+        LocationBonusUtils.BiomeResult result = LocationBonusUtils.getBiomeAt(serverLevel, entity.blockPosition());
         return result.totalBonus();
     }
 }

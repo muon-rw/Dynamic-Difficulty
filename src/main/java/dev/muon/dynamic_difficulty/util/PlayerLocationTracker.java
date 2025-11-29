@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tracks player locations (structure, biome, dimension) and sends level info updates to clients.
- * Uses {@link LocationBonusCache} for efficient structure/biome bonus lookups.
+ * Uses {@link LocationBonusUtils} for structure/biome lookups.
  */
 public class PlayerLocationTracker {
     
@@ -35,7 +35,6 @@ public class PlayerLocationTracker {
     
     /**
      * Record holding all tracked location state for a player.
-     * Using a record ensures immutability and clean state updates.
      */
     private record PlayerLocationState(
         ResourceLocation structureId,
@@ -133,9 +132,9 @@ public class PlayerLocationTracker {
         int currentBaseLevel = LevelingUtils.calculateBaseEntityLevel(player, playerPos);
         int playerBonus = calculatePlayerBonus(player);
 
-        // Fetch location data (caches make this fast)
-        LocationBonusCache.StructureBonusResult structureResult = LocationBonusCache.getStructureBonuses(level, playerPos);
-        LocationBonusCache.BiomeBonusResult biomeResult = LocationBonusCache.getBiomeBonuses(level, playerPos);
+        // Fetch location data - detect ALL structures, let client decide what to display
+        LocationBonusUtils.StructureResult structureResult = LocationBonusUtils.getStructureAt(level, playerPos, false);
+        LocationBonusUtils.BiomeResult biomeResult = LocationBonusUtils.getBiomeAt(level, playerPos);
 
         ResourceLocation currentStructure = structureResult.structureId();
         ResourceLocation currentBiome = biomeResult.biomeId();
