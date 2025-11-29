@@ -20,10 +20,13 @@ ___
         - `levels_per_distance` - Bonus per block from the world's spawn point (default: 0.01)
         - `levels_per_deepness` - Bonus per block below sea level (default: 0.0)
         - `levels_per_height` - Bonus per block above sea level (default: 0.0)
+        - `levels_per_day` - Bonus per in-game day passed (default: 0.0) *(config only)*
+        - `levels_per_local_difficulty` - Bonus based on Minecraft's local difficulty (default: 0.0) *(config only)*
         - `random_level_bonus` - Random bonus levels (0 to this value) (default: 0)
-    - Dimensions can override these defaults with a datapack (see [Dimensions](#dimensions))
+    - Dimensions can override most of these defaults with a datapack (see [Dimensions](#dimensions))
     - Entity-specific settings provide final authority over base level (see [Entities](#entities))
     - **Note:** Deepness/height scaling use sea level (Y=64) as the reference point. Dimensions can override this with the `sea_level` field.
+    - **Note:** `levels_per_day` and `levels_per_local_difficulty` are global config options and cannot be overridden per-dimension.
 
 2. **Non-Bypassing Bonuses** - Respect the `max_level` from Step 1
     - Bonuses with `bypasses_cap: false` (default for all biome bonuses, see [Biomes](#biome-leveling-settings))
@@ -39,8 +42,11 @@ ___
 - Base calculation:
     - `starting_level`: 1
     - Distance from spawn: 1600 blocks × `levels_per_distance` (0.01) = +16
-    - Total base: **17**
-- Biome bonus (`bypasses_cap: false`): +5 → Total: 22 → **Capped to 20**
+    - Depth: 20 blocks below sea level × `levels_per_deepness` (0.05) = +1
+    - Days: 10 days × `levels_per_day` (0.5) = +5
+    - Local difficulty: 2.5 × `levels_per_local_difficulty` (1.0) = +2
+    - Total base: **25**
+- Biome bonus (`bypasses_cap: false`): +5 → Total: 30 → **Capped to 20**
 - Structure bonus (`bypasses_cap: true`): +10 → **Final: 30**
 
 ### Lookup Priority
@@ -619,6 +625,6 @@ This example gives a 1% chance to drop a diamond from entities level 50 or highe
 
 ## Tips:
 
-1. Use the `/dynamic_difficulty dumpStructures` command to for a list of registered structures and their configured bonuses.
-2. Use `/dynamic_difficulty debug level` to see a full breakdown for the zone you're standing in
+1. Use the `/dynamic_difficulty dumpStructures` command for a list of registered structures and their configured bonuses.
+2. Use `/dynamic_difficulty debug location` to see a full breakdown of level calculation for where you're standing
 3. You can check if your datapack is loaded in game by using `/datapack list`
