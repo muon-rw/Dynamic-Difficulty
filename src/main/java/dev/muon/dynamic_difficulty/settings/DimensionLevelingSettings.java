@@ -24,6 +24,8 @@ public record DimensionLevelingSettings(
     float levelsPerDeepness,
     int randomLevelBonus,
     @Nullable BlockPos spawnPosOverride,
+    int seaLevel,
+    float levelsPerHeight,
     @Nullable Map<Attribute, AttributeModifier> attributeModifiers)
     implements LevelingSettings {
 
@@ -67,6 +69,12 @@ public record DimensionLevelingSettings(
           OPERATION_CODEC.fieldOf("operation").forGetter(AttributeModifierEntry::operation)
       ).apply(instance, AttributeModifierEntry::new));
 
+  // Custom codec for spawn_pos_override that only parses x and z (2D position for horizontal distance)
+  private static final Codec<BlockPos> SPAWN_POS_OVERRIDE_CODEC = RecordCodecBuilder.create(instance -> instance.group(
+      Codec.INT.fieldOf("x").forGetter(BlockPos::getX),
+      Codec.INT.fieldOf("z").forGetter(BlockPos::getZ)
+  ).apply(instance, (x, z) -> new BlockPos(x, 0, z)));
+
   private static final Codec<Map<Attribute, AttributeModifier>> ATTRIBUTE_MODIFIERS_CODEC = 
       Codec.list(ATTRIBUTE_MODIFIER_ENTRY_CODEC)
       .xmap(
@@ -98,11 +106,13 @@ public record DimensionLevelingSettings(
       Codec.INT.fieldOf("starting_level").forGetter(DimensionLevelingSettings::startingLevel),
       Codec.INT.fieldOf("max_level").forGetter(DimensionLevelingSettings::maxLevel),
       Codec.FLOAT.fieldOf("levels_per_distance").forGetter(DimensionLevelingSettings::levelsPerDistance),
-      Codec.FLOAT.fieldOf("levels_per_deepness").forGetter(DimensionLevelingSettings::levelsPerDeepness),
+      Codec.FLOAT.optionalFieldOf("levels_per_deepness", 0.0f).forGetter(DimensionLevelingSettings::levelsPerDeepness),
       Codec.INT.fieldOf("random_level_bonus").forGetter(DimensionLevelingSettings::randomLevelBonus),
-      BlockPos.CODEC.optionalFieldOf("spawn_pos_override").forGetter(s -> Optional.ofNullable(s.spawnPosOverride)),
+      SPAWN_POS_OVERRIDE_CODEC.optionalFieldOf("spawn_pos_override").forGetter(s -> Optional.ofNullable(s.spawnPosOverride)),
+      Codec.INT.optionalFieldOf("sea_level", 64).forGetter(DimensionLevelingSettings::seaLevel),
+      Codec.FLOAT.optionalFieldOf("levels_per_height", 0.0f).forGetter(DimensionLevelingSettings::levelsPerHeight),
       ATTRIBUTE_MODIFIERS_CODEC.optionalFieldOf("attribute_modifiers").forGetter(s -> Optional.ofNullable(s.attributeModifiers))
-  ).apply(instance, (startingLevel, maxLevel, levelsPerDistance, levelsPerDeepness, randomLevelBonus, spawnPosOverride, attributeModifiers) ->
+  ).apply(instance, (startingLevel, maxLevel, levelsPerDistance, levelsPerDeepness, randomLevelBonus, spawnPosOverride, seaLevel, levelsPerHeight, attributeModifiers) ->
       new DimensionLevelingSettings(
           startingLevel,
           maxLevel,
@@ -110,18 +120,26 @@ public record DimensionLevelingSettings(
           levelsPerDeepness,
           randomLevelBonus,
           spawnPosOverride.orElse(null),
+          seaLevel,
+          levelsPerHeight,
           attributeModifiers.orElse(null)
       )
   ));
 
   public static DimensionLevelingSettings load(JsonObject jsonObject) {
+    // Optional dimension-specific fields with hardcoded defaults (not config fallback)
+    int seaLevel = jsonObject.has("sea_level") ? jsonObject.get("sea_level").getAsInt() : 64;
+    float levelsPerDeepness = jsonObject.has("levels_per_deepness") ? jsonObject.get("levels_per_deepness").getAsFloat() : 0.0f;
+    float levelsPerHeight = jsonObject.has("levels_per_height") ? jsonObject.get("levels_per_height").getAsFloat() : 0.0f;
     return new DimensionLevelingSettings(
         jsonObject.get("starting_level").getAsInt(),
         jsonObject.get("max_level").getAsInt(),
         jsonObject.get("levels_per_distance").getAsFloat(),
-        jsonObject.get("levels_per_deepness").getAsFloat(),
+        levelsPerDeepness,
         jsonObject.get("random_level_bonus").getAsInt(),
         LevelingSettings.readSpawnPosOverride(jsonObject),
+        seaLevel,
+        levelsPerHeight,
         LevelingSettings.readAttributeModifiers(jsonObject));
   }
 }

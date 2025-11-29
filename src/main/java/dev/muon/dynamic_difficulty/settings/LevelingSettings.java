@@ -24,6 +24,22 @@ public interface LevelingSettings {
   int randomLevelBonus();
 
   Map<Attribute, AttributeModifier> attributeModifiers();
+  
+  /**
+   * Returns the sea level reference point for deepness calculations.
+   * Default is 64. Only DimensionLevelingSettings can override this.
+   */
+  default int seaLevel() {
+    return 64;
+  }
+  
+  /**
+   * Returns the levels per block above sea level for height-based scaling.
+   * Default is 0.0 (disabled). Only DimensionLevelingSettings can override this.
+   */
+  default float levelsPerHeight() {
+    return 0.0f;
+  }
 
   static Map<Attribute, AttributeModifier> readAttributeModifiers(JsonObject jsonObject) {
     if (!jsonObject.has("attribute_modifiers")) {
@@ -92,8 +108,8 @@ public interface LevelingSettings {
     if (!jsonObject.has("spawn_pos_override")) return null;
     JsonObject posJson = jsonObject.get("spawn_pos_override").getAsJsonObject();
     int x = posJson.get("x").getAsInt();
-    int y = posJson.get("y").getAsInt();
     int z = posJson.get("z").getAsInt();
-    return new BlockPos(x, y, z);
+    // Y is set to 0 as spawn_pos_override is only used for 2D horizontal distance calculations
+    return new BlockPos(x, 0, z);
   }
 }

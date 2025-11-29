@@ -1,4 +1,4 @@
-package dev.muon.dynamic_difficulty.compat;
+package dev.muon.dynamic_difficulty.compat.jade;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;

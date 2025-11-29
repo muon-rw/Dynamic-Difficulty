@@ -188,7 +188,11 @@ public class LevelingSystem {
     private static int calculateInitialLevel(LivingEntity entity) {
         LevelingSettings settings = getLevelingSettings(entity);
         BlockPos spawnPos = getSpawnPosition(entity);
-        double distanceToSpawn = Math.sqrt(spawnPos.distSqr(entity.blockPosition()));
+        BlockPos entityPos = entity.blockPosition();
+        // Use 2D horizontal distance (ignore Y) for distance-based scaling
+        double dx = spawnPos.getX() - entityPos.getX();
+        double dz = spawnPos.getZ() - entityPos.getZ();
+        double distanceToSpawn = Math.sqrt(dx * dx + dz * dz);
 
         int startingLevel = settings.startingLevel();
         int baseLevel = startingLevel;

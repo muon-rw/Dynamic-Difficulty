@@ -255,8 +255,8 @@ public class LevelingAPI {
     /**
      * Gets the display level for a player based on all registered providers
      * and the configured display strategy. This aggregated level is used for:
-     * - Displaying the player's level above their head
-     * - Color-coding mob levels relative to the player
+     * - Displaying the player's level above their head (name tags)
+     * - Color-coding mob difficulty indicators (red/yellow/green) relative to the player
      * 
      * <p><b>Side:</b> Server only
      * <p>Requires ServerPlayer parameter to access player data and calculate from providers.

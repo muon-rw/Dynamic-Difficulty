@@ -18,10 +18,12 @@ ___
     - The config file `dynamic_difficulty-common.toml` defines default base levels, based on:
         - `starting_level` - Base level for all entities (default: 1)
         - `levels_per_distance` - Bonus per block from the world's spawn point (default: 0.01)
-        - `levels_per_deepness` - Bonus per block below sea level (Y=64) (default: 0.0)
+        - `levels_per_deepness` - Bonus per block below sea level (default: 0.0)
+        - `levels_per_height` - Bonus per block above sea level (default: 0.0)
         - `random_level_bonus` - Random bonus levels (0 to this value) (default: 0)
     - Dimensions can override these defaults with a datapack (see [Dimensions](#dimensions))
     - Entity-specific settings provide final authority over base level (see [Entities](#entities))
+    - **Note:** Deepness/height scaling use sea level (Y=64) as the reference point. Dimensions can override this with the `sea_level` field.
 
 2. **Non-Bypassing Bonuses** - Respect the `max_level` from Step 1
     - Bonuses with `bypasses_cap: false` (default for all biome bonuses, see [Biomes](#biome-leveling-settings))
@@ -99,6 +101,23 @@ data/<namespace>/leveling_settings/dimension_tags/<tag_id>.json
 }
 ```
 
+**Example 3: Using spawn_pos_override and levels_per_height**
+```json
+{
+  "starting_level": 1,
+  "max_level": 0,
+  "levels_per_distance": 0.01,
+  "levels_per_deepness": 0.0,
+  "levels_per_height": 0.02,
+  "random_level_bonus": 0,
+  "spawn_pos_override": {
+    "x": 0,
+    "z": 0
+  },
+  "sea_level": 64
+}
+```
+
 **Note:** To fall back to config defaults, simply omit the `attribute_modifiers` field entirely (or use an empty array `[]` - both work the same way).
 
 ### Fields
@@ -108,12 +127,19 @@ data/<namespace>/leveling_settings/dimension_tags/<tag_id>.json
 | `starting_level`      | Integer | 1 | Base level for entities in this dimension                        |
 | `max_level`           | Integer | 0 | Maximum level cap (0 = unlimited)                                |
 | `levels_per_distance` | Float | 0.01 | Levels added per block from spawn                                |
-| `levels_per_deepness` | Float | 0.0 | Levels added per block below sea level                           |
+| `levels_per_deepness` | Float | 0.0 | **OPTIONAL** - Levels added per block below sea level (only applies when Y < sea_level) |
 | `random_level_bonus`  | Integer | 0 | Random bonus levels (0 to this value)                            |
-| `spawn_pos_override`  | Object | `null` | **OPTIONAL** - Override spawn position for distance calculations |
-| `attribute_modifiers` | Array | `[]` | **OPTIONAL** - Custom attribute bonuses per level    |
+| `spawn_pos_override`  | Object | `null` | **OPTIONAL** - Override spawn position (x, z only) for horizontal distance calculations |
+| `sea_level`           | Integer | 64 | **OPTIONAL** - Reference Y coordinate for depth/height calculations |
+| `levels_per_height`   | Float | 0.0 | **OPTIONAL** - Levels added per block above sea level (only applies when Y > sea_level) |
+| `attribute_modifiers` | Array | `[]` | **OPTIONAL** - Custom attribute bonuses per level (falls back to config) |
 
 **Note:** Dimension settings are used as fallback when no entity-specific settings exist. Dimensions can also override attribute modifiers, using the same format as entity settings (see [Attribute Modifiers](#attribute-modifiers) below).
+
+**Important:** 
+- Deepness-based scaling (`levels_per_deepness`) only applies when Y < `sea_level` (default: 64). It does not affect entities above sea level.
+- Height-based scaling (`levels_per_height`) is optional and only applies when Y > `sea_level` and `levels_per_height` > 0.
+- The `sea_level` can be overridden per dimension to match different world generation (e.g., set to 0 for dimensions without a traditional sea level).
 
 ---
 

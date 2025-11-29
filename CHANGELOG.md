@@ -1,3 +1,12 @@
+## 0.8.0
+- Add support for Reskillable Reimagined for player-based mob scaling
+- Fix depth-based scaling
+- Add height-based scaling
+- Sea level is now configurable per dimension in datapacks
+- `spawn_pos_override` now only takes an `x` and `z`
+- Updated some dimension default settings
+- Some more internal reorganization
+
 ## 0.7.3
 - Removed structure/biome cache from 0.7.2
 - Now only check bonuses for known nearby structures using StructureManager#startsForStructure and LocationPredicate, making caching unnecessary

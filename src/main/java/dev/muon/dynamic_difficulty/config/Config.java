@@ -73,6 +73,7 @@ public class Config {
     // Environmental Scaling
     public final ConfigValue<Double> levelsPerDistance;
     public final ConfigValue<Double> levelsPerDeepness;
+    public final ConfigValue<Double> levelsPerHeight;
     public final ConfigValue<Double> levelsPerDay;
     public final ConfigValue<Double> levelPowerPerDistance;
     public final ConfigValue<Double> levelPowerPerDeepness;
@@ -86,6 +87,9 @@ public class Config {
     
     // Puffish Skills Integration
     public final ConfigValue<List<? extends String>> puffishSkillsTreeBlacklist;
+    
+    // Reskillable Integration
+    public final ConfigValue<List<? extends String>> reskillableSkillBlacklist;
 
     // Blacklist / Whitelist
     public final ConfigValue<Boolean> cancelLevelsForPassives;
@@ -126,8 +130,11 @@ public class Config {
               .comment("How many levels to add per block from world spawn")
               .define("levels_per_block_from_spawn", 0.01D);
       levelsPerDeepness = builder
-              .comment("How many levels to add per block below sea level")
+              .comment("How many levels to add per block below sea level (default sea level is Y=64, can be overridden per dimension)")
               .define("levels_per_depth", 0.0D);
+      levelsPerHeight = builder
+              .comment("How many levels to add per block above sea level (default sea level is Y=64, can be overridden per dimension)")
+              .define("levels_per_height", 0.0D);
       levelsPerDay = builder
               .comment("How many levels to add per in-game day passed")
               .define("levels_per_day", 0.0D);
@@ -171,12 +178,34 @@ public class Config {
       builder.push("puffish_skills_integration");
       puffishSkillsTreeBlacklist = builder
               .comment("List of Puffish Skills tree IDs that should be excluded from player level calculations",
-                      "Trees in this list will not contribute to the player config bonus",
-                      "Example: [\"puffish_skills:mining\", \"puffish_skills:combat\"]")
-              .defineList("puffish_skills_tree_blacklist",
+                      "Trees in this list will not contribute their points to player-based mob level scaling",
+                      "Example: [\"puffish_skills:mining\", \"puffish_skills:combat\"]",
+                      "Leave empty to include all trees in mob scaling")
+              .defineListAllowEmpty("puffish_skills_tree_blacklist",
                       () -> Arrays.asList("puffish_skills:mining"),
                       () -> "puffish_skills:mining",
                       obj -> obj instanceof String && ResourceLocation.tryParse((String) obj) != null);
+      builder.pop();
+
+      builder.push("reskillable_integration");
+      reskillableSkillBlacklist = builder
+              .comment("List of Reskillable skill names that should be excluded from player level calculations",
+                      "Skills in this list will not contribute their levels to player-based mob level scaling",
+                      "Valid skill names: MINING, GATHERING, ATTACK, DEFENSE, BUILDING, FARMING, AGILITY, MAGIC",
+                      "Default: [\"GATHERING\", \"MINING\", \"FARMING\", \"BUILDING\"]",
+                      "Leave empty to include all skills in mob scaling")
+              .defineListAllowEmpty("reskillable_skill_blacklist",
+                      () -> Arrays.asList("GATHERING", "MINING", "FARMING", "BUILDING"),
+                      () -> "FARMING",
+                      obj -> {
+                          if (obj instanceof String skillName) {
+                              // Validate that it's a non-empty string that looks like a valid enum name
+                              // (letters and underscores). Actual validation happens in the provider.
+                              return !skillName.trim().isEmpty() && 
+                                     skillName.matches("^[A-Za-z_]+$");
+                          }
+                          return false;
+                      });
       builder.pop();
 
       builder.push("entity_filtering");
@@ -197,8 +226,9 @@ public class Config {
               .comment("List of [attribute_id, bonus_per_level, operation] triplets",
                       "attribute_id: The resource location of the attribute (e.g., \"minecraft:generic.attack_damage\")",
                       "bonus_per_level: The amount to add per entity level",
-                      "operation: add_value (flat addition), add_multiplied_base (percentage of base), or add_multiplied_total (percentage of final value)")
-              .defineList("level_bonus_per_attribute",
+                      "operation: add_value (flat addition), add_multiplied_base (percentage of base), or add_multiplied_total (percentage of final value)",
+                      "Leave empty to disable all attribute bonuses")
+              .defineListAllowEmpty("level_bonus_per_attribute",
                       Config::getDefaultAttributeBonuses,
                       () -> Arrays.asList("minecraft:generic.attack_damage", 0.0, "add_value"),
                       Config::isValidAttributeBonus);

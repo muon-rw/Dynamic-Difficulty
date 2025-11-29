@@ -1,7 +1,6 @@
 {
   "starting_level" : 10,
   "max_level" : 20,
-  "levels_per_distance" : 0.0001,
-  "levels_per_deepness" : 0.002,
+  "levels_per_distance" : 0.001,
   "random_level_bonus" : 5
 }

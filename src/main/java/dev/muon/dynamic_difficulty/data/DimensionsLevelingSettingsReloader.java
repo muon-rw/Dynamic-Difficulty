@@ -90,6 +90,8 @@ public class DimensionsLevelingSettingsReloader extends ContextAwareReloadListen
         Config.COMMON.levelsPerDeepness.get().floatValue(),
         Config.COMMON.randomLevelBonus.get(),
         null,
+        64, // Default sea level
+        Config.COMMON.levelsPerHeight.get().floatValue(),
         Map.of());
   }
 

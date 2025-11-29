@@ -292,7 +292,10 @@ public class ModCommands {
     // Calculate base level
     BlockPos spawnPos = dimSettings.spawnPosOverride() != null ? 
         dimSettings.spawnPosOverride() : level.getSharedSpawnPos();
-    double distance = Math.sqrt(spawnPos.distSqr(pos));
+    // Use 2D horizontal distance (ignore Y) for distance-based scaling
+    double dx = spawnPos.getX() - pos.getX();
+    double dz = spawnPos.getZ() - pos.getZ();
+    double distance = Math.sqrt(dx * dx + dz * dz);
     int baseLevel = dimSettings.startingLevel();
     int distanceBonus = LevelingUtils.calculateDistanceFactors(player, distance, dimSettings);
     long days = level.getDayTime() / 24000L;

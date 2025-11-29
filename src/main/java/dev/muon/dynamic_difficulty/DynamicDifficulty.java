@@ -2,7 +2,8 @@ package dev.muon.dynamic_difficulty;
 
 import com.mojang.logging.LogUtils;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
-import dev.muon.dynamic_difficulty.compat.PuffishSkillsProvider;
+import dev.muon.dynamic_difficulty.compat.puffish.PuffishSkillsProvider;
+import dev.muon.dynamic_difficulty.compat.reskillable.ReskillableReimaginedProvider;
 import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.attribute.ModAttributes;
 import dev.muon.dynamic_difficulty.item.ModItems;
@@ -19,32 +20,35 @@ import org.slf4j.Logger;
 
 @Mod(DynamicDifficulty.MODID)
 public class DynamicDifficulty {
-  public static final Logger LOGGER = LogUtils.getLogger();
-  public static final String MODID = "dynamic_difficulty";
+    public static final Logger LOGGER = LogUtils.getLogger();
+    public static final String MODID = "dynamic_difficulty";
 
-  public static ResourceLocation loc(String path) {
-    return ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, path);
-  }
-
-  public DynamicDifficulty(ModContainer container, IEventBus bus) {
-    ModAttributes.REGISTRY.register(bus);
-    ModItems.REGISTRY.register(bus);
-    ModLootConditions.REGISTRY.register(bus);
-    ModLootModifiers.REGISTRY.register(bus);
-    EntityLevelAttachment.REGISTRY.register(bus);
-    Config.register(container);
-    bus.addListener(this::onInterMod);
-
-    PlayerLevelUpdateHandler.registerCallback(PlayerLevelUpdateHandler::updatePlayerLevel);
-  }
-
-  private void onInterMod(InterModEnqueueEvent event) {
-    if (isModLoaded("puffish_skills")) {
-      LevelingAPI.registerPlayerLevelProvider(new PuffishSkillsProvider());
+    public static ResourceLocation loc(String path) {
+        return ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, path);
     }
-  }
 
-  public static boolean isModLoaded (String modId) {
-    return LoadingModList.get().getModFileById(modId) != null;
-  }
+    public DynamicDifficulty(ModContainer container, IEventBus bus) {
+        ModAttributes.REGISTRY.register(bus);
+        ModItems.REGISTRY.register(bus);
+        ModLootConditions.REGISTRY.register(bus);
+        ModLootModifiers.REGISTRY.register(bus);
+        EntityLevelAttachment.REGISTRY.register(bus);
+        Config.register(container);
+        bus.addListener(this::onInterMod);
+
+        PlayerLevelUpdateHandler.registerCallback(PlayerLevelUpdateHandler::updatePlayerLevel);
+    }
+
+    private void onInterMod(InterModEnqueueEvent event) {
+        if (isModLoaded("puffish_skills")) {
+            LevelingAPI.registerPlayerLevelProvider(new PuffishSkillsProvider());
+        }
+        if (isModLoaded("reskillable")) {
+            LevelingAPI.registerPlayerLevelProvider(new ReskillableReimaginedProvider());
+        }
+    }
+
+    public static boolean isModLoaded(String modId) {
+        return LoadingModList.get().getModFileById(modId) != null;
+    }
 }

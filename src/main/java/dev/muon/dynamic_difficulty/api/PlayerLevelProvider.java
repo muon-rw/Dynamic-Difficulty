@@ -10,9 +10,20 @@ import java.util.ArrayList;
  * Implement this interface and register it via {@link LevelingAPI#registerPlayerLevelProvider(PlayerLevelProvider)}
  * to contribute to the overall player level considered by Dynamic Difficulty when scaling mobs.
  * 
- * IMPORTANT: Player levels from this system are used for TWO purposes:
- * 1. DISPLAY: Shown above player heads and used to color-code mob difficulty (red/yellow/green)
- * 2. MOB SCALING: Nearby mobs get bonus levels based on player levels (via calculateBonusLevels)
+ * IMPORTANT: Player levels from this system are used for TWO distinct purposes:
+ * 
+ * 1. DISPLAY LEVEL (via {@link #getPlayerLevel(ServerPlayer)}):
+ *    - Shown above player heads (name tags)
+ *    - Used to color-code mob difficulty indicators (red/yellow/green) relative to player level
+ *    - This is the "display level" that players see and use for visual feedback
+ *    - NOTE: Mob difficulty color coding uses display levels, NOT mob scaling levels!
+ * 
+ * 2. MOB SCALING LEVEL (via {@link #calculateBonusLevels(List)}):
+ *    - Determines how many bonus levels nearby mobs receive based on player proximity
+ *    - This can differ from display level if providers override calculateBonusLevels()
+ *    - For example, a provider might exclude certain skill trees from mob scaling while
+ *      including them in display level (e.g., non-combat trees shouldn't make mobs harder)
+ * 
  * 
  * Player levels do NOT grant attribute bonuses to players themselves. Players do not gain
  * health, damage, or other combat bonuses from their level. This system only affects how
@@ -33,25 +44,51 @@ public interface PlayerLevelProvider {
      * Gets the level for a single player from this provider's system.
      * This is the core method that providers must implement.
      * 
-     * This is used for:
-     * - Displaying the player's level above their head
-     * - Color-coding mob levels relative to the player
-     * - Contributing to mob level scaling (via calculateBonusLevels)
+     * This method is used for DISPLAY purposes:
+     * - Displaying the player's level above their head (name tags)
+     * - Color-coding mob difficulty indicators (red/yellow/green) relative to the player's level
+     * 
+     * IMPORTANT: This is NOT directly used for mob scaling. Mob scaling uses
+     * {@link #calculateBonusLevels(List)} instead, which by default averages this method's
+     * results but can be overridden to exclude certain progression from mob difficulty.
+     * 
+     * For example, a skill system provider might:
+     * - Include ALL skill trees in getPlayerLevel() (for display)
+     * - Exclude non-combat trees in calculateBonusLevels() (for mob scaling)
+     * 
+     * This allows players to see their full progression while preventing non-combat
+     * skills from making mobs harder.
      *
      * @param player The player to get the level for
-     * @return The player's level from this provider
+     * @return The player's display level from this provider (used for UI and color coding)
      */
     int getPlayerLevel(ServerPlayer player);
 
     /**
      * Calculates the bonus levels for mob scaling based on the provided list of nearby players.
      * 
+     * This method determines how many bonus levels nearby mobs receive based on player proximity.
+     * It is SEPARATE from display level calculation and can return different values.
+     * 
      * By default, this averages the levels of all nearby players using getPlayerLevel().
-     * Providers can override this method to implement custom aggregation logic
-     * (e.g., use maximum level, sum levels, or apply distance-based weighting).
+     * Providers can override this method to:
+     * - Exclude certain progression from mob scaling (e.g., non-combat skill trees)
+     * - Implement custom aggregation logic (e.g., use maximum level, sum levels, distance-based weighting)
+     * - Apply different filtering than what's shown in display level
+     * 
+     * EXAMPLE: A skill system provider might:
+     * - getPlayerLevel() returns total of ALL skill trees (for display)
+     * - calculateBonusLevels() returns total of ONLY combat skill trees (for mob scaling)
+     * 
+     * This allows players to see their full progression while preventing non-combat
+     * skills from affecting mob difficulty.
+     * 
+     * NOTE: Mob difficulty color coding (red/yellow/green) uses display levels from
+     * getPlayerLevel(), NOT the values returned by this method. This method only affects
+     * the actual bonus levels applied to mobs.
      *
      * @param players A list of players near the entity being leveled.
-     * @return The calculated level bonus based on the players.
+     * @return The calculated level bonus based on the players (used for mob scaling only)
      */
     default int calculateBonusLevels(List<ServerPlayer> players) {
         if (players.isEmpty()) {

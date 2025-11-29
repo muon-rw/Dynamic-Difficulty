@@ -160,6 +160,7 @@ dependencies {
     // localRuntime "curse.maven:spark-361579:6225208"
 
     // Optional Compats:
+    // Apotheosis
     implementation("dev.shadowsoffire:Placebo:${minecraft_version}-${placebo}")
     implementation("dev.shadowsoffire:Apotheosis:${minecraft_version}-${apotheosis}")
     implementation("dev.shadowsoffire:ApothicAttributes:${minecraft_version}-${apothic_attributes}")
@@ -167,13 +168,20 @@ dependencies {
     implementation("dev.shadowsoffire:ApothicEnchanting:${minecraft_version}-${apothic_enchanting}")
 
     // Puffish
+    // https://www.curseforge.com/minecraft/mc-mods/puffish-skills/files/
+    // https://www.curseforge.com/minecraft/mc-mods/puffish-attributes/files/
+    // https://www.curseforge.com/minecraft/mc-mods/default-skill-trees/files/
     implementation ("net.puffish:skillsmod:${puffish_skills}:neoforge")
     localRuntime "curse.maven:default-skill-trees-1074229:5852412"
     localRuntime "curse.maven:puffish-attributes-991341:7183595"
 
+    // Reskillable Reimagined
+    // https://www.curseforge.com/minecraft/mc-mods/reskillable-reimagined/files/
+    implementation "curse.maven:reskillable-reimagined-1170464:7266884"
+
     // traveler's
-    implementation "curse.maven:travelers-titles-neoforge-1015155:6294123"
-    implementation "curse.maven:yungs-api-neoforge-1015100:6715463"
+    localRuntime "curse.maven:travelers-titles-neoforge-1015155:6294123"
+    localRuntime "curse.maven:yungs-api-neoforge-1015100:6715463"
 
     // just to fix the dev env crash
     localRuntime "curse.maven:patchouli-306770:6842247"
