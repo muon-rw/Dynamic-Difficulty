@@ -1,6 +1,6 @@
 package dev.muon.dynamic_difficulty.api;
 
-import dev.muon.dynamic_difficulty.util.PlayerLevelUpdateHandler;
+import dev.muon.dynamic_difficulty.player.PlayerLevelUpdateHandler;
 import net.minecraft.server.level.ServerPlayer;
 import java.util.List;
 import java.util.ArrayList;

@@ -1,16 +1,13 @@
 package dev.muon.dynamic_difficulty.util;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
+import dev.muon.dynamic_difficulty.api.BiomeBonus;
+import dev.muon.dynamic_difficulty.api.StructureBonus;
 import dev.muon.dynamic_difficulty.config.Config;
-import dev.muon.dynamic_difficulty.data.BiomeLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
-import dev.muon.dynamic_difficulty.data.StructureLevelingSettingsReloader;
-import dev.muon.dynamic_difficulty.settings.BiomeBonusSettings;
 import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
 import dev.muon.dynamic_difficulty.settings.LevelingSettings;
-import dev.muon.dynamic_difficulty.settings.StructureBonusSettings;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -23,8 +20,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.levelgen.structure.Structure;
 
 import java.util.HashSet;
 import java.util.List;
@@ -115,26 +110,6 @@ public class LevelingUtils {
     }
 
     /**
-     * Gets the structure level bonus from datapacks, checking both individual IDs and tags
-     * @param structureId The resource location of the structure
-     * @param structureRegistry The registry to check tags against
-     * @return The level bonus for this structure
-     */
-    public static int getStructureLevelBonus(ResourceLocation structureId, Registry<Structure> structureRegistry) {
-        return StructureLevelingSettingsReloader.getLevelBonus(structureId, structureRegistry);
-    }
-    
-    /**
-     * Gets the biome level bonus from datapacks, checking both individual IDs and tags
-     * @param biomeId The resource location of the biome
-     * @param biomeRegistry The registry to check tags against
-     * @return The level bonus for this biome
-     */
-    public static int getBiomeLevelBonus(ResourceLocation biomeId, Registry<Biome> biomeRegistry) {
-        return BiomeLevelingSettingsReloader.getLevelBonus(biomeId, biomeRegistry);
-    }
-
-    /**
      * Calculates base level from distance, depth, and height.
      * Deepness scaling only applies when Y < seaLevel (default 64).
      * Height scaling applies when Y > seaLevel and levelsPerHeight > 0.
@@ -214,43 +189,22 @@ public class LevelingUtils {
      * This matches the logic in LevelingSystem.createLevelForEntity() for display purposes.
      * 
      * @param baseLevel The base level (starting level + distance + day bonuses)
-     * @param structureId The structure ID at the position (can be null)
-     * @param biomeId The biome ID at the position (can be null)
+     * @param structureBonus The structure bonus info
+     * @param biomeBonus The biome bonus info
      * @param playerBonus The player bonus (always bypasses cap)
      * @param dimensionSettings The dimension leveling settings
-     * @param structureRegistry The structure registry (can be null if structureId is null)
-     * @param biomeRegistry The biome registry (can be null if biomeId is null)
      * @return The final level after applying max level cap and bypassing bonuses
      */
     public static int calculateFinalDisplayLevel(
             int baseLevel,
-            ResourceLocation structureId,
-            ResourceLocation biomeId,
+            StructureBonus structureBonus,
+            BiomeBonus biomeBonus,
             int playerBonus,
-            DimensionLevelingSettings dimensionSettings,
-            Registry<Structure> structureRegistry,
-            Registry<Biome> biomeRegistry) {
+            DimensionLevelingSettings dimensionSettings) {
         
-        // Calculate non-bypassing bonuses (applied before cap)
-        int nonBypassingStructureBonus = 0;
-        int nonBypassingBiomeBonus = 0;
-        
-        if (structureId != null && structureRegistry != null) {
-            StructureBonusSettings structureSettings = StructureLevelingSettingsReloader.get(structureId, structureRegistry);
-            if (structureSettings != null && !structureSettings.bypassesCap()) {
-                nonBypassingStructureBonus = structureSettings.levelBonus();
-            }
-        }
-        
-        if (biomeId != null && biomeRegistry != null) {
-            BiomeBonusSettings biomeSettings = BiomeLevelingSettingsReloader.get(biomeId, biomeRegistry);
-            if (biomeSettings != null && !biomeSettings.bypassesCap()) {
-                nonBypassingBiomeBonus = biomeSettings.levelBonus();
-            }
-        }
-        
-        // Apply non-bypassing bonuses
-        int levelWithNonBypassing = baseLevel + nonBypassingStructureBonus + nonBypassingBiomeBonus;
+        // Apply non-bypassing bonuses (before cap)
+        int nonBypassingBonuses = structureBonus.nonBypassingBonus() + biomeBonus.nonBypassingBonus();
+        int levelWithNonBypassing = baseLevel + nonBypassingBonuses;
         
         // Apply max level cap
         int maxLevel = dimensionSettings.maxLevel();
@@ -258,26 +212,8 @@ public class LevelingUtils {
             levelWithNonBypassing = Math.min(levelWithNonBypassing, maxLevel);
         }
         
-        // Calculate bypassing bonuses (applied after cap)
-        int bypassingStructureBonus = 0;
-        int bypassingBiomeBonus = 0;
-        
-        if (structureId != null && structureRegistry != null) {
-            StructureBonusSettings structureSettings = StructureLevelingSettingsReloader.get(structureId, structureRegistry);
-            if (structureSettings != null && structureSettings.bypassesCap()) {
-                bypassingStructureBonus = structureSettings.levelBonus();
-            }
-        }
-        
-        if (biomeId != null && biomeRegistry != null) {
-            BiomeBonusSettings biomeSettings = BiomeLevelingSettingsReloader.get(biomeId, biomeRegistry);
-            if (biomeSettings != null && biomeSettings.bypassesCap()) {
-                bypassingBiomeBonus = biomeSettings.levelBonus();
-            }
-        }
-        
-        // Player bonus always bypasses cap
-        int bypassingBonuses = bypassingStructureBonus + bypassingBiomeBonus + playerBonus;
+        // Apply bypassing bonuses (after cap) - player bonus always bypasses
+        int bypassingBonuses = structureBonus.bypassingBonus() + biomeBonus.bypassingBonus() + playerBonus;
         
         // Final level
         return Math.max(1, levelWithNonBypassing + bypassingBonuses);
@@ -328,24 +264,16 @@ public class LevelingUtils {
      * This accounts for max level cap and bypassing bonuses.
      * 
      * @param player The player (used for dimension/registry access)
-     * @param pos The position
-     * @param structureId The structure ID at the position (can be null)
-     * @param biomeId The biome ID at the position (can be null)
      * @param baseLevel The base level
-     * @param structureBonus The structure bonus value
-     * @param biomeBonus The biome bonus value
+     * @param structureBonus The structure bonus info
+     * @param biomeBonus The biome bonus info
      * @return The final displayed level without player bonus
      */
-    public static int calculateDisplayedLevel(ServerPlayer player, BlockPos pos, 
-                                               ResourceLocation structureId, ResourceLocation biomeId,
-                                               int baseLevel, int structureBonus, int biomeBonus) {
+    public static int calculateDisplayedLevel(ServerPlayer player, int baseLevel,
+                                               StructureBonus structureBonus, BiomeBonus biomeBonus) {
         ServerLevel level = player.serverLevel();
         var dimensionSettings = DimensionsLevelingSettingsReloader.get(level.dimension(), level.registryAccess().registryOrThrow(Registries.DIMENSION));
-        var structureRegistry = level.registryAccess().registryOrThrow(Registries.STRUCTURE);
-        var biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
         
-        return calculateFinalDisplayLevel(
-                baseLevel, structureId, biomeId, 0,
-                dimensionSettings, structureRegistry, biomeRegistry);
+        return calculateFinalDisplayLevel(baseLevel, structureBonus, biomeBonus, 0, dimensionSettings);
     }
 }

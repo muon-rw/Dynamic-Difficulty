@@ -2,19 +2,17 @@ package dev.muon.dynamic_difficulty.api;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.LevelingSystem;
-import dev.muon.dynamic_difficulty.util.PlayerLevelCalculator;
+import dev.muon.dynamic_difficulty.player.PlayerLevelCalculator;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
-import net.minecraft.core.Registry;
-import net.minecraft.resources.ResourceLocation;
+import dev.muon.dynamic_difficulty.util.LocationBonusUtils;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.levelgen.structure.Structure;
 
 import java.util.Map;
 
@@ -183,57 +181,57 @@ public class LevelingAPI {
     }
 
     /**
-     * Gets the structure level bonus for an entity's current position.
+     * Gets the structure bonus for an entity's current position.
      * 
      * <p><b>Side:</b> Server only
      * <p>Requires server-side world access to check structure manager for structures at position.
      *
      * @param entity The entity to get the structure bonus for
-     * @return The highest level bonus from any structure at the entity's position
+     * @return Structure bonus info including bypassing/non-bypassing bonuses and structure ID
      */
-    public static int getStructureLevelBonus(LivingEntity entity) {
-        return LevelingSystem.getStructureLevelBonus(entity);
+    public static StructureBonus getStructureBonus(LivingEntity entity) {
+        return LevelingSystem.getStructureBonus(entity);
     }
 
     /**
-     * Gets the structure level bonus for a given structure from datapack settings.
+     * Gets the structure bonus at a specific position.
      * 
-     * <p><b>Side:</b> Both (client & server)
-     * <p>Read-only operation that queries datapack settings. Requires a registry to check structure tags.
+     * <p><b>Side:</b> Server only
+     * <p>Requires server-side world access to check structure manager for structures at position.
      *
-     * @param structureId The structure's ResourceLocation
-     * @param structureRegistry The structure registry (can be obtained from world.registryAccess())
-     * @return The level bonus configured for the structure
+     * @param level The server level
+     * @param pos The block position
+     * @return Structure bonus info including bypassing/non-bypassing bonuses and structure ID
      */
-    public static int getStructureLevelBonus(ResourceLocation structureId, Registry<Structure> structureRegistry) {
-        return LevelingUtils.getStructureLevelBonus(structureId, structureRegistry);
+    public static StructureBonus getStructureBonus(ServerLevel level, BlockPos pos) {
+        return LocationBonusUtils.getStructureAt(level, pos, true);
     }
 
     /**
-     * Gets the biome level bonus for an entity's current position.
+     * Gets the biome bonus for an entity's current position.
      * 
      * <p><b>Side:</b> Server only
      * <p>Requires server-side world access to get biome at entity's position.
      *
      * @param entity The entity to get the biome bonus for
-     * @return The level bonus from the biome at the entity's position
+     * @return Biome bonus info including bypassing/non-bypassing bonuses and biome ID
      */
-    public static int getBiomeLevelBonus(LivingEntity entity) {
-        return LevelingSystem.getBiomeLevelBonus(entity);
+    public static BiomeBonus getBiomeBonus(LivingEntity entity) {
+        return LevelingSystem.getBiomeBonus(entity);
     }
 
     /**
-     * Gets the biome level bonus for a given biome from datapack settings.
+     * Gets the biome bonus at a specific position.
      * 
-     * <p><b>Side:</b> Both (client & server)
-     * <p>Read-only operation that queries datapack settings. Requires a registry to check biome tags.
+     * <p><b>Side:</b> Server only
+     * <p>Requires server-side world access to get biome at position.
      *
-     * @param biomeId The biome's ResourceLocation
-     * @param biomeRegistry The biome registry (can be obtained from world.registryAccess())
-     * @return The level bonus configured for the biome
+     * @param level The server level
+     * @param pos The block position
+     * @return Biome bonus info including bypassing/non-bypassing bonuses and biome ID
      */
-    public static int getBiomeLevelBonus(ResourceLocation biomeId, Registry<Biome> biomeRegistry) {
-        return LevelingUtils.getBiomeLevelBonus(biomeId, biomeRegistry);
+    public static BiomeBonus getBiomeBonus(ServerLevel level, BlockPos pos) {
+        return LocationBonusUtils.getBiomeAt(level, pos);
     }
 
     /**

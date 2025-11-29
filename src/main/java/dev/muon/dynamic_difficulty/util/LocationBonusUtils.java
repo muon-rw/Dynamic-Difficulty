@@ -1,5 +1,7 @@
 package dev.muon.dynamic_difficulty.util;
 
+import dev.muon.dynamic_difficulty.api.BiomeBonus;
+import dev.muon.dynamic_difficulty.api.StructureBonus;
 import dev.muon.dynamic_difficulty.data.BiomeLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.data.StructureLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.settings.BiomeBonusSettings;
@@ -30,9 +32,9 @@ public final class LocationBonusUtils {
      * @param pos The block position
      * @param onlyWithBonuses If true, only returns structures with configured bonuses.
      *                        If false, returns any structure (for StructureCredits-like display).
-     * @return The structure result (structureId may be null if no structure at position)
+     * @return The structure bonus info (structureId may be null if no structure at position)
      */
-    public static StructureResult getStructureAt(ServerLevel level, BlockPos pos, boolean onlyWithBonuses) {
+    public static StructureBonus getStructureAt(ServerLevel level, BlockPos pos, boolean onlyWithBonuses) {
         Registry<Structure> structureRegistry = level.registryAccess().registryOrThrow(Registries.STRUCTURE);
         ChunkPos chunkPos = new ChunkPos(pos);
         
@@ -83,7 +85,7 @@ public final class LocationBonusUtils {
             }
         }
         
-        return new StructureResult(bestStructureId, highestNonBypassing, highestBypassing);
+        return new StructureBonus(bestStructureId, highestNonBypassing, highestBypassing);
     }
     
     /**
@@ -92,69 +94,29 @@ public final class LocationBonusUtils {
      * 
      * @param level The server level
      * @param pos The block position
-     * @return The biome result (biomeId may be null if lookup fails)
+     * @return The biome bonus info (biomeId may be null if lookup fails)
      */
-    public static BiomeResult getBiomeAt(ServerLevel level, BlockPos pos) {
+    public static BiomeBonus getBiomeAt(ServerLevel level, BlockPos pos) {
         Registry<Biome> biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
         Biome biome = level.getBiome(pos).value();
         Optional<ResourceKey<Biome>> optKey = biomeRegistry.getResourceKey(biome);
         
         if (optKey.isEmpty()) {
-            return new BiomeResult(null, 0, 0);
+            return BiomeBonus.EMPTY;
         }
         
         ResourceLocation biomeId = optKey.get().location();
         BiomeBonusSettings settings = BiomeLevelingSettingsReloader.get(biomeId, biomeRegistry);
         
         if (settings == null) {
-            return new BiomeResult(biomeId, 0, 0);
+            return new BiomeBonus(biomeId, 0, 0);
         }
         
         int bonus = settings.levelBonus();
         if (settings.bypassesCap()) {
-            return new BiomeResult(biomeId, 0, bonus);
+            return new BiomeBonus(biomeId, 0, bonus);
         } else {
-            return new BiomeResult(biomeId, bonus, 0);
-        }
-    }
-    
-    // ========== Result Types ==========
-    
-    /**
-     * Result containing structure information.
-     * 
-     * @param structureId The structure at the position (null if none)
-     * @param nonBypassingBonus Highest bonus from structures that don't bypass cap
-     * @param bypassingBonus Highest bonus from structures that bypass cap
-     */
-    public record StructureResult(
-        ResourceLocation structureId,
-        int nonBypassingBonus,
-        int bypassingBonus
-    ) {
-        public int totalBonus() {
-            return nonBypassingBonus + bypassingBonus;
-        }
-        
-        public boolean hasStructure() {
-            return structureId != null;
-        }
-    }
-    
-    /**
-     * Result containing biome information.
-     * 
-     * @param biomeId The biome at the position (null if lookup failed)
-     * @param nonBypassingBonus Bonus that doesn't bypass cap
-     * @param bypassingBonus Bonus that bypasses cap
-     */
-    public record BiomeResult(
-        ResourceLocation biomeId,
-        int nonBypassingBonus,
-        int bypassingBonus
-    ) {
-        public int totalBonus() {
-            return nonBypassingBonus + bypassingBonus;
+            return new BiomeBonus(biomeId, bonus, 0);
         }
     }
 }

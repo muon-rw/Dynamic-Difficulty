@@ -1,12 +1,11 @@
 package dev.muon.dynamic_difficulty.config;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
-import dev.muon.dynamic_difficulty.api.PlayerLevelDisplayStrategy;
+import dev.muon.dynamic_difficulty.player.PlayerLevelDisplayStrategy;
 import java.util.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
@@ -75,6 +74,7 @@ public class Config {
     public final ConfigValue<Double> levelsPerDeepness;
     public final ConfigValue<Double> levelsPerHeight;
     public final ConfigValue<Double> levelsPerDay;
+    public final ConfigValue<Double> levelsPerLocalDifficulty;
     public final ConfigValue<Double> levelPowerPerDistance;
     public final ConfigValue<Double> levelPowerPerDeepness;
 
@@ -84,6 +84,10 @@ public class Config {
     public final ConfigValue<Boolean> applyPlayerBasedLeveling;
     public final ModConfigSpec.EnumValue<PlayerLevelDisplayStrategy> playerLevelDisplayStrategy;
     public final ConfigValue<Integer> playerLevelUpdateInterval;
+    
+    // Playtime-Based Scaling
+    public final ConfigValue<Boolean> enablePlaytimeScaling;
+    public final ConfigValue<Double> levelsPerPlaytimeHour;
     
     // Puffish Skills Integration
     public final ConfigValue<List<? extends String>> puffishSkillsTreeBlacklist;
@@ -138,6 +142,10 @@ public class Config {
       levelsPerDay = builder
               .comment("How many levels to add per in-game day passed")
               .define("levels_per_day", 0.0D);
+      levelsPerLocalDifficulty = builder
+              .comment("How many levels to add per point of local difficulty at mob spawn location",
+                      "Local difficulty considers regional difficulty, chunk inhabited time, moon phase, and world difficulty")
+              .define("levels_per_local_difficulty", 0.0D);
       levelPowerPerDistance = builder
               .comment("Exponential level scaling with distance from spawn")
               .define("distance_power_scaling", 0.0D);
@@ -173,6 +181,19 @@ public class Config {
                       "Providers can trigger immediate updates via events, this is just a safety net",
                       "Set to 0 to disable periodic updates (only event-driven updates will occur)")
               .defineInRange("player_level_update_interval", 600, 0, 1200);
+      builder.pop();
+      
+      builder.push("playtime_based_scaling");
+      enablePlaytimeScaling = builder
+              .comment("Enable playtime-based level scaling",
+                      "When enabled, uses Minecraft's built-in playtime statistic (Stats.PLAY_TIME)",
+                      "Playtime is automatically tracked by Minecraft and persists across sessions")
+              .define("enable_playtime_scaling", false);
+      levelsPerPlaytimeHour = builder
+              .comment("How many levels to add per hour of nearby-player playtime",
+                      "Playtime from all nearby players is averaged and converted to levels",
+                      "Example: 2 players with 10 and 20 hours = 15 hours average = 15 * this_value levels")
+              .define("levels_per_playtime_hour", 0.1D);
       builder.pop();
 
       builder.push("puffish_skills_integration");

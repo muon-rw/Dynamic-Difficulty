@@ -1,3 +1,11 @@
+## 0.9.0
+- Sync reskillable points automatically on allocation
+- Fix dayBonus not applying (Thanks jeffjks for bug testing!)
+- Add optional individual playtime-based scaling
+- Add optional local difficulty-based scaling
+- More internal reorganization (Almost stable, really!)
+- Various improvements to the debug location command
+
 ## 0.8.0
 - Add support for Reskillable Reimagined for player-based mob scaling
 - Fix depth-based scaling

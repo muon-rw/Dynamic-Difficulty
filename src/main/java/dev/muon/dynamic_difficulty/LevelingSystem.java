@@ -1,7 +1,9 @@
 package dev.muon.dynamic_difficulty;
 
+import dev.muon.dynamic_difficulty.api.BiomeBonus;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
+import dev.muon.dynamic_difficulty.api.StructureBonus;
 import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.data.EntityLevelingSettingsReloader;
@@ -18,6 +20,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.stats.Stats;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -26,6 +29,8 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.DifficultyInstance;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -200,6 +205,23 @@ public class LevelingSystem {
         int distanceBonus = LevelingUtils.calculateDistanceFactors(entity, distanceToSpawn, settings);
         baseLevel += distanceBonus;
 
+        // Day scaling (global config, not dimension-specific)
+        int dayBonus = 0;
+        if (entity.level() instanceof ServerLevel serverLevel) {
+            long days = serverLevel.getDayTime() / 24000L;
+            dayBonus = (int) (days * Config.COMMON.levelsPerDay.get());
+            baseLevel += dayBonus;
+        }
+
+        // Local difficulty scaling (global config, not dimension-specific)
+        int localDifficultyBonus = 0;
+        if (entity.level() instanceof ServerLevel serverLevel) {
+            DifficultyInstance difficulty = serverLevel.getCurrentDifficultyAt(entityPos);
+            float effectiveDifficulty = difficulty.getEffectiveDifficulty();
+            localDifficultyBonus = (int) (effectiveDifficulty * Config.COMMON.levelsPerLocalDifficulty.get());
+            baseLevel += localDifficultyBonus;
+        }
+
         int randomBonus = 0;
         int randomBonusValue = settings.randomLevelBonus();
         if (randomBonusValue > 0) { 
@@ -207,9 +229,9 @@ public class LevelingSystem {
             baseLevel += randomBonus;
         }
 
-        DynamicDifficulty.LOGGER.debug("{} base factors: starting={}, distance={}, random={}, subtotal={}", 
+        DynamicDifficulty.LOGGER.debug("{} base factors: starting={}, distance={}, day={}, localDifficulty={}, random={}, subtotal={}", 
             entity.getType().getDescription().getString(), 
-            startingLevel, distanceBonus, randomBonus, baseLevel);
+            startingLevel, distanceBonus, dayBonus, localDifficultyBonus, randomBonus, baseLevel);
 
         baseLevel = Math.max(1, baseLevel);
         
@@ -270,8 +292,8 @@ public class LevelingSystem {
      * Biome lookups use Minecraft's internal caching.
      */
     private static BonusResults calculateLocationBonuses(ServerLevel serverLevel, BlockPos pos) {
-        LocationBonusUtils.StructureResult structureResult = LocationBonusUtils.getStructureAt(serverLevel, pos, true);
-        LocationBonusUtils.BiomeResult biomeResult = LocationBonusUtils.getBiomeAt(serverLevel, pos);
+        StructureBonus structureResult = LocationBonusUtils.getStructureAt(serverLevel, pos, true);
+        BiomeBonus biomeResult = LocationBonusUtils.getBiomeAt(serverLevel, pos);
         
         return new BonusResults(
             structureResult.nonBypassingBonus(), structureResult.bypassingBonus(),
@@ -448,22 +470,20 @@ public class LevelingSystem {
     }
 
     /**
-     * Gets the structure level bonus for an entity's current position.
+     * Gets the structure bonus for an entity's current position.
      */
-    public static int getStructureLevelBonus(LivingEntity entity) {
-        if (!(entity.level() instanceof ServerLevel serverLevel)) return 0;
+    public static StructureBonus getStructureBonus(LivingEntity entity) {
+        if (!(entity.level() instanceof ServerLevel serverLevel)) return StructureBonus.EMPTY;
         
-        LocationBonusUtils.StructureResult result = LocationBonusUtils.getStructureAt(serverLevel, entity.blockPosition(), true);
-        return result.totalBonus();
+        return LocationBonusUtils.getStructureAt(serverLevel, entity.blockPosition(), true);
     }
 
     /**
-     * Gets the biome level bonus for an entity's current position.
+     * Gets the biome bonus for an entity's current position.
      */
-    public static int getBiomeLevelBonus(LivingEntity entity) {
-        if (!(entity.level() instanceof ServerLevel serverLevel)) return 0;
+    public static BiomeBonus getBiomeBonus(LivingEntity entity) {
+        if (!(entity.level() instanceof ServerLevel serverLevel)) return BiomeBonus.EMPTY;
         
-        LocationBonusUtils.BiomeResult result = LocationBonusUtils.getBiomeAt(serverLevel, entity.blockPosition());
-        return result.totalBonus();
+        return LocationBonusUtils.getBiomeAt(serverLevel, entity.blockPosition());
     }
 }

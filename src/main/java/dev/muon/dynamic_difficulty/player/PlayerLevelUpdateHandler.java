@@ -1,4 +1,4 @@
-package dev.muon.dynamic_difficulty.util;
+package dev.muon.dynamic_difficulty.player;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.LevelingSystem;

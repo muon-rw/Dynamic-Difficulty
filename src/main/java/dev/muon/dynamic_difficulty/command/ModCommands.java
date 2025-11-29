@@ -5,20 +5,16 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
+import dev.muon.dynamic_difficulty.api.BiomeBonus;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
+import dev.muon.dynamic_difficulty.api.StructureBonus;
 import dev.muon.dynamic_difficulty.config.Config;
-import dev.muon.dynamic_difficulty.data.BiomeLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
-import dev.muon.dynamic_difficulty.data.StructureLevelingSettingsReloader;
-import dev.muon.dynamic_difficulty.settings.BiomeBonusSettings;
 import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
-import dev.muon.dynamic_difficulty.settings.StructureBonusSettings;
-import dev.muon.dynamic_difficulty.util.LevelingUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -29,9 +25,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.structure.Structure;
-import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -216,102 +210,59 @@ public class ModCommands {
     ServerLevel level = player.serverLevel();
     BlockPos pos = player.blockPosition();
     
-    source.sendSystemMessage(Component.literal("§6=== Dynamic Difficulty Location Debug ==="));
-    source.sendSystemMessage(Component.literal("§7Position: " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()));
-    
-    // Dimension info
+    // Get dimension settings
     ResourceKey<Level> dimension = level.dimension();
     ResourceLocation dimensionId = dimension.location();
     Registry<Level> dimensionRegistry = level.registryAccess().registryOrThrow(Registries.DIMENSION);
     DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension, dimensionRegistry);
     
-    source.sendSystemMessage(Component.literal("§e--- Dimension ---"));
-    source.sendSystemMessage(Component.literal("§7ID: §f" + dimensionId));
-    source.sendSystemMessage(Component.literal("§7Starting Level: §f" + dimSettings.startingLevel()));
-    source.sendSystemMessage(Component.literal("§7Max Level: §f" + (dimSettings.maxLevel() > 0 ? dimSettings.maxLevel() : "Unlimited")));
-    source.sendSystemMessage(Component.literal("§7Levels per Distance: §f" + dimSettings.levelsPerDistance()));
-    source.sendSystemMessage(Component.literal("§7Levels per Deepness: §f" + dimSettings.levelsPerDeepness()));
-    source.sendSystemMessage(Component.literal("§7Random Level Bonus: §f0-" + dimSettings.randomLevelBonus()));
-    
-    // Biome info
-    Holder<Biome> biomeHolder = level.getBiome(pos);
-    Registry<Biome> biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
-    Optional<ResourceKey<Biome>> biomeKey = biomeRegistry.getResourceKey(biomeHolder.value());
-    
-    source.sendSystemMessage(Component.literal("§e--- Biome ---"));
-    if (biomeKey.isPresent()) {
-      ResourceLocation biomeId = biomeKey.get().location();
-      BiomeBonusSettings biomeSettings = BiomeLevelingSettingsReloader.get(biomeId, biomeRegistry);
-      source.sendSystemMessage(Component.literal("§7ID: §f" + biomeId));
-      if (biomeSettings != null) {
-        source.sendSystemMessage(Component.literal("§7Level Bonus: §f+" + biomeSettings.levelBonus()));
-        source.sendSystemMessage(Component.literal("§7Bypasses Cap: §f" + biomeSettings.bypassesCap()));
-      } else {
-        source.sendSystemMessage(Component.literal("§7Level Bonus: §f0 (no settings configured)"));
-      }
-    } else {
-      source.sendSystemMessage(Component.literal("§7ID: §cUnknown"));
-    }
-    
-    // Structure info
-    Registry<Structure> structureRegistry = level.registryAccess().registryOrThrow(Registries.STRUCTURE);
-    int highestStructureBonus = 0;
-    ResourceLocation currentStructureId = null;
-    StructureBonusSettings currentStructureSettings = null;
-    
-    for (Structure structure : structureRegistry) {
-      StructureStart start = level.structureManager().getStructureAt(pos, structure);
-      if (start != null && start.isValid()) {
-        Optional<ResourceKey<Structure>> optKey = structureRegistry.getResourceKey(structure);
-        if (optKey.isPresent()) {
-          ResourceLocation structureId = optKey.get().location();
-          StructureBonusSettings settings = StructureLevelingSettingsReloader.get(structureId, structureRegistry);
-          int bonus = settings != null ? settings.levelBonus() : 0;
-          if (bonus > highestStructureBonus) {
-            highestStructureBonus = bonus;
-            currentStructureId = structureId;
-            currentStructureSettings = settings;
-          }
-        }
-      }
-    }
-    
-    source.sendSystemMessage(Component.literal("§e--- Structure ---"));
-    if (currentStructureId != null) {
-      source.sendSystemMessage(Component.literal("§7ID: §f" + currentStructureId));
-      if (currentStructureSettings != null) {
-        source.sendSystemMessage(Component.literal("§7Level Bonus: §f+" + currentStructureSettings.levelBonus()));
-        source.sendSystemMessage(Component.literal("§7Bypasses Cap: §f" + currentStructureSettings.bypassesCap()));
-      } else {
-        source.sendSystemMessage(Component.literal("§7Level Bonus: §f0 (no settings configured)"));
-      }
-    } else {
-      source.sendSystemMessage(Component.literal("§7Not in any structure"));
-    }
-    
-    // Calculate base level
+    // Get spawn position (considering override)
     BlockPos spawnPos = dimSettings.spawnPosOverride() != null ? 
         dimSettings.spawnPosOverride() : level.getSharedSpawnPos();
-    // Use 2D horizontal distance (ignore Y) for distance-based scaling
-    double dx = spawnPos.getX() - pos.getX();
-    double dz = spawnPos.getZ() - pos.getZ();
+    int spawnX = spawnPos.getX();
+    int spawnZ = spawnPos.getZ();
+    
+    // Calculate distance
+    double dx = spawnX - pos.getX();
+    double dz = spawnZ - pos.getZ();
     double distance = Math.sqrt(dx * dx + dz * dz);
-    int baseLevel = dimSettings.startingLevel();
-    int distanceBonus = LevelingUtils.calculateDistanceFactors(player, distance, dimSettings);
+    int distanceBonus = (int)(distance * dimSettings.levelsPerDistance());
+    
+    // Calculate depth/height
+    int seaLevel = dimSettings.seaLevel();
+    int depthBonus = 0;
+    int heightBonus = 0;
+    int depthBlocks = 0;
+    int heightBlocks = 0;
+    if (pos.getY() < seaLevel && dimSettings.levelsPerDeepness() > 0) {
+      depthBlocks = seaLevel - pos.getY();
+      depthBonus = (int)(depthBlocks * dimSettings.levelsPerDeepness());
+    }
+    if (pos.getY() > seaLevel && dimSettings.levelsPerHeight() > 0) {
+      heightBlocks = pos.getY() - seaLevel;
+      heightBonus = (int)(heightBlocks * dimSettings.levelsPerHeight());
+    }
+    
+    // Calculate day bonus
     long days = level.getDayTime() / 24000L;
     int dayBonus = (int)(days * Config.COMMON.levelsPerDay.get());
     
-    source.sendSystemMessage(Component.literal("§e--- Base Level Calculation ---"));
-    source.sendSystemMessage(Component.literal("§7Starting Level: §f" + dimSettings.startingLevel()));
-    source.sendSystemMessage(Component.literal("§7Distance from Spawn: §f" + String.format("%.1f", distance) + " blocks"));
-    source.sendSystemMessage(Component.literal("§7Distance Bonus: §f" + (distanceBonus >= 0 ? "+" : "") + distanceBonus));
-    source.sendSystemMessage(Component.literal("§7Days Passed: §f" + days));
-    source.sendSystemMessage(Component.literal("§7Day Bonus: §f+" + dayBonus));
-    source.sendSystemMessage(Component.literal("§7§lBase Level: §f§l" + (baseLevel + distanceBonus + dayBonus)));
+    // Calculate local difficulty bonus
+    net.minecraft.world.DifficultyInstance difficulty = level.getCurrentDifficultyAt(pos);
+    float effectiveDifficulty = difficulty.getEffectiveDifficulty();
+    int localDifficultyBonus = (int)(effectiveDifficulty * Config.COMMON.levelsPerLocalDifficulty.get());
     
-    // Calculate bonuses and get IDs
-    int biomeBonus = LevelingAPI.getBiomeLevelBonus(player);
-    int structureBonus = LevelingAPI.getStructureLevelBonus(player);
+    // Base level calculation
+    int startingLevel = dimSettings.startingLevel();
+    int baseLevel = startingLevel + distanceBonus + depthBonus + heightBonus + dayBonus + localDifficultyBonus;
+    int maxLevel = dimSettings.maxLevel();
+    String maxLevelStr = maxLevel > 0 ? String.valueOf(maxLevel) : "unlimited";
+    
+    // Get bonuses
+    BiomeBonus biomeBonus = LevelingAPI.getBiomeBonus(level, pos);
+    StructureBonus structureBonus = LevelingAPI.getStructureBonus(level, pos);
+    
+    // Player bonus
     int playerBonus = 0;
     if (Config.COMMON.applyPlayerBasedLeveling.get()) {
       int rawBonus = PlayerLevelProvider.getProviders().stream()
@@ -322,31 +273,88 @@ public class ModCommands {
       playerBonus = (int) (rawBonus * multiplier);
     }
     
-    // Get biome ID
-    ResourceLocation biomeId = null;
-    if (biomeKey.isPresent()) {
-      biomeId = biomeKey.get().location();
+    // Calculate totals
+    int totalCapped = structureBonus.nonBypassingBonus() + biomeBonus.nonBypassingBonus();
+    int totalBypassing = structureBonus.bypassingBonus() + biomeBonus.bypassingBonus() + playerBonus;
+    
+    // Final level calculation
+    int afterCapped = baseLevel + totalCapped;
+    int cappedTo = maxLevel > 0 ? Math.min(afterCapped, maxLevel) : afterCapped;
+    int finalLevel = cappedTo + totalBypassing;
+    
+    // === Output ===
+    source.sendSystemMessage(Component.literal("§6=== Dynamic Difficulty Debug ==="));
+    source.sendSystemMessage(Component.literal("§7Position: §f" + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()));
+    source.sendSystemMessage(Component.literal("§7Dimension: §f" + dimensionId +" §7(sea lvl: §f" + seaLevel + "§7, spawn: §f" + spawnX + ", " + spawnZ + "§7)"));
+    source.sendSystemMessage(Component.literal("§7Scaling: §f" + dimSettings.levelsPerDistance() + "§7/dist, §f" + dimSettings.levelsPerDeepness() + "§7/depth, §f" + dimSettings.levelsPerHeight() + "§7/height, §f" + Config.COMMON.levelsPerDay.get() + "§7/day, §f" + Config.COMMON.levelsPerLocalDifficulty.get() + "§7/local, random: §f0-" + dimSettings.randomLevelBonus()));
+    source.sendSystemMessage(Component.literal(""));
+    
+    // Location line
+    String locationStr = (int)distance + " blocks from spawn";
+    if (pos.getY() < seaLevel) {
+      locationStr += ", " + depthBlocks + " below sea lvl";
+    } else {
+      locationStr += ", " + heightBlocks + " above sea lvl";
+    }
+    source.sendSystemMessage(Component.literal("§7Location: §f" + locationStr));
+    
+    // Base calculation
+    source.sendSystemMessage(Component.literal("§7Base Calculation:"));
+    source.sendSystemMessage(Component.literal("§7  Starting: §f" + startingLevel));
+    source.sendSystemMessage(Component.literal("§7  + Distance: §f" + distanceBonus + " §7(" + (int)distance + " × " + dimSettings.levelsPerDistance() + ")"));
+    if (pos.getY() < seaLevel) {
+      source.sendSystemMessage(Component.literal("§7  + Depth: §f" + depthBonus + " §7(" + depthBlocks + " × " + dimSettings.levelsPerDeepness() + ")"));
+    } else {
+      source.sendSystemMessage(Component.literal("§7  + Height: §f" + heightBonus + " §7(" + heightBlocks + " × " + dimSettings.levelsPerHeight() + ")"));
+    }
+    source.sendSystemMessage(Component.literal("§7  + Days: §f" + dayBonus + " §7(" + days + " × " + Config.COMMON.levelsPerDay.get() + ")"));
+    source.sendSystemMessage(Component.literal("§7  + Local: §f" + localDifficultyBonus + " §7(" + String.format("%.2f", effectiveDifficulty) + " × " + Config.COMMON.levelsPerLocalDifficulty.get() + ")"));
+    source.sendSystemMessage(Component.literal("§7  = Base Level: §f" + baseLevel + " §7(max: " + maxLevelStr + ")"));
+    source.sendSystemMessage(Component.literal(""));
+    
+    // Biome line
+    if (biomeBonus.biomeId() != null) {
+      String biomeBonusStr = formatBonus(biomeBonus.nonBypassingBonus(), biomeBonus.bypassingBonus());
+      source.sendSystemMessage(Component.literal("§7Biome: §f" + biomeBonus.biomeId() + " §7→ " + biomeBonusStr));
+    } else {
+      source.sendSystemMessage(Component.literal("§7Biome: §cunknown"));
     }
     
-    source.sendSystemMessage(Component.literal("§e--- Bonuses ---"));
-    source.sendSystemMessage(Component.literal("§7Structure Bonus: §f" + (structureBonus > 0 ? "+" : "") + structureBonus));
-    source.sendSystemMessage(Component.literal("§7Biome Bonus: §f" + (biomeBonus > 0 ? "+" : "") + biomeBonus));
-    source.sendSystemMessage(Component.literal("§7Player Bonus: §f" + (playerBonus > 0 ? "+" : "") + playerBonus));
+    // Structure line
+    if (structureBonus.hasStructure()) {
+      String structureBonusStr = formatBonus(structureBonus.nonBypassingBonus(), structureBonus.bypassingBonus());
+      source.sendSystemMessage(Component.literal("§7Structure: §f" + structureBonus.structureId() + " §7→ " + structureBonusStr));
+    } else {
+      source.sendSystemMessage(Component.literal("§7Structure: §fnone"));
+    }
     
-    // Final level calculation using proper logic (max level cap + bypassing bonuses)
-    int finalBaseLevel = baseLevel + distanceBonus + dayBonus;
-    int finalLevel = LevelingUtils.calculateFinalDisplayLevel(
-        finalBaseLevel, currentStructureId, biomeId, playerBonus,
-        dimSettings, structureRegistry, biomeRegistry);
+    // Player line
+    source.sendSystemMessage(Component.literal("§7Player: §f+" + playerBonus + " §7(bypasses cap)"));
+    source.sendSystemMessage(Component.literal(""));
     
-    source.sendSystemMessage(Component.literal("§e--- Final Level (for entities) ---"));
-    source.sendSystemMessage(Component.literal("§7Base Level: §f" + finalBaseLevel));
-    source.sendSystemMessage(Component.literal("§7Max Level Cap: §f" + (dimSettings.maxLevel() > 1 ? dimSettings.maxLevel() : "Unlimited")));
-    source.sendSystemMessage(Component.literal("§7+ All Bonuses: §f+" + (structureBonus + biomeBonus + playerBonus)));
-    source.sendSystemMessage(Component.literal("§7§lFinal Level: §f§l" + finalLevel));
-    
-    source.sendSystemMessage(Component.literal("§6====================================="));
+    // Final line
+    String finalStr;
+    if (maxLevel > 0 && afterCapped > maxLevel) {
+      // Cap was enforced
+      finalStr = "§7Final: §f" + baseLevel + " base + " + totalCapped + " (capped) §7→ §f" + cappedTo + " §7+ §f" + totalBypassing + " (bypassing) §7= §f§l" + finalLevel;
+    } else {
+      // Cap was not enforced
+      finalStr = "§7Final: §f" + baseLevel + " base + " + totalCapped + " (capped) §7→ §f" + cappedTo + " §7+ §f" + totalBypassing + " (bypassing) §7= §f§l" + finalLevel;
+    }
+    source.sendSystemMessage(Component.literal(finalStr));
     
     return 1;
+  }
+  
+  private static String formatBonus(int nonBypassing, int bypassing) {
+    if (nonBypassing == 0 && bypassing == 0) {
+      return "§fno bonus";
+    } else if (nonBypassing > 0 && bypassing > 0) {
+      return "§f+" + nonBypassing + " §7(respects cap), §f+" + bypassing + " §7(bypasses cap)";
+    } else if (bypassing > 0) {
+      return "§f+" + bypassing + " §7(bypasses cap)";
+    } else {
+      return "§f+" + nonBypassing + " §7(respects cap)";
+    }
   }
 }
