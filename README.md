@@ -440,6 +440,183 @@ Some player level provider support is built-in.
 
 ---
 
+## Loot Settings
+
+Dynamic Difficulty provides a flexible system for level-based loot drops using NeoForge Global Loot Modifiers (GLMs).
+
+### Configuration
+
+Level-based drops can be enabled/disabled in `dynamic_difficulty-common.toml`:
+
+```toml
+[level_based_drops]
+# Whether mobs should drop level-up items based on their level
+enable_level_based_drops = true
+```
+
+**Note:** This config option toggles the entire built-in `inject_level_drops` GLM. When disabled, no loot injection occurs regardless of what's in the loot table. If you want to keep the GLM active but customize the drops, override the loot table instead (see [Overriding the Built-in Loot](#overriding-the-built-in-loot)).
+
+### Built-in Loot Condition
+
+The mod provides a custom loot condition for level-gated drops:
+
+**Condition Type:** `dynamic_difficulty:entity_level`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `min` | Integer | **OPTIONAL** - Minimum entity level (inclusive) |
+| `max` | Integer | **OPTIONAL** - Maximum entity level (inclusive) |
+| `exact` | Integer | **OPTIONAL** - Match exactly this level (overrides min/max) |
+
+**Examples:**
+
+```json
+{
+  "condition": "dynamic_difficulty:entity_level",
+  "min": 20,
+  "max": 50
+}
+```
+
+```json
+{
+  "condition": "dynamic_difficulty:entity_level",
+  "min": 10
+}
+```
+
+```json
+{
+  "condition": "dynamic_difficulty:entity_level",
+  "exact": 100
+}
+```
+
+### Built-in Global Loot Modifier
+
+The mod includes a GLM that injects a custom loot table into all entity drops.
+
+**File:** `data/dynamic_difficulty/loot_modifiers/inject_level_drops.json`
+
+```json
+{
+  "type": "dynamic_difficulty:inject_loot_table",
+  "conditions": [],
+  "loot_table": "dynamic_difficulty:inject/level_based_drops"
+}
+```
+
+**GLM Type:** `dynamic_difficulty:inject_loot_table`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `conditions` | Array | Standard NeoForge loot conditions |
+| `loot_table` | ResourceLocation | The loot table to inject into entity drops |
+
+### Built-in Loot Table
+
+The default level-based drops are defined in:
+
+```
+data/dynamic_difficulty/loot_table/inject/level_based_drops.json
+```
+
+This table uses multiple pools with `dynamic_difficulty:entity_level` conditions to provide tiered drops:
+
+| Level Range | Available Drops |
+|-------------|-----------------|
+| 2-19 | Potion of Growth, Elixir of Nurturing, Draught of Ascension |
+| 20-39 | + Essence of Vitality |
+| 40-59 | + Crystal of Awakening |
+| 60-79 | Higher rarity weights |
+| 80+ | Highest rarity weights |
+
+### Level-Up Item Caps
+
+The built-in level-up items have configurable maximum level caps in `dynamic_difficulty-common.toml`:
+
+| Item | Default Max Level | Config Key |
+|------|-------------------|------------|
+| Potion of Growth | 20 | `potion_of_growth_max_level` |
+| Elixir of Nurturing | 40 | `elixir_of_nurturing_max_level` |
+| Draught of Ascension | 60 | `draught_of_ascension_max_level` |
+| Essence of Vitality | 80 | `essence_of_vitality_max_level` |
+| Crystal of Awakening | 100 | `crystal_of_awakening_max_level` |
+
+**Note:** The drop level ranges in the built-in loot table are designed to match these caps. For example, entities level 2-19 can drop Potion of Growth (which levels mobs up to 20), while entities level 20+ start dropping Elixir of Nurturing (which can raise mobs to 40), and so on. This creates a natural progression where defeating higher-level mobs yields items capable of creating even stronger mobs.
+
+If you modify these caps in the config, consider also updating the loot table ranges to match.
+
+### Overriding the Built-in Loot
+
+To customize or replace the built-in loot behavior, you have several options:
+
+**Option 1: Replace the loot table (easiest)**
+
+Create your own loot table at `data/dynamic_difficulty/loot_table/inject/level_based_drops.json` in your datapack. The built-in GLM will automatically use your table instead.
+
+**Option 2: Replace the GLM entirely**
+
+Override the built-in GLM by creating your own file at:
+```
+data/dynamic_difficulty/loot_modifiers/inject_level_drops.json
+```
+
+This completely replaces the built-in GLM with your own configuration.
+
+**Option 3: Add additional GLMs**
+
+The `global_loot_modifiers.json` works like a tag — using `"replace": false` merges your entries with existing ones. You only need to include your own GLM:
+
+```
+data/neoforge/loot_modifiers/global_loot_modifiers.json
+```
+
+```json
+{
+  "replace": false,
+  "entries": [
+    "yourmod:additional_level_drops"
+  ]
+}
+```
+
+This adds your GLM alongside the built-in one without affecting other mods.
+
+### Example: Custom Level-Based Loot Table
+
+```json
+{
+  "type": "minecraft:entity",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:diamond",
+          "weight": 1
+        },
+        {
+          "type": "minecraft:empty",
+          "weight": 99
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "dynamic_difficulty:entity_level",
+          "min": 50
+        }
+      ]
+    }
+  ]
+}
+```
+
+This example gives a 1% chance to drop a diamond from entities level 50 or higher.
+
+---
+
 ## Tips:
 
 1. Use the `/dynamic_difficulty dumpStructures` command to for a list of registered structures and their configured bonuses.
