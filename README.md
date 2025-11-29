@@ -280,7 +280,7 @@ data/<namespace>/leveling_settings/structure_tags/<tag_id>.json
 
 **Examples:**
 - `data/minecraft/leveling_settings/structures/trial_dungeon.json`
-- `data/minecraft/leveling_settings/structure_tags/minecraft:village.json`
+- `data/minecraft/leveling_settings/structure_tags/village.json`
 - `data/dynamic_difficulty/leveling_settings/structure_tags/level_1.json`
 
 ### JSON Format
