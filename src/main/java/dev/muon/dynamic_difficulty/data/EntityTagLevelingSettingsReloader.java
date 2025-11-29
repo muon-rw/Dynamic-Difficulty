@@ -54,10 +54,10 @@ public class EntityTagLevelingSettingsReloader extends ContextAwareReloadListene
       @NotNull ProfilerFiller profilerFiller) {
     LOGGER.info("Loading entity tag leveling settings from 'leveling_settings/entity_tags'");
     
-    Map<ResourceLocation, EntityLevelingSettings> parsed = new HashMap<>();
+    Map<ResourceLocation, EntityLevelingSettings.RawSettings> parsed = new HashMap<>();
     var ops = makeConditionalOps();
     for (Map.Entry<ResourceLocation, JsonElement> entry : prepared.entrySet()) {
-      EntityLevelingSettings.CODEC.decode(ops, entry.getValue())
+      EntityLevelingSettings.RAW_CODEC.decode(ops, entry.getValue())
           .result()
           .ifPresentOrElse(
               pair -> parsed.put(entry.getKey(), pair.getFirst()),

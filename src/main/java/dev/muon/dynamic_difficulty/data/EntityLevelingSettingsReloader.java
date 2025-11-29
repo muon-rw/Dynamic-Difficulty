@@ -3,7 +3,7 @@ package dev.muon.dynamic_difficulty.data;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.mojang.logging.LogUtils;
-import dev.muon.dynamic_difficulty.DynamicDifficulty;
+import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
 import dev.muon.dynamic_difficulty.settings.EntityLevelingSettings;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -29,8 +29,9 @@ import java.util.concurrent.Executor;
 public class EntityLevelingSettingsReloader extends ContextAwareReloadListener {
   private static final Logger LOGGER = LogUtils.getLogger();
   private static final Gson GSON = new Gson();
-  private static final Map<ResourceLocation, EntityLevelingSettings> INDIVIDUAL_SETTINGS = new HashMap<>();
-  private static final Map<ResourceLocation, EntityLevelingSettings> TAG_SETTINGS = new HashMap<>();
+  // Store raw settings - they get resolved at lookup time with dimension fallback
+  private static final Map<ResourceLocation, EntityLevelingSettings.RawSettings> INDIVIDUAL_SETTINGS = new HashMap<>();
+  private static final Map<ResourceLocation, EntityLevelingSettings.RawSettings> TAG_SETTINGS = new HashMap<>();
   private final SimpleJsonResourceReloadListener jsonReloader;
 
   public EntityLevelingSettingsReloader() {
@@ -42,13 +43,17 @@ public class EntityLevelingSettingsReloader extends ContextAwareReloadListener {
     };
   }
 
+  /**
+   * Gets resolved entity settings, falling back to dimension settings for any omitted fields.
+   * Returns null if no entity-specific settings exist (caller should use dimension settings directly).
+   */
   @Nullable
-  public static EntityLevelingSettings get(EntityType<?> entityType) {
+  public static EntityLevelingSettings get(EntityType<?> entityType, DimensionLevelingSettings dimSettings) {
     ResourceLocation entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
     
     // Check individual entity settings first (they take precedence)
     if (INDIVIDUAL_SETTINGS.containsKey(entityId)) {
-      return INDIVIDUAL_SETTINGS.get(entityId);
+      return INDIVIDUAL_SETTINGS.get(entityId).resolve(dimSettings);
     }
     
     // Check entity tags
@@ -56,15 +61,39 @@ public class EntityLevelingSettingsReloader extends ContextAwareReloadListener {
     if (optHolder.isPresent()) {
       Holder<EntityType<?>> entityHolder = optHolder.get();
       // Find the first matching tag (tags are checked in order, first match wins)
-      for (Map.Entry<ResourceLocation, EntityLevelingSettings> tagEntry : TAG_SETTINGS.entrySet()) {
+      for (Map.Entry<ResourceLocation, EntityLevelingSettings.RawSettings> tagEntry : TAG_SETTINGS.entrySet()) {
         TagKey<EntityType<?>> entityTag = TagKey.create(Registries.ENTITY_TYPE, tagEntry.getKey());
         if (entityHolder.is(entityTag)) {
-          return tagEntry.getValue();
+          return tagEntry.getValue().resolve(dimSettings);
         }
       }
     }
     
     return null;
+  }
+
+  /**
+   * Checks if an entity type has custom settings (individual or tag-based).
+   */
+  public static boolean hasCustomSettings(EntityType<?> entityType) {
+    ResourceLocation entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
+    
+    if (INDIVIDUAL_SETTINGS.containsKey(entityId)) {
+      return true;
+    }
+    
+    Optional<Holder.Reference<EntityType<?>>> optHolder = BuiltInRegistries.ENTITY_TYPE.getHolder(entityId);
+    if (optHolder.isPresent()) {
+      Holder<EntityType<?>> entityHolder = optHolder.get();
+      for (Map.Entry<ResourceLocation, EntityLevelingSettings.RawSettings> tagEntry : TAG_SETTINGS.entrySet()) {
+        TagKey<EntityType<?>> entityTag = TagKey.create(Registries.ENTITY_TYPE, tagEntry.getKey());
+        if (entityHolder.is(entityTag)) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
   }
 
   @Override
@@ -92,7 +121,7 @@ public class EntityLevelingSettingsReloader extends ContextAwareReloadListener {
     
     var ops = makeConditionalOps();
     for (Map.Entry<ResourceLocation, JsonElement> entry : prepared.entrySet()) {
-      EntityLevelingSettings.CODEC.decode(ops, entry.getValue())
+      EntityLevelingSettings.RAW_CODEC.decode(ops, entry.getValue())
           .result()
           .ifPresentOrElse(
               pair -> INDIVIDUAL_SETTINGS.put(entry.getKey(), pair.getFirst()),
@@ -103,7 +132,7 @@ public class EntityLevelingSettingsReloader extends ContextAwareReloadListener {
     LOGGER.info("Loaded {} individual entity leveling settings from 'leveling_settings/entities'", INDIVIDUAL_SETTINGS.size());
   }
   
-  public static void loadTagSettings(Map<ResourceLocation, EntityLevelingSettings> tagSettings) {
+  public static void loadTagSettings(Map<ResourceLocation, EntityLevelingSettings.RawSettings> tagSettings) {
     TAG_SETTINGS.clear();
     TAG_SETTINGS.putAll(tagSettings);
     LOGGER.info("Loaded {} entity tag leveling settings from 'leveling_settings/entity_tags'", TAG_SETTINGS.size());

@@ -205,20 +205,20 @@ public class LevelingSystem {
         int distanceBonus = LevelingUtils.calculateDistanceFactors(entity, distanceToSpawn, settings);
         baseLevel += distanceBonus;
 
-        // Day scaling (global config, not dimension-specific)
+        // Day scaling (from entity/dimension settings, which fall back to config)
         int dayBonus = 0;
         if (entity.level() instanceof ServerLevel serverLevel) {
             long days = serverLevel.getDayTime() / 24000L;
-            dayBonus = (int) (days * Config.COMMON.levelsPerDay.get());
+            dayBonus = (int) (days * settings.levelsPerDay());
             baseLevel += dayBonus;
         }
 
-        // Local difficulty scaling (global config, not dimension-specific)
+        // Local difficulty scaling (from entity/dimension settings, which fall back to config)
         int localDifficultyBonus = 0;
         if (entity.level() instanceof ServerLevel serverLevel) {
             DifficultyInstance difficulty = serverLevel.getCurrentDifficultyAt(entityPos);
             float effectiveDifficulty = difficulty.getEffectiveDifficulty();
-            localDifficultyBonus = (int) (effectiveDifficulty * Config.COMMON.levelsPerLocalDifficulty.get());
+            localDifficultyBonus = (int) (effectiveDifficulty * settings.levelsPerLocalDifficulty());
             baseLevel += localDifficultyBonus;
         }
 
@@ -326,40 +326,18 @@ public class LevelingSystem {
 
     public static Map<ResourceKey<Attribute>, AttributeModifier> getAttributeBonuses(LivingEntity entity) {
         LevelingSettings settings = getLevelingSettings(entity);
-        Map<ResourceKey<Attribute>, AttributeModifier> modifiersToUse;
-
-        // Check if we have entity-specific settings with non-empty modifiers
-        if (settings instanceof EntityLevelingSettings entitySettings) {
-            Map<Attribute, AttributeModifier> entityModifiers = entitySettings.attributeModifiers();
-            if (entityModifiers != null && !entityModifiers.isEmpty()) {
-                modifiersToUse = convertAttributeMapToKeyMap(entityModifiers);
-            } else {
-                // Entity settings exist but modifiers are empty/null, check dimension settings
-                ResourceKey<Level> dimension = entity.level().dimension();
-                DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension);
-                Map<Attribute, AttributeModifier> dimModifiers = dimSettings.attributeModifiers();
-                
-                if (dimModifiers != null && !dimModifiers.isEmpty()) {
-                    modifiersToUse = convertAttributeMapToKeyMap(dimModifiers);
-                } else {
-                    // Fall back to global config
-                    modifiersToUse = Config.getAttributeBonuses();
-                }
-            }
-        } else if (settings instanceof DimensionLevelingSettings dimSettings) {
-            Map<Attribute, AttributeModifier> dimModifiers = dimSettings.attributeModifiers();
-            if (dimModifiers != null && !dimModifiers.isEmpty()) {
-                modifiersToUse = convertAttributeMapToKeyMap(dimModifiers);
-            } else {
-                // Dimension settings exist but modifiers are empty/null, use global config
-                modifiersToUse = Config.getAttributeBonuses();
-            }
-        } else {
-            // No specific settings, use global config
-            modifiersToUse = Config.getAttributeBonuses();
+        
+        // Get modifiers from settings (already resolved: entity → dimension → null)
+        Map<Attribute, AttributeModifier> modifiers = settings.attributeModifiers();
+        
+        // null = field was omitted at all levels, fall back to config
+        // empty map = explicitly set to [] (disable modifiers)
+        // non-empty map = use these modifiers
+        if (modifiers == null) {
+            return Config.getAttributeBonuses();
         }
         
-        return modifiersToUse;
+        return convertAttributeMapToKeyMap(modifiers);
     }
 
     // Helper method to convert Map<Attribute, AttributeModifier> to Map<ResourceKey<Attribute>, AttributeModifier>
@@ -410,13 +388,15 @@ public class LevelingSystem {
     }
 
     static LevelingSettings getLevelingSettings(LivingEntity entity) {
-        LevelingSettings entitySettings = EntityLevelingSettingsReloader.get(entity.getType());
+        ResourceKey<Level> dimension = entity.level().dimension();
+        DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension);
+        
+        // Entity settings resolve with dimension as fallback
+        LevelingSettings entitySettings = EntityLevelingSettingsReloader.get(entity.getType(), dimSettings);
         if (entitySettings != null) {
             return entitySettings;
         }
 
-        ResourceKey<Level> dimension = entity.level().dimension();
-        DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension);
         return dimSettings;
     }
 

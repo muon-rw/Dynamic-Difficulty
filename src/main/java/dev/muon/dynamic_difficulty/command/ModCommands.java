@@ -245,12 +245,12 @@ public class ModCommands {
     
     // Calculate day bonus
     long days = level.getDayTime() / 24000L;
-    int dayBonus = (int)(days * Config.COMMON.levelsPerDay.get());
+    int dayBonus = (int)(days * dimSettings.levelsPerDay());
     
     // Calculate local difficulty bonus
     net.minecraft.world.DifficultyInstance difficulty = level.getCurrentDifficultyAt(pos);
     float effectiveDifficulty = difficulty.getEffectiveDifficulty();
-    int localDifficultyBonus = (int)(effectiveDifficulty * Config.COMMON.levelsPerLocalDifficulty.get());
+    int localDifficultyBonus = (int)(effectiveDifficulty * dimSettings.levelsPerLocalDifficulty());
     
     // Base level calculation
     int startingLevel = dimSettings.startingLevel();
@@ -286,7 +286,7 @@ public class ModCommands {
     source.sendSystemMessage(Component.literal("§6=== Dynamic Difficulty Debug ==="));
     source.sendSystemMessage(Component.literal("§7Position: §f" + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()));
     source.sendSystemMessage(Component.literal("§7Dimension: §f" + dimensionId +" §7(sea lvl: §f" + seaLevel + "§7, spawn: §f" + spawnX + ", " + spawnZ + "§7)"));
-    source.sendSystemMessage(Component.literal("§7Scaling: §f" + dimSettings.levelsPerDistance() + "§7/dist, §f" + dimSettings.levelsPerDeepness() + "§7/depth, §f" + dimSettings.levelsPerHeight() + "§7/height, §f" + Config.COMMON.levelsPerDay.get() + "§7/day, §f" + Config.COMMON.levelsPerLocalDifficulty.get() + "§7/local, random: §f0-" + dimSettings.randomLevelBonus()));
+    source.sendSystemMessage(Component.literal("§7Scaling: §f" + dimSettings.levelsPerDistance() + "§7/dist, §f" + dimSettings.levelsPerDeepness() + "§7/depth, §f" + dimSettings.levelsPerHeight() + "§7/height, §f" + dimSettings.levelsPerDay() + "§7/day, §f" + dimSettings.levelsPerLocalDifficulty() + "§7/local, random: §f0-" + dimSettings.randomLevelBonus()));
     source.sendSystemMessage(Component.literal(""));
     
     // Location line
@@ -307,8 +307,8 @@ public class ModCommands {
     } else {
       source.sendSystemMessage(Component.literal("§7  + Height: §f" + heightBonus + " §7(" + heightBlocks + " × " + dimSettings.levelsPerHeight() + ")"));
     }
-    source.sendSystemMessage(Component.literal("§7  + Days: §f" + dayBonus + " §7(" + days + " × " + Config.COMMON.levelsPerDay.get() + ")"));
-    source.sendSystemMessage(Component.literal("§7  + Local: §f" + localDifficultyBonus + " §7(" + String.format("%.2f", effectiveDifficulty) + " × " + Config.COMMON.levelsPerLocalDifficulty.get() + ")"));
+    source.sendSystemMessage(Component.literal("§7  + Days: §f" + dayBonus + " §7(" + days + " × " + dimSettings.levelsPerDay() + ")"));
+    source.sendSystemMessage(Component.literal("§7  + Local: §f" + localDifficultyBonus + " §7(" + String.format("%.2f", effectiveDifficulty) + " × " + dimSettings.levelsPerLocalDifficulty() + ")"));
     source.sendSystemMessage(Component.literal("§7  = Base Level: §f" + baseLevel + " §7(max: " + maxLevelStr + ")"));
     source.sendSystemMessage(Component.literal(""));
     

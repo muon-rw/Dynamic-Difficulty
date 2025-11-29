@@ -1,3 +1,10 @@
+## 0.9.1
+- Clean up datapack settings fallback chain: Entity -> Dimension -> Config (all fields now optional)
+- `levels_per_day` and `levels_per_local_difficulty` are now overridable per dimension/entity
+- `levels_per_height` is now overridable per entity
+- Specifying empty attribute modifiers `"attribute_modifiers": []` now explicitly disables scaling
+- Omitting `attribute_modifiers` falls back to dimension -> config defaults
+
 ## 0.9.0
 - Sync reskillable points automatically on allocation
 - Fix dayBonus not applying (Thanks jeffjks for bug testing!)

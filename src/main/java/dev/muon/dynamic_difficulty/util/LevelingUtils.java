@@ -133,10 +133,9 @@ public class LevelingUtils {
             LevelingSettings settings) {
         double distanceLevel = distanceToSpawn * settings.levelsPerDistance();
         
-        // Get dimension settings for sea level and height scaling
+        // Sea level is dimension-specific only (entities don't have their own sea level)
         DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension);
         int seaLevel = dimSettings.seaLevel();
-        float levelsPerHeight = dimSettings.levelsPerHeight();
         
         double depthLevel = 0.0;
         double heightLevel = 0.0;
@@ -147,7 +146,8 @@ public class LevelingUtils {
             depthLevel = depthBelowSea * settings.levelsPerDeepness();
         }
         
-        // Height scaling: only applies when above sea level
+        // Height scaling: only applies when above sea level (uses entity/dimension setting)
+        float levelsPerHeight = settings.levelsPerHeight();
         if (yPos > seaLevel && levelsPerHeight > 0) {
             double heightAboveSea = yPos - seaLevel;
             heightLevel = heightAboveSea * levelsPerHeight;
@@ -221,7 +221,7 @@ public class LevelingUtils {
 
     /**
      * Calculates the base entity level at a given position.
-     * This includes starting level, distance factors, and day scaling.
+     * This includes starting level, distance factors, day scaling, and local difficulty.
      * Note: Random bonus is excluded as it's per-entity and non-deterministic.
      * 
      * @param player The player (used for dimension access)
@@ -250,9 +250,14 @@ public class LevelingUtils {
         int distanceBonus = calculateDistanceFactors(dimension, pos.getY(), distanceToSpawn, dimSettings);
         baseLevel += distanceBonus;
 
-        // Day scaling (global config, not dimension-specific)
+        // Day scaling (from dimension settings, which fall back to config)
         long days = level.getDayTime() / 24000L;
-        baseLevel += (int) (days * Config.COMMON.levelsPerDay.get());
+        baseLevel += (int) (days * dimSettings.levelsPerDay());
+
+        // Local difficulty scaling (from dimension settings, which fall back to config)
+        net.minecraft.world.DifficultyInstance difficulty = level.getCurrentDifficultyAt(pos);
+        float effectiveDifficulty = difficulty.getEffectiveDifficulty();
+        baseLevel += (int) (effectiveDifficulty * dimSettings.levelsPerLocalDifficulty());
 
         // Note: Random bonus is excluded as it's per-entity and non-deterministic
 

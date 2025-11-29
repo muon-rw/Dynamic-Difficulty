@@ -20,13 +20,13 @@ ___
         - `levels_per_distance` - Bonus per block from the world's spawn point (default: 0.01)
         - `levels_per_deepness` - Bonus per block below sea level (default: 0.0)
         - `levels_per_height` - Bonus per block above sea level (default: 0.0)
-        - `levels_per_day` - Bonus per in-game day passed (default: 0.0) *(config only)*
-        - `levels_per_local_difficulty` - Bonus based on Minecraft's local difficulty (default: 0.0) *(config only)*
+        - `levels_per_day` - Bonus per in-game day passed (default: 0.0)
+        - `levels_per_local_difficulty` - Bonus based on Minecraft's local difficulty (default: 0.0)
         - `random_level_bonus` - Random bonus levels (0 to this value) (default: 0)
-    - Dimensions can override most of these defaults with a datapack (see [Dimensions](#dimensions))
+    - **All fields are optional in datapacks** - omit a field to use config defaults
+    - Dimensions can override any of these defaults with a datapack (see [Dimensions](#dimensions))
     - Entity-specific settings provide final authority over base level (see [Entities](#entities))
     - **Note:** Deepness/height scaling use sea level (Y=64) as the reference point. Dimensions can override this with the `sea_level` field.
-    - **Note:** `levels_per_day` and `levels_per_local_difficulty` are global config options and cannot be overridden per-dimension.
 
 2. **Non-Bypassing Bonuses** - Respect the `max_level` from Step 1
     - Bonuses with `bypasses_cap: false` (default for all biome bonuses, see [Biomes](#biome-leveling-settings))
@@ -78,14 +78,22 @@ data/<namespace>/leveling_settings/dimension_tags/<tag_id>.json
 
 ### JSON Format
 
-**Example 1: Override attribute modifiers**
+**All fields are optional** - omit any field to use the config default.
+
+**Example 1: Minimal - just override what you need**
+```json
+{
+  "max_level": 50,
+  "levels_per_day": 0.5
+}
+```
+
+**Example 2: Override attribute modifiers**
 ```json
 {
   "starting_level": 1,
-  "max_level": 0,
   "levels_per_distance": 0.005,
   "levels_per_deepness": 0.05,
-  "random_level_bonus": 0,
   "attribute_modifiers": [
     {
       "attribute": "minecraft:generic.attack_damage",
@@ -96,26 +104,13 @@ data/<namespace>/leveling_settings/dimension_tags/<tag_id>.json
 }
 ```
 
-**Example 2: Fall back to config defaults**
+**Example 3: Using spawn_pos_override and height/day scaling**
 ```json
 {
-  "starting_level": 1,
-  "max_level": 0,
-  "levels_per_distance": 0.005,
-  "levels_per_deepness": 0.05,
-  "random_level_bonus": 0
-}
-```
-
-**Example 3: Using spawn_pos_override and levels_per_height**
-```json
-{
-  "starting_level": 1,
-  "max_level": 0,
   "levels_per_distance": 0.01,
-  "levels_per_deepness": 0.0,
   "levels_per_height": 0.02,
-  "random_level_bonus": 0,
+  "levels_per_day": 0.5,
+  "levels_per_local_difficulty": 1.0,
   "spawn_pos_override": {
     "x": 0,
     "z": 0
@@ -124,21 +119,31 @@ data/<namespace>/leveling_settings/dimension_tags/<tag_id>.json
 }
 ```
 
-**Note:** To fall back to config defaults, simply omit the `attribute_modifiers` field entirely (or use an empty array `[]` - both work the same way).
+**Example 4: Disable day/local scaling for a dimension (e.g., The End)**
+```json
+{
+  "levels_per_day": 0.0,
+  "levels_per_local_difficulty": 0.0
+}
+```
 
 ### Fields
 
 | Field                 | Type | Default | Description                                                      |
 |-----------------------|------|---------|------------------------------------------------------------------|
-| `starting_level`      | Integer | 1 | Base level for entities in this dimension                        |
-| `max_level`           | Integer | 0 | Maximum level cap (0 = unlimited)                                |
-| `levels_per_distance` | Float | 0.01 | Levels added per block from spawn                                |
-| `levels_per_deepness` | Float | 0.0 | **OPTIONAL** - Levels added per block below sea level (only applies when Y < sea_level) |
-| `random_level_bonus`  | Integer | 0 | Random bonus levels (0 to this value)                            |
-| `spawn_pos_override`  | Object | `null` | **OPTIONAL** - Override spawn position (x, z only) for horizontal distance calculations |
-| `sea_level`           | Integer | 64 | **OPTIONAL** - Reference Y coordinate for depth/height calculations |
-| `levels_per_height`   | Float | 0.0 | **OPTIONAL** - Levels added per block above sea level (only applies when Y > sea_level) |
-| `attribute_modifiers` | Array | `[]` | **OPTIONAL** - Custom attribute bonuses per level (falls back to config) |
+| `starting_level`      | Integer | config | Base level for entities in this dimension                        |
+| `max_level`           | Integer | config | Maximum level cap (0 = unlimited)                                |
+| `levels_per_distance` | Float | config | Levels added per block from spawn                                |
+| `levels_per_deepness` | Float | config | Levels added per block below sea level (only applies when Y < sea_level) |
+| `levels_per_height`   | Float | config | Levels added per block above sea level (only applies when Y > sea_level) |
+| `levels_per_day`      | Float | config | Levels added per in-game day passed                              |
+| `levels_per_local_difficulty` | Float | config | Levels added per point of local difficulty                |
+| `random_level_bonus`  | Integer | config | Random bonus levels (0 to this value)                            |
+| `spawn_pos_override`  | Object | `null` | Override spawn position (x, z only) for horizontal distance calculations |
+| `sea_level`           | Integer | 64 | Reference Y coordinate for depth/height calculations             |
+| `attribute_modifiers` | Array | config | Custom attribute bonuses per level                               |
+
+**Note:** All fields are optional. Omitting a field uses the value from `dynamic_difficulty-common.toml` config. For `attribute_modifiers`, use an empty array `[]` to explicitly disable modifiers for this dimension.
 
 **Note:** Dimension settings are used as fallback when no entity-specific settings exist. Dimensions can also override attribute modifiers, using the same format as entity settings (see [Attribute Modifiers](#attribute-modifiers) below).
 
@@ -168,52 +173,52 @@ data/<namespace>/leveling_settings/entity_tags/<tag_id>.json
 
 ### JSON Format
 
-**Example 1: Override attributes per level from the `dynamic_difficulty-common.toml` config**
+**All fields are optional** - omit any field to inherit from dimension settings (which fall back to config).
+
+**Example 1: Minimal - just set a max level for bosses**
 ```json
 {
-  "starting_level": 1,
-  "max_level": 0,
-  "levels_per_distance": 0.01,
-  "levels_per_deepness": 0.0,
-  "random_level_bonus": 0,
+  "max_level": 100
+}
+```
+
+**Example 2: Override attributes for a specific entity**
+```json
+{
+  "max_level": 50,
   "attribute_modifiers": [
     {
       "attribute": "minecraft:generic.attack_damage",
-      "amount": 0.2,
+      "amount": 0.5,
       "operation": "add_value"
-    },
-    {
-      "attribute": "minecraft:generic.max_health",
-      "amount": 0.05,
-      "operation": "add_multiplied_base"
     }
   ]
 }
 ```
 
-**Example 2: Fall back to config defaults for attributes per level**
+**Example 3: Disable distance scaling for a stationary enemy**
 ```json
 {
-  "starting_level": 1,
-  "max_level": 0,
-  "levels_per_distance": 0.01,
-  "levels_per_deepness": 0.0,
-  "random_level_bonus": 0
+  "levels_per_distance": 0.0,
+  "levels_per_day": 0.0
 }
 ```
-
-**Note:** To fall back to config defaults, simply omit the `attribute_modifiers` field entirely (or use an empty array `[]` - both work the same way).
 
 ### Fields
 
 | Field | Type | Default | Description                                    |
 |-------|------|---------|------------------------------------------------|
-| `starting_level` | Integer | 1 | Base level for this entity type                |
-| `max_level` | Integer | 0 | Maximum level cap (0 = unlimited)              |
-| `levels_per_distance` | Float | 0.01 | Levels added per block from world spawn        |
-| `levels_per_deepness` | Float | 0.0 | Levels added per block below sea level         |
-| `random_level_bonus` | Integer | 0 | Random bonus levels (0 to this value)          |
-| `attribute_modifiers` | Array | `[]` | OPTIONAL -  Custom attribute bonuses per level |
+| `starting_level` | Integer | dimension | Base level for this entity type                |
+| `max_level` | Integer | dimension | Maximum level cap (0 = unlimited)              |
+| `levels_per_distance` | Float | dimension | Levels added per block from world spawn        |
+| `levels_per_deepness` | Float | dimension | Levels added per block below sea level         |
+| `levels_per_height` | Float | dimension | Levels added per block above sea level         |
+| `levels_per_day` | Float | dimension | Levels added per in-game day passed            |
+| `levels_per_local_difficulty` | Float | dimension | Levels added per point of local difficulty     |
+| `random_level_bonus` | Integer | dimension | Random bonus levels (0 to this value)          |
+| `attribute_modifiers` | Array | dimension | Custom attribute bonuses per level             |
+
+**Note:** All fields are optional. Omitting a field uses the value from the dimension settings, which in turn falls back to config. For `attribute_modifiers`, use an empty array `[]` to explicitly disable modifiers for this entity.
 
 ### Attribute Modifiers
 
