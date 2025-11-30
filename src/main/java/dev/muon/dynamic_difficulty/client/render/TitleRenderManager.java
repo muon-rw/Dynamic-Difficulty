@@ -32,12 +32,6 @@ public class TitleRenderManager {
     // Track final displayed values to detect actual changes (avoids retriggering on location change with same level)
     private int lastDisplayedLevel = -1;
     private int lastPlayerBonus = -1;
-    
-    // Track component values for title display purposes
-    private int lastStructureBonus = -1;
-    private int lastBiomeBonus = -1;
-    private ResourceLocation lastStructureId = null;
-    private ResourceLocation lastBiomeId = null;
 
     public TitleRenderManager() {
         this.structureTitleRenderer = new StructureTitleRenderer<>(1); // Only track 1 recent structure
@@ -114,10 +108,6 @@ public class TitleRenderManager {
             lastPlayerBonus = playerBonus;
         }
         
-        // Always update tracked component values for title display purposes
-        lastStructureId = structureId;
-        lastStructureBonus = structureBonus;
-
         if (Config.CLIENT.showStructureTitles.get()) {
             boolean shouldDisplay = !Config.CLIENT.structureTitleOnlyAnnounceIfModified.get() || structureBonus > 0;
             if (shouldDisplay && !structureTitleRenderer.matchesAnyRecentEntry(id -> id.equals(structureId))) {
@@ -139,10 +129,6 @@ public class TitleRenderManager {
             lastPlayerBonus = playerBonus;
         }
         
-        // Always update tracked component values for title display purposes
-        lastBiomeId = biomeId;
-        lastBiomeBonus = biomeBonus;
-
         if (Config.CLIENT.showBiomeTitles.get()) {
             boolean shouldDisplay = !Config.CLIENT.biomeTitleOnlyAnnounceIfModified.get() || biomeBonus > 0;
             if (shouldDisplay) {
@@ -178,12 +164,6 @@ public class TitleRenderManager {
             lastPlayerBonus = playerBonus;
         }
         
-        // Dimension change resets structure/biome tracking (player is in a new world)
-        lastStructureId = null;
-        lastStructureBonus = -1;
-        lastBiomeId = null;
-        lastBiomeBonus = -1;
-
         if (Config.CLIENT.showDimensionTitles.get()) {
             boolean shouldDisplay = true;
             if (Config.CLIENT.dimensionTitleOnlyAnnounceIfModified.get()) {
@@ -384,10 +364,6 @@ public class TitleRenderManager {
 
         lastDisplayedLevel = -1;
         lastPlayerBonus = -1;
-        lastStructureBonus = -1;
-        lastBiomeBonus = -1;
-        lastStructureId = null;
-        lastBiomeId = null;
     }
 }
 

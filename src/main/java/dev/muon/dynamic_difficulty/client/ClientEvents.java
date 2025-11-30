@@ -12,7 +12,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 @EventBusSubscriber(modid = DynamicDifficulty.MODID, value = Dist.CLIENT)
-public class ClientEventHandler {
+public class ClientEvents {
     
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
