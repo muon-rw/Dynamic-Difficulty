@@ -4,6 +4,7 @@
 - `levels_per_height` is now overridable per entity
 - Specifying empty attribute modifiers `"attribute_modifiers": []` now explicitly disables scaling
 - Omitting `attribute_modifiers` falls back to dimension -> config defaults
+- Debug Location command now factors random bonus in Final Level
 
 ## 0.9.0
 - Sync reskillable points automatically on allocation

@@ -276,11 +276,20 @@ public class ModCommands {
     // Calculate totals
     int totalCapped = structureBonus.nonBypassingBonus() + biomeBonus.nonBypassingBonus();
     int totalBypassing = structureBonus.bypassingBonus() + biomeBonus.bypassingBonus() + playerBonus;
+    int randomBonus = dimSettings.randomLevelBonus();
     
-    // Final level calculation
-    int afterCapped = baseLevel + totalCapped;
-    int cappedTo = maxLevel > 0 ? Math.min(afterCapped, maxLevel) : afterCapped;
-    int finalLevel = cappedTo + totalBypassing;
+    // Final level calculation with ranges (random is applied before cap)
+    int baseLow = baseLevel;
+    int baseHigh = baseLevel + randomBonus;
+    
+    int preCappedLow = baseLow + totalCapped;
+    int preCappedHigh = baseHigh + totalCapped;
+    
+    int cappedLow = maxLevel > 0 ? Math.min(preCappedLow, maxLevel) : preCappedLow;
+    int cappedHigh = maxLevel > 0 ? Math.min(preCappedHigh, maxLevel) : preCappedHigh;
+    
+    int finalLow = cappedLow + totalBypassing;
+    int finalHigh = cappedHigh + totalBypassing;
     
     // === Output ===
     source.sendSystemMessage(Component.literal("§6=== Dynamic Difficulty Debug ==="));
@@ -309,7 +318,8 @@ public class ModCommands {
     }
     source.sendSystemMessage(Component.literal("§7  + Days: §f" + dayBonus + " §7(" + days + " × " + dimSettings.levelsPerDay() + ")"));
     source.sendSystemMessage(Component.literal("§7  + Local: §f" + localDifficultyBonus + " §7(" + String.format("%.2f", effectiveDifficulty) + " × " + dimSettings.levelsPerLocalDifficulty() + ")"));
-    source.sendSystemMessage(Component.literal("§7  = Base Level: §f" + baseLevel + " §7(max: " + maxLevelStr + ")"));
+    String baseRangeStr = randomBonus > 0 ? baseLevel + " (+0-" + randomBonus + " random)" : String.valueOf(baseLevel);
+    source.sendSystemMessage(Component.literal("§7  = Base Level: §f" + baseRangeStr + " §7(max: " + maxLevelStr + ")"));
     source.sendSystemMessage(Component.literal(""));
     
     // Biome line
@@ -332,16 +342,12 @@ public class ModCommands {
     source.sendSystemMessage(Component.literal("§7Player: §f+" + playerBonus + " §7(bypasses cap)"));
     source.sendSystemMessage(Component.literal(""));
     
-    // Final line
-    String finalStr;
-    if (maxLevel > 0 && afterCapped > maxLevel) {
-      // Cap was enforced
-      finalStr = "§7Final: §f" + baseLevel + " base + " + totalCapped + " (capped) §7→ §f" + cappedTo + " §7+ §f" + totalBypassing + " (bypassing) §7= §f§l" + finalLevel;
-    } else {
-      // Cap was not enforced
-      finalStr = "§7Final: §f" + baseLevel + " base + " + totalCapped + " (capped) §7→ §f" + cappedTo + " §7+ §f" + totalBypassing + " (bypassing) §7= §f§l" + finalLevel;
-    }
-    source.sendSystemMessage(Component.literal(finalStr));
+    // Final line with ranges
+    String baseStr = formatRange(baseLow, baseHigh);
+    String cappedStr = formatRange(cappedLow, cappedHigh);
+    String finalStr = formatRange(finalLow, finalHigh);
+    
+    source.sendSystemMessage(Component.literal("§7Final: §f" + baseStr + " base + " + totalCapped + " §7→(Cap)§7→ §f" + cappedStr + " §7+ §f" + totalBypassing + " §7= §f§l" + finalStr));
     
     return 1;
   }
@@ -356,5 +362,9 @@ public class ModCommands {
     } else {
       return "§f+" + nonBypassing + " §7(respects cap)";
     }
+  }
+  
+  private static String formatRange(int low, int high) {
+    return low == high ? String.valueOf(low) : low + "-" + high;
   }
 }
