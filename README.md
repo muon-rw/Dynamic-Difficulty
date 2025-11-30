@@ -633,4 +633,5 @@ This example gives a 1% chance to drop a diamond from entities level 50 or highe
 1. Use the `/dynamic_difficulty dumpStructures` command for a list of registered structures and their configured bonuses.
 2. Use `/dynamic_difficulty debug location` to see a full breakdown of level calculation for where you're standing
 3. You can check if your datapack is loaded in game by using `/datapack list`
-4. Datapacks are best edited with [VSCode](https://code.visualstudio.com/) - Highly recommended: open your *entire datapack folder* in VScode to manage all files at once - Infinitely easier to organize lots of files and folders than relying on Explorer/Finder! 
+4. Datapacks are best edited with [VSCode](https://code.visualstudio.com/)
+5. Open your *entire datapack folder* in VScode to manage all files at once - Infinitely easier to organize lots of files and folders, rather than relying on Explorer/Finder! 
