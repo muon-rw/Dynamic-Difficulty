@@ -452,7 +452,11 @@ Some player level provider support is built-in.
 
 ## Loot Settings
 
-Dynamic Difficulty provides a flexible system for level-based loot drops using NeoForge Global Loot Modifiers (GLMs).
+Dynamic Difficulty provides a flexible system for level-based loot drops.
+
+**Platform Implementation:**
+- **NeoForge:** Uses Global Loot Modifiers (GLMs) for loot injection
+- **Fabric:** Uses a mixin to inject the loot table directly
 
 ### Configuration
 
@@ -464,7 +468,7 @@ Level-based drops can be enabled/disabled in `dynamic_difficulty-common.toml`:
 enable_level_based_drops = true
 ```
 
-**Note:** This config option toggles the entire built-in `inject_level_drops` GLM. When disabled, no loot injection occurs regardless of what's in the loot table. If you want to keep the GLM active but customize the drops, override the loot table instead (see [Overriding the Built-in Loot](#overriding-the-built-in-loot)).
+**Note:** This config option toggles the entire built-in loot injection system. When disabled, no loot injection occurs regardless of what's in the loot table. If you want to keep loot injection active but customize the drops, override the loot table instead (see [Overriding the Built-in Loot](#overriding-the-built-in-loot)).
 
 ### Built-in Loot Condition
 
@@ -502,9 +506,9 @@ The mod provides a custom loot condition for level-gated drops:
 }
 ```
 
-### Built-in Global Loot Modifier
+### Built-in Global Loot Modifier (NeoForge Only)
 
-The mod includes a GLM that injects a custom loot table into all entity drops.
+On NeoForge, the mod includes a Global Loot Modifier (GLM) that injects a custom loot table into all entity drops.
 
 **File:** `data/dynamic_difficulty/loot_modifiers/inject_level_drops.json`
 
@@ -522,6 +526,8 @@ The mod includes a GLM that injects a custom loot table into all entity drops.
 |-------|------|-------------|
 | `conditions` | Array | Standard NeoForge loot conditions |
 | `loot_table` | ResourceLocation | The loot table to inject into entity drops |
+
+**Note:** On Fabric, the loot table injection is handled via mixin instead. The same loot table (`dynamic_difficulty:inject/level_based_drops`) is used on both platforms.
 
 ### Built-in Loot Table
 
@@ -561,11 +567,11 @@ If you modify these caps in the config, consider also updating the loot table ra
 
 To customize or replace the built-in loot behavior, you have several options:
 
-**Option 1: Replace the loot table (easiest)**
+**Option 1: Replace the loot table (easiest, works on both platforms)**
 
-Create your own loot table at `data/dynamic_difficulty/loot_table/inject/level_based_drops.json` in your datapack. The built-in GLM will automatically use your table instead.
+Create your own loot table at `data/dynamic_difficulty/loot_table/inject/level_based_drops.json` in your datapack. Both NeoForge and Fabric will automatically use your table instead.
 
-**Option 2: Replace the GLM entirely**
+**Option 2: Replace the GLM entirely (NeoForge only)**
 
 Override the built-in GLM by creating your own file at:
 ```
@@ -574,7 +580,7 @@ data/dynamic_difficulty/loot_modifiers/inject_level_drops.json
 
 This completely replaces the built-in GLM with your own configuration.
 
-**Option 3: Add additional GLMs**
+**Option 3: Add additional GLMs (NeoForge only)**
 
 The `global_loot_modifiers.json` works like a tag — using `"replace": false` merges your entries with existing ones. You only need to include your own GLM:
 
