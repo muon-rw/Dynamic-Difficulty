@@ -1,3 +1,8 @@
+## 1.0.0
+- Multiloader Port - Might be some small things missed, please report any bugs you find! 
+- Increase config default damage bonuses per level 0.2 -> 0.25
+- 
+
 ## 0.9.1
 - Clean up datapack settings fallback chain: Entity -> Dimension -> Config (all fields now optional)
 - `levels_per_day` and `levels_per_local_difficulty` are now overridable per dimension/entity
@@ -20,7 +25,7 @@
 - Add height-based scaling
 - Sea level is now configurable per dimension in datapacks
 - `spawn_pos_override` now only takes an `x` and `z`
-- Add config option to disable restriction for only showing structure titles if they have modified levels 
+- Add config option to disable restriction for only showing structure titles if they have modified levels
 - Updated some dimension default settings
 - Some more internal reorganization
 

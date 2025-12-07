@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.muon.dynamic_difficulty.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "plugin": "dev.muon.dynamic_difficulty.MixinConfigPluginNeoForge",
+  "mixins": [
+    "LivingEntityAccessor",
+    "LivingEntityMixin",
+    "compat.puffish_skills.SkillsModMixin",
+    "compat.reskillable.SyncToClientMixin"
+  ],
+  "client": [
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,35 @@
+modLoader="javafml"
+loaderVersion="${neoforge_loader_version_range}"
+issueTrackerURL = "https://github.com/${sources}/issues"
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}+${minecraft_version}"
+displayName="${mod_name}"
+logoFile="assets/${mod_id}/icon.png"
+logoBlur=false
+authors="${mod_author}"
+credits="${neoforge_mod_contributors}"
+description='''
+${mod_description}
+'''
+
+[[mixins]]
+config = "${mod_id}.mixins.json"
+[[mixins]]
+config = "${mod_id}.neoforge.mixins.json"
+
+[[dependencies.${mod_id}]]
+modId="neoforge"
+type="required"
+versionRange="${neoforge_loader_version_range}"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="minecraft"
+type="required"
+versionRange="${neoforge_minecraft_version_range}"
+ordering="NONE"
+side="BOTH"

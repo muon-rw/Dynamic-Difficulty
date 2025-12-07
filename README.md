@@ -3,13 +3,12 @@
 Highly configurable and compatible mob leveling system
 
 ___
-# Mod Developers: 
+# Mod Developers:
 - **No Maven yet! For now, use Cursemaven!**
 ---
 
 # Datapack Guide
-### NOTE: This guide is for 1.21.1 Neoforge!
-*1.21.1 Fabric does not yet have all of these features, though they will be ported in the next few days!*
+### NOTE: This guide is for 1.21.1 Only!
 *For information on 1.21.10, make sure to select the 1.21.10 branch!*
 
 ### How are levels calculated?
@@ -147,7 +146,7 @@ data/<namespace>/leveling_settings/dimension_tags/<tag_id>.json
 
 **Note:** Dimension settings are used as fallback when no entity-specific settings exist. Dimensions can also override attribute modifiers, using the same format as entity settings (see [Attribute Modifiers](#attribute-modifiers) below).
 
-**Important:** 
+**Important:**
 - Deepness-based scaling (`levels_per_deepness`) only applies when Y < `sea_level` (default: 64). It does not affect entities above sea level.
 - Height-based scaling (`levels_per_height`) is optional and only applies when Y > `sea_level` and `levels_per_height` > 0.
 - The `sea_level` can be overridden per dimension to match different world generation (e.g., set to 0 for dimensions without a traditional sea level).
@@ -442,9 +441,9 @@ Configure player-based scaling in `dynamic_difficulty-common.toml`:
 
 ### Player Level Providers
 
-Some player level provider support is built-in. 
+Some player level provider support is built-in.
 - Additional providers can be added via the API
-- Suggestions for new built-in providers are also welcome - Submit a GitHub issue! 
+- Suggestions for new built-in providers are also welcome - Submit a GitHub issue!
 
 **Current Providers:**
 - Pufferfish's Skills

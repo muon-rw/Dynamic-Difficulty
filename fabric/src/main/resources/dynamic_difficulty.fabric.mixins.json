@@ -1,0 +1,22 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.muon.dynamic_difficulty.mixin",
+  "refmap": "${mod_id}.refmap.json",
+  "compatibilityLevel": "JAVA_21",
+  "plugin": "dev.muon.dynamic_difficulty.MixinConfigPluginFabric",
+  "mixins": [
+    "LivingEntityAccessor",
+    "LivingEntityMixinFabric",
+    "LootTableMixin",
+    "compat.puffish_skills.SkillsModMixin"
+  ],
+  "client": [
+    "client.EntityRendererMixin"
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
+  
