@@ -5,13 +5,14 @@ Highly configurable and compatible mob leveling system
 ___
 
 <details>
-<summary><h2>For Mod Developers</h2></summary>
+<summary><h1>For Mod Developers (Click to Expand)</h1></summary>
 
 ### Maven Repository
 
-Add the following to your `repositories` 
+Add the maven to your `repositories` in `build.gradle` 
 ```groovy
 repositories {
+    // ... other repositories
     maven {
         url = "https://maven.muon.rip/releases/"
     }
@@ -20,7 +21,8 @@ repositories {
 
 ### Dependency Setup
 
-Set a version in `gradle.properties` (assuming Gradle Groovy)
+Define the version in `gradle.properties` (assuming Gradle Groovy)
+Find available versions at: [maven.muon.rip/#/releases/](https://maven.muon.rip/#/releases/)
 
 ```properties
 dynamic_difficulty_version=1.0.0+1.21.1
@@ -40,16 +42,11 @@ implementation("dev.muon.dynamic_difficulty:dynamic_difficulty-neoforge:${dynami
 modImplementation("dev.muon.dynamic_difficulty:dynamic_difficulty-fabric:${dynamic_difficulty_version}")
 ```
 
-#### Common
+#### Common (Multiloader projects)
 
 ```groovy
 implementation("dev.muon.dynamic_difficulty:dynamic_difficulty-common:${dynamic_difficulty_version}")
 ```
-
-
-### Available Versions
-
-Find available versions at: [maven.muon.rip/#/releases/](https://maven.muon.rip/#/releases/)
 
 </details>
 
