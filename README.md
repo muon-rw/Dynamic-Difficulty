@@ -9,7 +9,7 @@ ___
 
 ### Maven Repository
 
-Add the maven to your `repositories` in `build.gradle` 
+Add the maven to your `repositories` in your `build.gradle` (assuming Gradle Groovy)
 ```groovy
 repositories {
     // ... other repositories
@@ -19,16 +19,14 @@ repositories {
 }
 ```
 
-### Dependency Setup
-
-- Set a mod version in `gradle.properties` (assuming Gradle Groovy)
-- Find all available mod versions at: [maven.muon.rip/#/releases/](https://maven.muon.rip/#/releases/)
+Set a mod version in `gradle.properties`
 
 ```properties
 dynamic_difficulty_version=1.0.0+1.21.1
 ```
+Find all available mod versions at: [maven.muon.rip/#/releases/](https://maven.muon.rip/#/releases/)
 
-Then add the appropriate dependency for your loader:
+Then add the appropriate artifact in `dependencies` in your `build.gradle`
 
 #### NeoForge
 
