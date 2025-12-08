@@ -229,7 +229,27 @@ public class LevelingUtils {
      * @return The base level at this position
      */
     public static int calculateBaseEntityLevel(ServerPlayer player, BlockPos pos) {
-        ServerLevel level = player.serverLevel();
+        return calculateBaseEntityLevel(player.serverLevel(), pos);
+    }
+
+    /**
+     * Calculates the base entity level at a given position in a specific level.
+     * This includes starting level, distance factors, day scaling, and local difficulty.
+     * Note: Random bonus is excluded as it's per-entity and non-deterministic.
+     * 
+     * <p>This is the base level before:
+     * <ul>
+     *   <li>Player-based scaling (nearby player level bonuses)</li>
+     *   <li>Structure bonuses</li>
+     *   <li>Biome bonuses</li>
+     *   <li>Random variation</li>
+     * </ul>
+     * 
+     * @param level The server level
+     * @param pos The position to calculate level for
+     * @return The base level at this position
+     */
+    public static int calculateBaseEntityLevel(ServerLevel level, BlockPos pos) {
         // Get dimension-specific settings (or fall back to global config)
         ResourceKey<Level> dimension = level.dimension();
         DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension, level.registryAccess().registryOrThrow(Registries.DIMENSION));

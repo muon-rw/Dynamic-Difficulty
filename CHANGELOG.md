@@ -1,3 +1,7 @@
+## 1.0.3
+- Add API helper methods `getLevelAt` for finding the base entity level at a given location
+- Add `@since` and `@Nullable`/`@NotNull` annotations to API, improved some `@return` descriptions
+
 ## 1.0.2
 - More fixes for gradle project resolution
 
