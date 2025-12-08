@@ -1,5 +1,5 @@
 {
-  "starting_level" : 1,
+  "starting_level" : 3,
   "max_level" : 20,
   "levels_per_distance" : 0.0,
   "levels_per_deepness" : 0.1,

@@ -1,7 +1,9 @@
 ## 1.0.0
 - Multiloader Port - Might be some small things missed, please report any bugs you find! 
-- Increase config default damage bonuses per level 0.2 -> 0.25
-- 
+- Increase config default bonus for attack/projectile/magic damage per level 0.2 -> 0.25
+- Add preset levels for Mine Cells, RPG MiniBosses, The Bumblezone, Marium's Soulslike Weaponry, Eden Ring, Paradise Lost, T.O Magic n' Extras
+- Updated preset levels for Aquamirae, Ice And Fire, Iron's Spellbooks, Cataclysm, Friends and Foes, Minecraft
+- Fix "Only show structure title if modified" config option not working
 
 ## 0.9.1
 - Clean up datapack settings fallback chain: Entity -> Dimension -> Config (all fields now optional)

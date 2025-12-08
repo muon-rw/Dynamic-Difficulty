@@ -376,8 +376,8 @@ public class Config {
               .define("show_structure_titles", defaultShowStructureTitles);
       structureTitleOnlyAnnounceIfModified = builder
               .comment("Only display structure titles if the structure provides a level bonus",
-                      "When false (default), structure titles always display when entering structures",
-                      "When true, structure titles only display if structureBonus > 0")
+                      "When false, structure titles always display when entering structures",
+                      "When true (default), structure titles only display if structureBonus > 0")
               .define("structure_title_only_announce_if_modified", true);
       structureTitleFadeInTime = builder
               .comment("Time in ticks for structure title to fade in")

@@ -1,7 +1,8 @@
 {
-    "starting_level" : 1,
-    "max_level" : 1,
+    "starting_level" : 20,
+    "max_level" : 20,
     "levels_per_distance" : 0,
     "levels_per_deepness" : 0,
-    "random_level_bonus" : 0
+    "random_level_bonus" : 0,
+    "attribute_modifiers" : []
   }

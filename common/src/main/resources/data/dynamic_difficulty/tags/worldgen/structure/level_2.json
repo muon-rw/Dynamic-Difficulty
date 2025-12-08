@@ -37,6 +37,7 @@
     {"id":"#repurposed_structures:mineshafts", "required": false},
     {"id":"#repurposed_structures:mansions", "required": false},
     {"id":"#repurposed_structures:pyramids", "required": false},
+    {"id":"takesapillage:bastille", "required": false},
     {"id":"ati_structures:dark_tower", "required": false},
     {"id":"ati_structures:deepslate_keep", "required": false},
     {"id":"ati_structures:granite_fort", "required": false},

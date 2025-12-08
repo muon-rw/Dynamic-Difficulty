@@ -1,0 +1,19 @@
+{
+    "starting_level" : 22,
+    "max_level" : 22,
+    "levels_per_distance" : 0.001,
+    "levels_per_deepness" : 0.05,
+    "random_level_bonus" : 0,
+    "attribute_modifiers": [
+      {
+        "attribute": "minecraft:generic.attack_damage",
+        "amount": 0.0,
+        "operation": 1
+      },
+      {
+        "attribute": "minecraft:generic.max_health",
+        "amount": 0.0,
+        "operation": 0
+      }
+    ]
+  }

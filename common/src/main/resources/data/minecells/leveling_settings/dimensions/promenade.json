@@ -1,0 +1,10 @@
+{
+  "starting_level" : 5,
+  "max_level" : 8,
+  "levels_per_distance" : 0.0,
+  "levels_per_deepness" : 0.0,
+  "levels_per_height" : 0.0,
+  "levels_per_day" : 0.0,
+  "levels_per_local_difficulty" : 0.0,
+  "random_level_bonus" : 3
+}

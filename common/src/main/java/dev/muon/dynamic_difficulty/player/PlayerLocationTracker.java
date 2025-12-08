@@ -9,6 +9,7 @@ import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.network.NetworkDispatcher;
 import dev.muon.dynamic_difficulty.network.message.LocationEntryPacket;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
+import dev.muon.dynamic_difficulty.util.LocationBonusUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -130,8 +131,9 @@ public class PlayerLocationTracker {
         int currentBaseLevel = LevelingUtils.calculateBaseEntityLevel(player, playerPos);
         int playerBonus = calculatePlayerBonus(player);
 
-        // Fetch location data - detect ALL structures, let client decide what to display
-        StructureBonus structureBonus = LevelingAPI.getStructureBonus(level, playerPos);
+        // Fetch location data - detect ALL structures (including those without bonuses),
+        // let client decide what to display based on its config
+        StructureBonus structureBonus = LocationBonusUtils.getStructureAt(level, playerPos, false);
         BiomeBonus biomeBonus = LevelingAPI.getBiomeBonus(level, playerPos);
 
         ResourceLocation currentStructure = structureBonus.structureId();
