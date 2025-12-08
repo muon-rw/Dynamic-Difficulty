@@ -1,7 +1,7 @@
 package dev.muon.dynamic_difficulty.gradle
 
 object Properties {
-    const val GROUP = "dev.muon"
+    const val GROUP = "dev.muon.dynamic_difficulty"
     const val MOD_NAME = "Dynamic Difficulty"
     const val ARCHIVES_NAME = "dynamic_difficulty"
     const val MOD_ID = "dynamic_difficulty"
