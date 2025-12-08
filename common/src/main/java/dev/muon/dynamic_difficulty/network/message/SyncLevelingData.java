@@ -11,7 +11,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
 /**
- * Packet to sync entity level data to clients.
+ * Packet to manually sync entity level data to clients.
  * Platform-specific code handles registration and the handle() method adapter.
  */
 public class SyncLevelingData implements CustomPacketPayload {
@@ -63,14 +63,11 @@ public class SyncLevelingData implements CustomPacketPayload {
     
     Entity entity = level.getEntity(msg.entityId);
     if (entity instanceof LivingEntity living) {
-      // Update attachment - this is the source of truth
       DynamicDifficulty.getHelper().getLevelAttachmentHelper().setLevel(living, msg.level);
       DynamicDifficulty.LOGGER.debug("Updated client attachment: {} (ID {}) level = {}",
               living.getType().getDescription().getString(), msg.entityId, msg.level);
     } else if (entity == null) {
-      // Entity not loaded yet - this is fine, level will be synced when entity loads
-      // or when player starts tracking it. No need to cache separately.
-      DynamicDifficulty.LOGGER.debug("Received SyncLevelingData for entity ID {} (not yet loaded) - will sync when entity loads", msg.entityId);
+      DynamicDifficulty.LOGGER.debug("Received SyncLevelingData for entity ID {} (not yet loaded)", msg.entityId);
     }
   }
 }

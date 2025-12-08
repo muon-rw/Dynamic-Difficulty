@@ -9,20 +9,23 @@ ___
 
 ### Maven Repository
 
-Add the maven to your `repositories` in your `build.gradle` (assuming Gradle Groovy)
+Add the following mavens to your `repositories` in your `build.gradle` (assuming Gradle Groovy)
 ```groovy
 repositories {
     // ... other repositories
-    maven {
-        url = "https://maven.muon.rip/releases/"
-    }
+    // Dynamic Difficulty
+    maven { url = "https://maven.muon.rip/releases/" }
+    // Forge Config API Port
+    maven { url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/" }
+    // Mixin Squared
+    maven { url = "https://maven.bawnorton.com/releases" }
 }
 ```
 
 Set a mod version in `gradle.properties`
 
 ```properties
-dynamic_difficulty_version=1.0.0+1.21.1
+dynamic_difficulty_version=1.0.1+1.21.1
 ```
 Find all available mod versions at: [maven.muon.rip/#/releases/](https://maven.muon.rip/#/releases/)
 

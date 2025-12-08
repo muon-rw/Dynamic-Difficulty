@@ -112,29 +112,29 @@ repositories {
 }
 
 dependencies {
-    runtimeOnly("curse.maven:configured-457570:5873783")
+    runtimeOnly("curse.maven:configured-457570:5873783") { isTransitive = false }
 
 
     // Dev Env
-    runtimeOnly("mezz.jei:jei-${Versions.MINECRAFT}-neoforge:${Versions.JEI}")
-    implementation("snownee.jade:Jade-NeoForge:${Versions.MINECRAFT}-${Versions.JADE}")
+    runtimeOnly("mezz.jei:jei-${Versions.MINECRAFT}-neoforge:${Versions.JEI}") { isTransitive = false }
+    implementation("snownee.jade:Jade-NeoForge:${Versions.MINECRAFT}-${Versions.JADE}") { isTransitive = false }
 
     // Optional Compats:
     // Apotheosis
-    implementation("dev.shadowsoffire:Placebo:${Versions.MINECRAFT}-${Versions.PLACEBO}")
-    implementation("dev.shadowsoffire:Apotheosis:${Versions.MINECRAFT}-${Versions.APOTHEOSIS}")
-    implementation("dev.shadowsoffire:ApothicAttributes:${Versions.MINECRAFT}-${Versions.APOTHIC_ATTRIBUTES}")
-    implementation("dev.shadowsoffire:ApothicSpawners:${Versions.MINECRAFT}-${Versions.APOTHIC_SPAWNERS}")
-    implementation("dev.shadowsoffire:ApothicEnchanting:${Versions.MINECRAFT}-${Versions.APOTHIC_ENCHANTING}")
+    implementation("dev.shadowsoffire:Placebo:${Versions.MINECRAFT}-${Versions.PLACEBO}") { isTransitive = false }
+    implementation("dev.shadowsoffire:Apotheosis:${Versions.MINECRAFT}-${Versions.APOTHEOSIS}") { isTransitive = false }
+    implementation("dev.shadowsoffire:ApothicAttributes:${Versions.MINECRAFT}-${Versions.APOTHIC_ATTRIBUTES}") { isTransitive = false }
+    implementation("dev.shadowsoffire:ApothicSpawners:${Versions.MINECRAFT}-${Versions.APOTHIC_SPAWNERS}") { isTransitive = false }
+    implementation("dev.shadowsoffire:ApothicEnchanting:${Versions.MINECRAFT}-${Versions.APOTHIC_ENCHANTING}") { isTransitive = false }
 
     // Puffish
-    implementation("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}:neoforge")
-    implementation("net.puffish:attributesmod:${Versions.PUFFISH_ATTRIBUTES}:neoforge")
-    runtimeOnly("curse.maven:default-skill-trees-1074229:5852412")
+    implementation("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}:neoforge") { isTransitive = false }
+    runtimeOnly("net.puffish:attributesmod:${Versions.PUFFISH_ATTRIBUTES}:neoforge") { isTransitive = false }
+    runtimeOnly("curse.maven:default-skill-trees-1074229:5852412") { isTransitive = false }
 
     // Reskillable Reimagined
     // https://www.curseforge.com/minecraft/mc-mods/reskillable-reimagined/files/
-    implementation("curse.maven:reskillable-reimagined-1170464:7266884")
+    implementation("curse.maven:reskillable-reimagined-1170464:7266884") { isTransitive = false }
 }
 
 publishMods {

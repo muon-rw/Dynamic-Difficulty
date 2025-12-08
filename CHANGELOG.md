@@ -1,3 +1,6 @@
+## 1.0.1
+- Make gradle resolution easier, updated dev readme
+
 ## 1.0.0
 - Multiloader Port - Might be some small things missed, please report any bugs you find! 
 - Increase config default bonus for attack/projectile/magic damage per level 0.2 -> 0.25

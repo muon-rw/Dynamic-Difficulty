@@ -60,7 +60,7 @@ dependencies {
 
     api("fuzs.forgeconfigapiport:forgeconfigapiport-common-neoforgeapi:${Versions.FCAP}")
 
-    implementation("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}")
+    implementation("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}") { isTransitive = false }
 }
 
 configurations {
