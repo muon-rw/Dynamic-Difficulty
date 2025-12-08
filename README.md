@@ -15,9 +15,9 @@ repositories {
     // ... other repositories
     // Dynamic Difficulty
     maven { url = "https://maven.muon.rip/releases/" }
-    // Forge Config API Port
+    // Forge Config API Port (Only required for Common/Fabric) 
     maven { url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/" }
-    // Mixin Squared
+    // Mixin Squared (Only required for Common/Fabric) 
     maven { url = "https://maven.bawnorton.com/releases" }
 }
 ```
