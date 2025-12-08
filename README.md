@@ -5,7 +5,7 @@ Highly configurable and compatible mob leveling system
 ___
 
 <details>
-<summary><h1>For Mod Developers (Click to Expand)</h1></summary>
+<summary><h1>Mod Developers (Click to Expand)</h1></summary>
 
 ### Maven Repository
 
