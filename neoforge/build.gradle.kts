@@ -158,7 +158,7 @@ dependencies {
 
     // Dungeon Difficulty
     compileOnly("curse.maven:dungeon-difficulty-645559:7279795")
-    localRuntime("curse.maven:dungeon-difficulty-645559:7279795")
+    // localRuntime("curse.maven:dungeon-difficulty-645559:7279795") Requires FFAPI. Rather not rn
 }
 
 publishMods {
