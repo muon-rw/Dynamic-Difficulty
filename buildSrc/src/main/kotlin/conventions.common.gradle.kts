@@ -131,8 +131,8 @@ publishing {
     }
     repositories {
         maven {
-            name = "Greenhouse"
-            url = uri("https://maven.greenhouseteam.dev/releases")
+            name = "Muon"
+            url = uri("https://maven.muon.rip/releases")
             credentials {
                 username = System.getenv("MAVEN_USERNAME")
                 password = System.getenv("MAVEN_PASSWORD")

@@ -18,9 +18,9 @@ public class NetworkDispatcher {
   }
 
   /**
-   * Syncs an entity's level to clients. 
-   * For player entities, syncs to all players (needed for global UI like tablist, placeholders).
-   * For other entities, only syncs to players tracking the entity (efficient for mobs).
+   * Syncs an entity's level to all relevant clients.
+   * For players, send to all players
+   * For non-players, send only to players tracking the entity
    */
   public static void syncLevelToClients(LivingEntity entity) {
     if (entity.level().isClientSide()) return;
@@ -28,8 +28,6 @@ public class NetworkDispatcher {
     SyncLevelingData packet = new SyncLevelingData(entity);
     
     if (entity instanceof ServerPlayer) {
-      // Player levels are displayed globally (tablist, scoreboards, TextPlaceholderAPI, etc.)
-      // so sync to all players for client-side UI
       for (ServerPlayer player : entity.level().getServer().getPlayerList().getPlayers()) {
         getHelper().sendToPlayer(player, packet);
       }

@@ -15,6 +15,7 @@ import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
@@ -25,6 +26,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.structure.Structure;
 
@@ -49,10 +52,27 @@ public class ModCommands {
                     .then(
                         Commands.literal("add")
                             .then(
-                                Commands.argument("value", IntegerArgumentType.integer())
-                                    .executes(ModCommands::executeAddLevelCommand))))
+                                Commands.argument("targets", EntityArgument.entities())
+                                    .then(
+                                        Commands.argument("value", IntegerArgumentType.integer())
+                                            .executes(ModCommands::executeAddLevelCommand)))))
             .requires(ModCommands::hasPermission);
     dispatcher.register(addLevelCommand);
+    
+    // Level set command
+    LiteralArgumentBuilder<CommandSourceStack> setLevelCommand =
+        Commands.literal("dynamic_difficulty")
+            .then(
+                Commands.literal("level")
+                    .then(
+                        Commands.literal("set")
+                            .then(
+                                Commands.argument("targets", EntityArgument.entities())
+                                    .then(
+                                        Commands.argument("value", IntegerArgumentType.integer(1))
+                                            .executes(ModCommands::executeSetLevelCommand)))))
+            .requires(ModCommands::hasPermission);
+    dispatcher.register(setLevelCommand);
     
     // Level get command
     LiteralArgumentBuilder<CommandSourceStack> getLevelCommand =
@@ -61,7 +81,9 @@ public class ModCommands {
                 Commands.literal("level")
                     .then(
                         Commands.literal("get")
-                            .executes(ModCommands::executeGetLevelCommand)))
+                            .then(
+                                Commands.argument("targets", EntityArgument.entities())
+                                    .executes(ModCommands::executeGetLevelCommand))))
             .requires(ModCommands::hasPermission);
     dispatcher.register(getLevelCommand);
     
@@ -86,14 +108,84 @@ public class ModCommands {
     dispatcher.register(debugLocationCommand);
   }
 
-  private static int executeAddLevelCommand(CommandContext<CommandSourceStack> ctx) {
-    // todo: this should target entities
-    return 1;
+  private static int executeAddLevelCommand(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+    CommandSourceStack source = ctx.getSource();
+    int value = IntegerArgumentType.getInteger(ctx, "value");
+    Collection<? extends Entity> targets = EntityArgument.getEntities(ctx, "targets");
+    
+    int successCount = 0;
+    for (Entity entity : targets) {
+      if (entity instanceof LivingEntity livingEntity) {
+        if (!LevelingAPI.canHaveLevel(livingEntity)) {
+          source.sendFailure(Component.literal("§c" + entity.getName().getString() + " cannot have levels"));
+          continue;
+        }
+        
+        int oldLevel = LevelingAPI.getLevel(livingEntity);
+        try {
+          LevelingAPI.addLevels(livingEntity, value);
+          int newLevel = LevelingAPI.getLevel(livingEntity);
+          source.sendSystemMessage(Component.literal("§aAdded " + value + " level(s) to " + entity.getName().getString() + " §7(Lv. " + oldLevel + " → " + newLevel + ")"));
+          successCount++;
+        } catch (IllegalArgumentException e) {
+          source.sendFailure(Component.literal("§cFailed to add levels to " + entity.getName().getString() + ": " + e.getMessage()));
+        }
+      } else {
+        source.sendFailure(Component.literal("§c" + entity.getName().getString() + " is not a living entity"));
+      }
+    }
+    
+    return successCount;
   }
 
-  private static int executeGetLevelCommand(CommandContext<CommandSourceStack> ctx) {
-    // todo: implement level getting
-    return 1;
+  private static int executeSetLevelCommand(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+    CommandSourceStack source = ctx.getSource();
+    Collection<? extends Entity> targets = EntityArgument.getEntities(ctx, "targets");
+    int value = IntegerArgumentType.getInteger(ctx, "value");
+    
+    int successCount = 0;
+    for (Entity entity : targets) {
+      if (entity instanceof LivingEntity livingEntity) {
+        if (!LevelingAPI.canHaveLevel(livingEntity)) {
+          source.sendFailure(Component.literal("§c" + entity.getName().getString() + " cannot have levels"));
+          continue;
+        }
+        
+        try {
+          LevelingAPI.setAndUpdateLevel(livingEntity, value);
+          source.sendSystemMessage(Component.literal("§aSet " + entity.getName().getString() + " to level §f" + value));
+          successCount++;
+        } catch (IllegalArgumentException e) {
+          source.sendFailure(Component.literal("§cFailed to set level for " + entity.getName().getString() + ": " + e.getMessage()));
+        }
+      } else {
+        source.sendFailure(Component.literal("§c" + entity.getName().getString() + " is not a living entity"));
+      }
+    }
+    
+    return successCount;
+  }
+
+  private static int executeGetLevelCommand(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+    CommandSourceStack source = ctx.getSource();
+    Collection<? extends Entity> targets = EntityArgument.getEntities(ctx, "targets");
+    
+    int successCount = 0;
+    for (Entity entity : targets) {
+      if (entity instanceof LivingEntity livingEntity) {
+        if (!LevelingAPI.hasLevel(livingEntity)) {
+          source.sendSystemMessage(Component.literal("§7" + entity.getName().getString() + " has no level assigned"));
+        } else {
+          int level = LevelingAPI.getLevel(livingEntity);
+          source.sendSystemMessage(Component.literal("§a" + entity.getName().getString() + " §7is level §f" + level));
+        }
+        successCount++;
+      } else {
+        source.sendFailure(Component.literal("§c" + entity.getName().getString() + " is not a living entity"));
+      }
+    }
+    
+    return successCount;
   }
 
   private static boolean hasPermission(CommandSourceStack commandSourceStack) {

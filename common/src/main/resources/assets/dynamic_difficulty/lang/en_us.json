@@ -1,5 +1,6 @@
 {
   "dynamic_difficulty.level": "Level %s",
+  "dynamic_difficulty.level_info.breakdown": " (Environment: %s, Player: %s)",
   "config.jade.plugin_dynamic_difficulty.level": "Level",
   "jade.dynamic_difficulty.tooltip": "Level: %d",
   "attribute.dynamic_difficulty.damage_bonus": "Damage Bonus",

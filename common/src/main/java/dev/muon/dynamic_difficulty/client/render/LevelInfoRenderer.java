@@ -2,6 +2,7 @@ package dev.muon.dynamic_difficulty.client.render;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.config.Config;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -96,12 +97,13 @@ public class LevelInfoRenderer extends TitleRenderer<Void> {
      * @param playerBonus The player bonus to show separately
      */
     public void displayLevelInfo(int displayedLevel, int playerBonus) {
-        // Build level info: "Lv. n (+ p)" format where n includes all bonuses except player
-        MutableComponent levelInfo = Component.literal("Lv. " + displayedLevel);
+        int totalLevel = displayedLevel + playerBonus;
+        MutableComponent levelInfo = Component.literal("Lv. " + totalLevel);
 
-        // Only show player bonus separately if it exists
-        if (playerBonus > 0) {
-            levelInfo.append(Component.literal(" (+" + playerBonus + ")"));
+        // Only show breakdown if advanced tooltips is enabled and there's a player bonus
+        if (Minecraft.getInstance().options.advancedItemTooltips && playerBonus > 0) {
+            levelInfo.append(Component.translatable("dynamic_difficulty.level_info.breakdown", displayedLevel, playerBonus)
+                    .withStyle(ChatFormatting.GRAY));
         }
 
         displayedLevelInfo = levelInfo;

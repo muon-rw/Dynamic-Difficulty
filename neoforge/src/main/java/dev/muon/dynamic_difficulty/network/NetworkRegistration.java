@@ -12,7 +12,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 /**
  * NeoForge packet registration.
  */
-@EventBusSubscriber(modid = DynamicDifficulty.MODID, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = DynamicDifficulty.MODID)
 public class NetworkRegistration {
 
     @SubscribeEvent

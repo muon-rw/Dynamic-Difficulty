@@ -4,6 +4,9 @@
 - Add preset levels for Mine Cells, RPG MiniBosses, The Bumblezone, Marium's Soulslike Weaponry, Eden Ring, Paradise Lost, T.O Magic n' Extras
 - Updated preset levels for Aquamirae, Ice And Fire, Iron's Spellbooks, Cataclysm, Friends and Foes, Minecraft
 - Fix "Only show structure title if modified" config option not working
+- Player bonuses are now merged into the "Lv. xx" subtitle, unless advanced tooltips is enabled
+- Use platform built-in syncing for level attachment
+- Implemented the `set`/`add`/`get` level commands
 
 ## 0.9.1
 - Clean up datapack settings fallback chain: Entity -> Dimension -> Config (all fields now optional)

@@ -1,15 +1,15 @@
 package dev.muon.dynamic_difficulty.gradle
 
 object Versions {
-    const val MOD = "2.1.2"
+    const val MOD = "1.0.0"
 
     const val MINECRAFT = "1.21.1"
     const val PARCHMENT_MINECRAFT = "1.21.1"
     const val NEOFORM = "$MINECRAFT-20240808.144430"
     const val PARCHMENT = "2024.11.17"
 
-    const val FABRIC_API = "0.115.6+1.21.1"
-    const val FABRIC_LOADER = "0.16.14"
+    const val FABRIC_API = "0.116.7+1.21.1"
+    const val FABRIC_LOADER = "0.17.3"
     const val MOD_MENU = "11.0.0-beta.1"
     const val FABRIC_LOADER_RANGE = ">=0.15"
     const val FABRIC_MINECRAFT_RANGE = ">=1.21-"

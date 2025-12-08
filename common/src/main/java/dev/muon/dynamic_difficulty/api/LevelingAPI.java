@@ -39,7 +39,7 @@ public class LevelingAPI {
     /**
      * Checks if an entity has a level assigned
      * 
-     * <p><b>Side:</b> Both (client & server)
+     * <p><b>Side:</b> Both (client &amp; server)
      * 
      * @param entity The entity to check
      * @return true if the entity has a level, false otherwise
@@ -51,7 +51,7 @@ public class LevelingAPI {
     /**
      * Gets the current level of any living entity, including players.
      * 
-     * <p><b>Side:</b> Both (client & server)
+     * <p><b>Side:</b> Both (client &amp; server)
      * 
      * <p><b>IMPORTANT DISTINCTION:</b>
      * <ul>
@@ -103,7 +103,7 @@ public class LevelingAPI {
     /**
      * Checks if an entity type can have levels applied
      * 
-     * <p><b>Side:</b> Both (client & server)
+     * <p><b>Side:</b> Both (client &amp; server)
      * 
      * @param entity The entity to check
      * @return true if the entity can have levels, false otherwise
@@ -115,7 +115,7 @@ public class LevelingAPI {
     /**
      * Checks if an entity's level should be displayed
      * 
-     * <p><b>Side:</b> Both (client & server)
+     * <p><b>Side:</b> Both (client &amp; server)
      * <p>Typically used on client-side for rendering decisions, but safe to call on server.
      * 
      * @param entity The entity to check
@@ -156,7 +156,7 @@ public class LevelingAPI {
      * Gets the attribute modifiers for a given entity's level.
      * This returns the modifiers that would be applied, but does not apply them.
      * 
-     * <p><b>Side:</b> Both (client & server)
+     * <p><b>Side:</b> Both (client &amp; server)
      * <p>Read-only operation that queries leveling settings.
      * 
      * @param entity The entity to get modifiers for

@@ -111,7 +111,7 @@ public class LevelingUtils {
 
     /**
      * Calculates base level from distance, depth, and height.
-     * Deepness scaling only applies when Y < seaLevel (default 64).
+     * Deepness scaling only applies when Y &lt; seaLevel (default 64).
      * Height scaling applies when Y > seaLevel and levelsPerHeight > 0.
      */
     public static int calculateDistanceFactors(
@@ -123,7 +123,7 @@ public class LevelingUtils {
     
     /**
      * Calculates base level from distance, depth, and height for a specific Y coordinate.
-     * Deepness scaling only applies when Y < seaLevel (default 64).
+     * Deepness scaling only applies when Y &lt; seaLevel (default 64).
      * Height scaling applies when Y > seaLevel and levelsPerHeight > 0.
      */
     public static int calculateDistanceFactors(
