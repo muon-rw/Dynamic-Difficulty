@@ -283,6 +283,7 @@ public class Config {
     public final ConfigValue<Double> renderDistance;
     public final ConfigValue<List<String>> hiddenLevelEntities;
     public final ConfigValue<Boolean> showApotheosisWorldTier;
+    public final ConfigValue<Boolean> showDungeonDifficultyInfo;
     public final ConfigValue<Boolean> enableLineOfSightCheck;
     
     // Integration Options
@@ -351,6 +352,11 @@ public class Config {
                       "This will scan entity attributes for Apotheosis tier modifiers",
                       "Tiers: Haven, Frontier, Ascent, Summit, Pinnacle")
               .define("show_apotheosis_world_tier", true);
+      showDungeonDifficultyInfo = builder
+              .comment("Show Dungeon Difficulty info in entity level display (if Dungeon Difficulty is installed)",
+                      "Displays the difficulty type and level in brackets after the entity level",
+                      "Example: 'Lv. 15 [Normal 5]'")
+              .define("show_dungeon_difficulty_info", true);
       enableLineOfSightCheck = builder
               .comment("Enable line of sight checks for entity level rendering",
                       "When enabled, levels are only shown for entities the player can see (requires raycast)",

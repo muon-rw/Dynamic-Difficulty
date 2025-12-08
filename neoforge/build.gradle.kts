@@ -155,6 +155,10 @@ dependencies {
     // https://www.curseforge.com/minecraft/mc-mods/reskillable-reimagined/files/
     compileOnly("curse.maven:reskillable-reimagined-1170464:7266884")
     localRuntime("curse.maven:reskillable-reimagined-1170464:7266884")
+
+    // Dungeon Difficulty
+    compileOnly("curse.maven:dungeon-difficulty-645559:7279795")
+    localRuntime("curse.maven:dungeon-difficulty-645559:7279795")
 }
 
 publishMods {

@@ -65,14 +65,21 @@ dependencies {
     // Modmenu
     modCompileOnly("com.terraformersmc:modmenu:${Versions.MOD_MENU}")
     modLocalRuntime("com.terraformersmc:modmenu:${Versions.MOD_MENU}")
+
     // Jade
     modCompileOnly("curse.maven:jade-324717:6738760")
     modLocalRuntime("curse.maven:jade-324717:6738760")
+
     // Skill Tree
     modCompileOnly("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}:fabric")
     modLocalRuntime("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}:fabric")
     modLocalRuntime("net.puffish:attributesmod:${Versions.PUFFISH_ATTRIBUTES}:fabric")
     modLocalRuntime("curse.maven:default-skill-trees-1074229:5852412")
+
+    // Dungeon Difficulty
+    modCompileOnly("curse.maven:dungeon-difficulty-645559:7279793")
+    modLocalRuntime("curse.maven:dungeon-difficulty-645559:7279793")
+    modLocalRuntime("maven.modrinth:tiny-config:3.0.0-fabric")
 
 }
 

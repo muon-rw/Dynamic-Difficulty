@@ -9,6 +9,7 @@
     "LivingEntityAccessor",
     "LivingEntityMixinFabric",
     "LootTableMixin",
+    "compat.dungeon_difficulty.EntityScalingMixin",
     "compat.puffish_skills.SkillsModMixin"
   ],
   "client": [

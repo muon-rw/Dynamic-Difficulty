@@ -1,5 +1,7 @@
 package dev.muon.dynamic_difficulty.platform;
 
+import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyAttachmentHelper;
+import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyAttachmentHelperNeoForge;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
@@ -9,6 +11,7 @@ public class PlatformHelperNeoForge implements PlatformHelper {
     
     private static final LevelAttachmentHelper LEVEL_ATTACHMENT_HELPER = new LevelAttachmentHelperNeoForge();
     private static final NetworkHelper NETWORK_HELPER = new NetworkHelperNeoForge();
+    private static final DungeonDifficultyAttachmentHelper DUNGEON_DIFFICULTY_ATTACHMENT_HELPER = new DungeonDifficultyAttachmentHelperNeoForge();
 
     @Override
     public Platform getPlatform() {
@@ -36,5 +39,10 @@ public class PlatformHelperNeoForge implements PlatformHelper {
     @Override
     public NetworkHelper getNetworkHelper() {
         return NETWORK_HELPER;
+    }
+    
+    @Override
+    public DungeonDifficultyAttachmentHelper getDungeonDifficultyAttachmentHelper() {
+        return DUNGEON_DIFFICULTY_ATTACHMENT_HELPER;
     }
 }
