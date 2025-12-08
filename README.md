@@ -21,8 +21,8 @@ repositories {
 
 ### Dependency Setup
 
-Define the version in `gradle.properties` (assuming Gradle Groovy)
-Find available versions at: [maven.muon.rip/#/releases/](https://maven.muon.rip/#/releases/)
+- Set a mod version in `gradle.properties` (assuming Gradle Groovy)
+- Find all available mod versions at: [maven.muon.rip/#/releases/](https://maven.muon.rip/#/releases/)
 
 ```properties
 dynamic_difficulty_version=1.0.0+1.21.1
