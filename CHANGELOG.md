@@ -1,3 +1,6 @@
+## 1.0.2
+- More fixes for gradle project resolution
+
 ## 1.0.1
 - Make gradle resolution easier, updated dev readme
 

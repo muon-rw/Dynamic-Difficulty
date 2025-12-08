@@ -111,30 +111,50 @@ repositories {
     maven("https://maven.puffish.net")
 }
 
-dependencies {
-    runtimeOnly("curse.maven:configured-457570:5873783") { isTransitive = false }
+val localRuntime: Configuration by configurations.creating
 
+configurations {
+    named("runtimeClasspath") {
+        extendsFrom(localRuntime)
+    }
+    named("testRuntimeClasspath") {
+        extendsFrom(localRuntime)
+    }
+}
+
+dependencies {
 
     // Dev Env
-    runtimeOnly("mezz.jei:jei-${Versions.MINECRAFT}-neoforge:${Versions.JEI}") { isTransitive = false }
-    implementation("snownee.jade:Jade-NeoForge:${Versions.MINECRAFT}-${Versions.JADE}") { isTransitive = false }
+    localRuntime("mezz.jei:jei-${Versions.MINECRAFT}-neoforge:${Versions.JEI}")
+    localRuntime("curse.maven:configured-457570:5873783")
 
     // Optional Compats:
+    // Jade
+    compileOnly("snownee.jade:Jade-NeoForge:${Versions.MINECRAFT}-${Versions.JADE}")
+    localRuntime("snownee.jade:Jade-NeoForge:${Versions.MINECRAFT}-${Versions.JADE}")
+
     // Apotheosis
-    implementation("dev.shadowsoffire:Placebo:${Versions.MINECRAFT}-${Versions.PLACEBO}") { isTransitive = false }
-    implementation("dev.shadowsoffire:Apotheosis:${Versions.MINECRAFT}-${Versions.APOTHEOSIS}") { isTransitive = false }
-    implementation("dev.shadowsoffire:ApothicAttributes:${Versions.MINECRAFT}-${Versions.APOTHIC_ATTRIBUTES}") { isTransitive = false }
-    implementation("dev.shadowsoffire:ApothicSpawners:${Versions.MINECRAFT}-${Versions.APOTHIC_SPAWNERS}") { isTransitive = false }
-    implementation("dev.shadowsoffire:ApothicEnchanting:${Versions.MINECRAFT}-${Versions.APOTHIC_ENCHANTING}") { isTransitive = false }
+    compileOnly("dev.shadowsoffire:Placebo:${Versions.MINECRAFT}-${Versions.PLACEBO}")
+    localRuntime("dev.shadowsoffire:Placebo:${Versions.MINECRAFT}-${Versions.PLACEBO}")
+    compileOnly("dev.shadowsoffire:Apotheosis:${Versions.MINECRAFT}-${Versions.APOTHEOSIS}")
+    localRuntime("dev.shadowsoffire:Apotheosis:${Versions.MINECRAFT}-${Versions.APOTHEOSIS}")
+    compileOnly("dev.shadowsoffire:ApothicAttributes:${Versions.MINECRAFT}-${Versions.APOTHIC_ATTRIBUTES}")
+    localRuntime("dev.shadowsoffire:ApothicAttributes:${Versions.MINECRAFT}-${Versions.APOTHIC_ATTRIBUTES}")
+    compileOnly("dev.shadowsoffire:ApothicSpawners:${Versions.MINECRAFT}-${Versions.APOTHIC_SPAWNERS}")
+    localRuntime("dev.shadowsoffire:ApothicSpawners:${Versions.MINECRAFT}-${Versions.APOTHIC_SPAWNERS}")
+    compileOnly("dev.shadowsoffire:ApothicEnchanting:${Versions.MINECRAFT}-${Versions.APOTHIC_ENCHANTING}")
+    localRuntime("dev.shadowsoffire:ApothicEnchanting:${Versions.MINECRAFT}-${Versions.APOTHIC_ENCHANTING}")
 
     // Puffish
-    implementation("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}:neoforge") { isTransitive = false }
-    runtimeOnly("net.puffish:attributesmod:${Versions.PUFFISH_ATTRIBUTES}:neoforge") { isTransitive = false }
-    runtimeOnly("curse.maven:default-skill-trees-1074229:5852412") { isTransitive = false }
+    compileOnly("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}:neoforge")
+    localRuntime("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}:neoforge")
+    localRuntime("net.puffish:attributesmod:${Versions.PUFFISH_ATTRIBUTES}:neoforge")
+    localRuntime("curse.maven:default-skill-trees-1074229:5852412")
 
     // Reskillable Reimagined
     // https://www.curseforge.com/minecraft/mc-mods/reskillable-reimagined/files/
-    implementation("curse.maven:reskillable-reimagined-1170464:7266884") { isTransitive = false }
+    compileOnly("curse.maven:reskillable-reimagined-1170464:7266884")
+    localRuntime("curse.maven:reskillable-reimagined-1170464:7266884")
 }
 
 publishMods {

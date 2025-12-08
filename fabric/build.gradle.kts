@@ -48,8 +48,10 @@ dependencies {
     modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${Versions.FCAP}")
 
     // Compats
-    modImplementation("com.terraformersmc:modmenu:${Versions.MOD_MENU}") { isTransitive = false }
-    modImplementation("curse.maven:jade-324717:6738760") { isTransitive = false }
+    modCompileOnly("com.terraformersmc:modmenu:${Versions.MOD_MENU}")
+    modLocalRuntime("com.terraformersmc:modmenu:${Versions.MOD_MENU}")
+    modCompileOnly("curse.maven:jade-324717:6738760")
+    modLocalRuntime("curse.maven:jade-324717:6738760")
 
     // Dev Env
     modLocalRuntime("curse.maven:emi-580555:6420930")
@@ -65,7 +67,8 @@ dependencies {
     }
 
     // Skill Tree
-    modImplementation("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}:fabric") { isTransitive = false }
+    modCompileOnly("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}:fabric")
+    modLocalRuntime("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}:fabric")
     modLocalRuntime("net.puffish:attributesmod:${Versions.PUFFISH_ATTRIBUTES}:fabric")
     modLocalRuntime("curse.maven:default-skill-trees-1074229:5852412")
 }
