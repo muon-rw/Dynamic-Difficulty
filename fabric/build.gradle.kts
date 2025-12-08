@@ -44,17 +44,6 @@ dependencies {
 
     modImplementation("net.fabricmc:fabric-loader:${Versions.FABRIC_LOADER}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:${Versions.FABRIC_API}")
-    // Config
-    modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${Versions.FCAP}")
-
-    // Compats
-    modCompileOnly("com.terraformersmc:modmenu:${Versions.MOD_MENU}")
-    modLocalRuntime("com.terraformersmc:modmenu:${Versions.MOD_MENU}")
-    modCompileOnly("curse.maven:jade-324717:6738760")
-    modLocalRuntime("curse.maven:jade-324717:6738760")
-
-    // Dev Env
-    modLocalRuntime("curse.maven:emi-580555:6420930")
 
     modImplementation("com.github.bawnorton.mixinsquared:mixinsquared-fabric:0.3.4")
     include("com.github.bawnorton.mixinsquared:mixinsquared-fabric:0.3.4")
@@ -66,11 +55,25 @@ dependencies {
         }
     }
 
+    // Dev Env
+    modLocalRuntime("curse.maven:emi-580555:6420930")
+
+    // Config
+    modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${Versions.FCAP}")
+
+    // Compats
+    // Modmenu
+    modCompileOnly("com.terraformersmc:modmenu:${Versions.MOD_MENU}")
+    modLocalRuntime("com.terraformersmc:modmenu:${Versions.MOD_MENU}")
+    // Jade
+    modCompileOnly("curse.maven:jade-324717:6738760")
+    modLocalRuntime("curse.maven:jade-324717:6738760")
     // Skill Tree
     modCompileOnly("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}:fabric")
     modLocalRuntime("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}:fabric")
     modLocalRuntime("net.puffish:attributesmod:${Versions.PUFFISH_ATTRIBUTES}:fabric")
     modLocalRuntime("curse.maven:default-skill-trees-1074229:5852412")
+
 }
 
 loom {
