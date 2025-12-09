@@ -29,9 +29,12 @@ public class DynamicDifficultyFabric implements ModInitializer {
             LevelingAPI.registerPlayerLevelProvider(new PuffishSkillsProviderFabric());
         }
 
-        // Register attachment type early - MUST happen before networking to ensure
-        // the attachment is registered on clients before sync packets arrive
+        // Register attachment types early - MUST happen before networking to ensure
+        // attachments are registered on clients before sync packets arrive
         EntityLevelAttachmentFabric.init();
+        if (DynamicDifficulty.isModLoaded("dungeon_difficulty")) {
+            dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyAttachmentFabric.init();
+        }
         
         ModAttributesFabric.init();
         ModItemsFabric.init();

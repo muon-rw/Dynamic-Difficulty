@@ -1,5 +1,6 @@
 ## 1.0.5
 - Add Dungeon Difficulty nameplate compat (can be toggled off in config)
+- Add some better edge-case handling for Fabric-side dedicated server attachment syncing
 
 ## 1.0.4
 - Fix a crash on Fabric when connecting to dedicated servers

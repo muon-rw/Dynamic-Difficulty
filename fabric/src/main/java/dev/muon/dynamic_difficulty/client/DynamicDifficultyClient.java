@@ -3,6 +3,7 @@ package dev.muon.dynamic_difficulty.client;
 import dev.muon.dynamic_difficulty.client.render.TitleRenderManager;
 import dev.muon.dynamic_difficulty.network.NetworkRegistration;
 import dev.muon.dynamic_difficulty.network.message.SyncDungeonDifficultyData;
+import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -37,7 +38,8 @@ public class DynamicDifficultyClient implements ClientModInitializer {
                 ApotheosisClientCache.onClientTick(client.level.getGameTime());
             }
             
-            // Process pending Dungeon Difficulty data (for entities that weren't loaded when packet arrived)
+            // Process pending sync data (for entities that weren't loaded when packet arrived)
+            SyncLevelingData.processPendingData();
             SyncDungeonDifficultyData.processPendingData();
         });
         
@@ -55,6 +57,7 @@ public class DynamicDifficultyClient implements ClientModInitializer {
         ClientEntityEvents.ENTITY_UNLOAD.register((entity, world) -> {
             if (entity instanceof LivingEntity) {
                 ApotheosisClientCache.onEntityRemoved(entity.getId());
+                SyncLevelingData.removePendingData(entity.getId());
                 SyncDungeonDifficultyData.removePendingData(entity.getId());
             }
         });
@@ -63,6 +66,7 @@ public class DynamicDifficultyClient implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             TitleRenderManager.getInstance().clearCache();
             ApotheosisClientCache.clearCache();
+            SyncLevelingData.clearPendingData();
             SyncDungeonDifficultyData.clearPendingData();
         });
     }

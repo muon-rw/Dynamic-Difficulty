@@ -3,6 +3,7 @@ package dev.muon.dynamic_difficulty.client;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.client.render.TitleRenderManager;
 import dev.muon.dynamic_difficulty.network.message.SyncDungeonDifficultyData;
+import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.api.distmarker.Dist;
@@ -47,7 +48,8 @@ public class ClientEventsNeoForge {
             ApotheosisClientCache.onClientTick(minecraft.level.getGameTime());
         }
         
-        // Process pending Dungeon Difficulty data (for entities that weren't loaded when packet arrived)
+        // Process pending sync data (for entities that weren't loaded when packet arrived)
+        SyncLevelingData.processPendingData();
         SyncDungeonDifficultyData.processPendingData();
     }
     
@@ -67,6 +69,7 @@ public class ClientEventsNeoForge {
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         TitleRenderManager.getInstance().clearCache();
         ApotheosisClientCache.clearCache();
+        SyncLevelingData.clearPendingData();
         SyncDungeonDifficultyData.clearPendingData();
     }
     
@@ -74,6 +77,7 @@ public class ClientEventsNeoForge {
     public static void onEntityUnload(EntityLeaveLevelEvent event) {
         if (event.getLevel().isClientSide() && event.getEntity() instanceof LivingEntity) {
             ApotheosisClientCache.onEntityRemoved(event.getEntity().getId());
+            SyncLevelingData.removePendingData(event.getEntity().getId());
             SyncDungeonDifficultyData.removePendingData(event.getEntity().getId());
         }
     }
@@ -82,6 +86,7 @@ public class ClientEventsNeoForge {
     public static void onLevelUnload(LevelEvent.Unload event) {
         if (event.getLevel().isClientSide()) {
             ApotheosisClientCache.clearCache();
+            SyncLevelingData.clearPendingData();
             SyncDungeonDifficultyData.clearPendingData();
         }
     }
