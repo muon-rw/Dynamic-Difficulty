@@ -1,3 +1,6 @@
+## 1.0.5
+- Add Dungeon Difficulty nameplate compat (can be toggled off in config)
+
 ## 1.0.4
 - Fix a crash on Fabric when connecting to dedicated servers
 

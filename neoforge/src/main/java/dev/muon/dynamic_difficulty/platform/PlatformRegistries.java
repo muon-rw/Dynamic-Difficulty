@@ -1,6 +1,7 @@
 package dev.muon.dynamic_difficulty.platform;
 
 import dev.muon.dynamic_difficulty.attribute.ModAttributesNeoForge;
+import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyAttachmentNeoForge;
 import dev.muon.dynamic_difficulty.item.ModItemsNeoForge;
 import dev.muon.dynamic_difficulty.loot.condition.ModLootConditionsNeoForge;
 import dev.muon.dynamic_difficulty.loot.modifier.ModLootModifiersNeoForge;
@@ -19,6 +20,7 @@ public class PlatformRegistries {
         ModLootConditionsNeoForge.REGISTRY.register(eventBus);
         ModLootModifiersNeoForge.REGISTRY.register(eventBus);
         EntityLevelAttachmentNeoForge.REGISTRY.register(eventBus);
+        DungeonDifficultyAttachmentNeoForge.REGISTRY.register(eventBus);
         
         // Populate common references (DeferredHolder implements Holder, so this works immediately)
         ModAttributesNeoForge.init();

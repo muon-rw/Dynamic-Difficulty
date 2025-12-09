@@ -31,22 +31,22 @@ Find all available mod versions at: [maven.muon.rip/#/releases/](https://maven.m
 
 Then add the appropriate artifact in `dependencies` in your `build.gradle`
 
-#### NeoForge
+#### NeoForge (assuming ModDevGradle)
 
 ```groovy
 implementation("dev.muon.dynamic_difficulty:dynamic_difficulty-neoforge:${dynamic_difficulty_version}")
 ```
 
-#### Fabric
+#### Fabric (assuming Fabric Loom)
 
 ```groovy
 modImplementation("dev.muon.dynamic_difficulty:dynamic_difficulty-fabric:${dynamic_difficulty_version}")
 ```
 
-#### Common (Multiloader projects)
+#### Common (assuming ModDevGradle)
 
 ```groovy
-implementation("dev.muon.dynamic_difficulty:dynamic_difficulty-common:${dynamic_difficulty_version}")
+compileOnly("dev.muon.dynamic_difficulty:dynamic_difficulty-common:${dynamic_difficulty_version}")
 ```
 
 </details>

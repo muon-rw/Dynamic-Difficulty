@@ -2,6 +2,7 @@ package dev.muon.dynamic_difficulty.client;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.client.render.TitleRenderManager;
+import dev.muon.dynamic_difficulty.network.message.SyncDungeonDifficultyData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.api.distmarker.Dist;
@@ -45,6 +46,9 @@ public class ClientEventsNeoForge {
         if (minecraft.level != null) {
             ApotheosisClientCache.onClientTick(minecraft.level.getGameTime());
         }
+        
+        // Process pending Dungeon Difficulty data (for entities that weren't loaded when packet arrived)
+        SyncDungeonDifficultyData.processPendingData();
     }
     
     @SubscribeEvent
@@ -63,12 +67,14 @@ public class ClientEventsNeoForge {
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         TitleRenderManager.getInstance().clearCache();
         ApotheosisClientCache.clearCache();
+        SyncDungeonDifficultyData.clearPendingData();
     }
     
     @SubscribeEvent
     public static void onEntityUnload(EntityLeaveLevelEvent event) {
         if (event.getLevel().isClientSide() && event.getEntity() instanceof LivingEntity) {
             ApotheosisClientCache.onEntityRemoved(event.getEntity().getId());
+            SyncDungeonDifficultyData.removePendingData(event.getEntity().getId());
         }
     }
     
@@ -76,6 +82,7 @@ public class ClientEventsNeoForge {
     public static void onLevelUnload(LevelEvent.Unload event) {
         if (event.getLevel().isClientSide()) {
             ApotheosisClientCache.clearCache();
+            SyncDungeonDifficultyData.clearPendingData();
         }
     }
 }

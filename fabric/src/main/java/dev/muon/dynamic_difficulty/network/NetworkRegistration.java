@@ -1,6 +1,7 @@
 package dev.muon.dynamic_difficulty.network;
 
 import dev.muon.dynamic_difficulty.network.message.LocationEntryPacket;
+import dev.muon.dynamic_difficulty.network.message.SyncDungeonDifficultyData;
 import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -18,6 +19,7 @@ public class NetworkRegistration {
     public static void register() {
         PayloadTypeRegistry.playS2C().register(SyncLevelingData.TYPE, SyncLevelingData.CODEC);
         PayloadTypeRegistry.playS2C().register(LocationEntryPacket.TYPE, LocationEntryPacket.CODEC);
+        PayloadTypeRegistry.playS2C().register(SyncDungeonDifficultyData.TYPE, SyncDungeonDifficultyData.CODEC);
     }
 
     /**
@@ -33,6 +35,11 @@ public class NetworkRegistration {
         ClientPlayNetworking.registerGlobalReceiver(
                 LocationEntryPacket.TYPE,
                 (payload, context) -> LocationEntryPacket.handleOnClient(payload)
+        );
+
+        ClientPlayNetworking.registerGlobalReceiver(
+                SyncDungeonDifficultyData.TYPE,
+                (payload, context) -> SyncDungeonDifficultyData.handleOnClient(payload)
         );
     }
 }

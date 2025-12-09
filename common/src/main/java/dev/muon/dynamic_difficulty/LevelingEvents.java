@@ -97,6 +97,8 @@ public class LevelingEvents {
         if (LevelingAPI.hasLevel(trackedEntity)) {
             NetworkDispatcher.syncLevelToPlayer(trackedEntity, trackingPlayer);
         }
+        // Sync Dungeon Difficulty data if present
+        NetworkDispatcher.syncDungeonDifficultyToPlayer(trackedEntity, trackingPlayer);
     }
 
     /**

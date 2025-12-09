@@ -1,6 +1,8 @@
 package dev.muon.dynamic_difficulty.network;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
+import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyData;
+import dev.muon.dynamic_difficulty.network.message.SyncDungeonDifficultyData;
 import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
 import dev.muon.dynamic_difficulty.network.message.LocationEntryPacket;
 import dev.muon.dynamic_difficulty.platform.NetworkHelper;
@@ -52,5 +54,19 @@ public class NetworkDispatcher {
   
   public static void sendLocationEntry(ServerPlayer player, LocationEntryPacket.EntryType entryType, ResourceLocation locationId, int locationBonus, int baseLevel, int playerBonus, int displayedLevel) {
     getHelper().sendToPlayer(player, new LocationEntryPacket(entryType, locationId, locationBonus, baseLevel, playerBonus, displayedLevel));
+  }
+
+  /**
+   * Syncs Dungeon Difficulty data to a specific player.
+   * Used when a player starts tracking an entity.
+   */
+  public static void syncDungeonDifficultyToPlayer(LivingEntity entity, ServerPlayer player) {
+    DungeonDifficultyData data = DynamicDifficulty.getHelper().getDungeonDifficultyAttachmentHelper().getData(entity);
+    if (data != null && !data.isEmpty()) {
+      getHelper().sendToPlayer(player, new SyncDungeonDifficultyData(entity.getId(), data));
+      DynamicDifficulty.LOGGER.debug("Synced Dungeon Difficulty data to {} for entity {} (ID {}): {} level {}",
+              player.getName().getString(), entity.getType().getDescription().getString(), 
+              entity.getId(), data.difficultyName(), data.level());
+    }
   }
 }
