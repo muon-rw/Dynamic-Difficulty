@@ -26,6 +26,8 @@ Set a mod version in `gradle.properties`
 
 ```properties
 dynamic_difficulty_version=1.0.1+1.21.1
+# Only required for Fabric Client/Server runs:
+fcap_version=21.1.3
 ```
 Find all available mod versions at: [maven.muon.rip/#/releases/](https://maven.muon.rip/#/releases/)
 
@@ -41,6 +43,7 @@ implementation("dev.muon.dynamic_difficulty:dynamic_difficulty-neoforge:${dynami
 
 ```groovy
 modImplementation("dev.muon.dynamic_difficulty:dynamic_difficulty-fabric:${dynamic_difficulty_version}")
+modLocalRuntime("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${fcap_version}")
 ```
 
 #### Common (assuming ModDevGradle)
