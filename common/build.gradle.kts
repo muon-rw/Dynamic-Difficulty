@@ -89,5 +89,5 @@ publishMods {
     changelog = rootProject.file("CHANGELOG.md").readText()
     version = "${Versions.MOD}+${Versions.MINECRAFT}"
     type = STABLE
-    // No common mod publish for now
+    // gwah
 }
