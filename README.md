@@ -60,6 +60,28 @@ compileOnly("dev.muon.dynamic_difficulty:dynamic_difficulty-common:${dynamic_dif
 ### NOTE: This guide is for 1.21.1 Only!
 *For information on 1.21.10, make sure to select the 1.21.10 branch!*
 
+### Built-in Default Settings
+
+The mod ships with a built-in datapack containing default leveling settings for vanilla Minecraft and many popular mods. These settings are located in:
+
+```
+resourcepacks/default/data/
+```
+
+This includes dimension settings, entity settings, biome/structure bonuses, and more for mods like Cataclysm, Twilight Forest, Ice and Fire, and others.
+
+**Disabling Built-in Settings:**
+
+If you want to start with a completely clean slate and define all settings yourself, you can disable the built-in datapack in `dynamic_difficulty-common.toml`:
+
+```toml
+[built_in_datapack]
+# Requires a game restart to take effect
+use_default_leveling_settings = false
+```
+
+When disabled, only your custom datapacks will be loaded, giving you full control over all leveling settings.
+
 ### How are levels calculated?
 
 1. **Base Level**

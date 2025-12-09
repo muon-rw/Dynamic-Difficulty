@@ -12,6 +12,9 @@ import dev.muon.dynamic_difficulty.platform.PlatformHelperFabric;
 import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeConfigRegistry;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.fabricmc.fabric.api.resource.ResourcePackActivationType;
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.PackType;
 import net.neoforged.fml.config.ModConfig;
 
@@ -24,6 +27,18 @@ public class DynamicDifficultyFabric implements ModInitializer {
 
         NeoForgeConfigRegistry.INSTANCE.register(DynamicDifficulty.MODID, ModConfig.Type.COMMON, Config.COMMON_SPEC);
         NeoForgeConfigRegistry.INSTANCE.register(DynamicDifficulty.MODID, ModConfig.Type.CLIENT, Config.CLIENT_SPEC);
+        
+        // Register built-in datapack with default settings (if enabled in config)
+        if (Config.COMMON.useDefaultLevelingSettings.get()) {
+            FabricLoader.getInstance().getModContainer(DynamicDifficulty.MODID).ifPresent(container -> {
+                ResourceManagerHelper.registerBuiltinResourcePack(
+                        DynamicDifficulty.loc("default"),
+                        container,
+                        Component.literal("Dynamic Difficulty Defaults"),
+                        ResourcePackActivationType.DEFAULT_ENABLED
+                );
+            });
+        }
         // Register mod-specific providers
         if (DynamicDifficulty.isModLoaded("puffish_skills")) {
             LevelingAPI.registerPlayerLevelProvider(new PuffishSkillsProviderFabric());

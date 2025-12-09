@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    {"id":"dungeons_arise:aviary", "required": false},
+    {"id":"ancient_trials:dungeon_trial", "required": false},
+    {"id":"dungeons_arise:shiraz_palace", "required": false},
+    {"id":"eternal_starlight:golem_forge", "required": false},
+    {"id":"mes:phantom_citadel", "required": false},
+    {"id":"dungeons_arise:heavenly_conqueror", "required": false},
+    {"id":"nova_structures:end_castle", "required": false}
+  ]
+} 

@@ -37,7 +37,7 @@ public record DungeonDifficultyData(String difficultyName, int level) {
     
     /**
      * Gets the translation key for this difficulty type.
-     * Uses Dungeon Difficulty's translation key format: "difficulty.type.<name>"
+     * Uses Dungeon Difficulty's translation key format: "difficulty.type.name"
      * @return The translation key (e.g., "difficulty.type.normal", "difficulty.type.dungeon")
      */
     public String getTranslationKey() {

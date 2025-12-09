@@ -1,0 +1,23 @@
+{
+  "replace": false,
+  "values": [
+    {"id":"minecraft:fortress", "required": false},
+    {"id":"minecraft:bastion_remnant", "required": false},
+    {"id":"betterfortresses:fortress", "required": false},
+    {"id":"eternal_starlight:cursed_garden", "required": false},
+    {"id":"frostiful:frostologer_castle", "required": false},
+    {"id":"aether:silver_dungeon", "required": false},
+    {"id":"nova_structures:nether_keep", "required": false},
+    {"id":"dungeons_arise:foundry", "required": false},
+    {"id":"dungeons_arise:coliseum", "required": false},
+    {"id":"adventuredungeons:coldlair", "required": false},
+    {"id":"nova_structures:illager_manor", "required": false},
+    {"id":"nova_structures:trident_trial_monument", "required": false},
+    {"id":"nova_structures:toxic_lair", "required": false},
+    {"id":"nova_structures:shrine_combat_tier_4", "required": false},
+    {"id":"nova_structures:end_ship", "required": false},
+    {"id":"the_bumblezone:phantasm_aviary", "required": false},
+    {"id":"#repurposed_structures:bastions", "required": false},
+    {"id":"#repurposed_structures:fortresses", "required": false}
+  ]
+} 

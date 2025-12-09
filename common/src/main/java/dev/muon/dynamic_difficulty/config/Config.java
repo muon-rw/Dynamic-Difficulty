@@ -56,6 +56,9 @@ public class Config {
   }
 
   public static class Common {
+    // Built-in Datapack
+    public final ConfigValue<Boolean> useDefaultLevelingSettings;
+    
     // Base Leveling
     public final ConfigValue<Integer> startingLevel;
     public final ConfigValue<Integer> maxLevel;
@@ -107,6 +110,15 @@ public class Config {
     public final ConfigValue<Boolean> enableLevelBasedDrops;
 
     public Common(ModConfigSpec.Builder builder) {
+      builder.push("built_in_datapack");
+      useDefaultLevelingSettings = builder
+              .comment("Whether to load the built-in default leveling settings datapack",
+                      "This includes dimension, entity, biome, and structure level bonuses for vanilla and various mods",
+                      "Disable this if you want to start with a clean slate and define all settings yourself",
+                      "Requires a game restart to take effect")
+              .define("use_default_leveling_settings", true);
+      builder.pop();
+      
       builder.push("base_leveling");
       startingLevel = builder
               .comment("Base level for all entities")

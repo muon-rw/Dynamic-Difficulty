@@ -329,13 +329,17 @@ public class ModCommands {
     int heightBonus = 0;
     int depthBlocks = 0;
     int heightBlocks = 0;
-    if (pos.getY() < seaLevel && dimSettings.levelsPerDeepness() > 0) {
+    if (pos.getY() < seaLevel) {
       depthBlocks = seaLevel - pos.getY();
-      depthBonus = (int)(depthBlocks * dimSettings.levelsPerDeepness());
+      if (dimSettings.levelsPerDeepness() > 0) {
+        depthBonus = (int) (depthBlocks * dimSettings.levelsPerDeepness());
+      }
     }
-    if (pos.getY() > seaLevel && dimSettings.levelsPerHeight() > 0) {
+    if (pos.getY() > seaLevel) {
       heightBlocks = pos.getY() - seaLevel;
-      heightBonus = (int)(heightBlocks * dimSettings.levelsPerHeight());
+      if (dimSettings.levelsPerHeight() > 0) {
+        heightBonus = (int) (heightBlocks * dimSettings.levelsPerHeight());
+      }
     }
     
     // Calculate day bonus
@@ -442,7 +446,7 @@ public class ModCommands {
     String cappedStr = formatRange(cappedLow, cappedHigh);
     String finalStr = formatRange(finalLow, finalHigh);
     
-    source.sendSystemMessage(Component.literal("§7Final: §f" + baseStr + " base + " + totalCapped + " §7→(Cap)§7→ §f" + cappedStr + " §7+ §f" + totalBypassing + " §7= §f§l" + finalStr));
+    source.sendSystemMessage(Component.literal("§7Final: §f" + baseStr + " base + " + totalCapped + " §7→(Cap:" + maxLevelStr + ")§7→ §f" + cappedStr + " §7+ §f" + totalBypassing + " §7= §f§l" + finalStr));
     
     return 1;
   }

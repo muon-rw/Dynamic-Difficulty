@@ -6,10 +6,15 @@ import dev.muon.dynamic_difficulty.compat.reskillable.ReskillableReimaginedProvi
 import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.platform.PlatformHelperNeoForge;
 import dev.muon.dynamic_difficulty.platform.PlatformRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.repository.PackSource;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.event.AddPackFindersEvent;
 
 @Mod(DynamicDifficulty.MODID)
 public class DynamicDifficultyNeoForge {
@@ -32,8 +37,25 @@ public class DynamicDifficultyNeoForge {
         // Register all platform-specific registries and populate common references
         PlatformRegistries.registerAll(eventBus);
         
+        // Register built-in datapack
+        eventBus.addListener(this::addPackFinders);
+        
         // Register config
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.COMMON_SPEC);
         modContainer.registerConfig(ModConfig.Type.CLIENT, Config.CLIENT_SPEC);
     }
+    
+    private void addPackFinders(AddPackFindersEvent event) {
+        if (Config.COMMON.useDefaultLevelingSettings.get()) {
+            event.addPackFinders(
+                    DynamicDifficulty.loc("resourcepacks/default"),
+                    PackType.SERVER_DATA,
+                    Component.literal("Dynamic Difficulty Defaults"),
+                    PackSource.BUILT_IN,
+                    false,
+                    Pack.Position.BOTTOM
+            );
+        }
+    }
+
 }

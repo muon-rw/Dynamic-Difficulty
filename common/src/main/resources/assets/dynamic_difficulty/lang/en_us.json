@@ -119,6 +119,9 @@
   "dynamic_difficulty.configuration.level_info_x_offset": "X offset",
   "dynamic_difficulty.configuration.level_info_y_offset": "Y offset",
   
+  "dynamic_difficulty.configuration.built_in_datapack": "Built-in Datapack",
+  "dynamic_difficulty.configuration.use_default_leveling_settings": "Use default leveling settings",
+  "dynamic_difficulty.configuration.use_default_leveling_settings.tooltip": "Whether to load the built-in default leveling settings datapack. Disable to start with a clean slate. Requires restart.",
   "dynamic_difficulty.configuration.base_leveling": "Base Leveling",
   "dynamic_difficulty.configuration.environmental_leveling": "Environmental Leveling",
   "dynamic_difficulty.configuration.player_based_bonus_scaling": "Player-Based Bonus Scaling",

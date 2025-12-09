@@ -1,3 +1,8 @@
+## 1.0.6
+- Properly mark "Forge Config API Port" as required on Fabric
+- Add config option to disable built-in leveling settings ("Built-In Datapack" section), so it's easier for pack devs to start their own from scratch
+- Fix some small issues with the `/dynamic_difficulty debug location` command related to depth
+
 ## 1.0.5
 - Add Dungeon Difficulty nameplate compat (can be toggled off in config)
 - Add some better edge-case handling for Fabric-side dedicated server attachment syncing
