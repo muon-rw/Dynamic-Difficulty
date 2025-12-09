@@ -27,4 +27,14 @@ public class EntityLevelAttachmentFabric {
                     .persistent(Codec.INT)
                     .syncWith(ByteBufCodecs.VAR_INT.cast(), AttachmentSyncPredicate.all())
     );
+    
+    /**
+     * Forces class loading and attachment registration.
+     * Must be called during mod initialization on both client and server
+     * to ensure the attachment type is registered before any sync packets arrive.
+     */
+    public static void init() {
+        // Simply accessing LEVEL triggers static initialization and registration
+        DynamicDifficulty.LOGGER.debug("Registered entity level attachment: {}", LEVEL.identifier());
+    }
 }

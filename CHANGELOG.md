@@ -1,3 +1,6 @@
+## 1.0.4
+- Fix a crash on Fabric when connecting to dedicated servers
+
 ## 1.0.3
 - Add API helper methods `getLevelAt` for finding the base entity level at a given location
 - Add `@since` and `@Nullable`/`@NotNull` annotations to API, improved some `@return` descriptions
