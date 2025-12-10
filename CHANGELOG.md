@@ -1,3 +1,6 @@
+## 1.0.7
+- Change default `#c:is_cold/overworld` biome level bonus to `#c:is_icy`
+
 ## 1.0.6
 - Properly mark "Forge Config API Port" as required on Fabric
 - Add config option to disable built-in leveling settings ("Built-In Datapack" section), so it's easier for pack devs to start their own from scratch

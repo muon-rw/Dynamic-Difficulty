@@ -146,6 +146,8 @@ publishMods {
 
         clientRequired = true
         serverRequired = true
+
+        requires ("forge-config-api-port-fabric")
     }
 
 //    modrinth {
