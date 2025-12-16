@@ -247,10 +247,13 @@ public class Config {
               .define("disable_passive_mob_leveling", true);
       blacklistedMobs = builder
               .comment("Entities that cannot level up",
-                      "Example: [\"minecraft:zombie\", \"minecraft:skeleton\"]")
+                      "Supports wildcards: use 'modid:*' to blacklist all entities from a mod",
+                      "Examples: [\"minecraft:zombie\", \"minecraft:skeleton\", \"cataclysm:*\"]")
               .define("blacklisted_entities", new ArrayList<>());
       whitelistedMobs = builder
-              .comment("If not empty, only these entities can level up")
+              .comment("If not empty, only these entities can level up",
+                      "Supports wildcards: use 'modid:*' to whitelist all entities from a mod",
+                      "Examples: [\"minecraft:zombie\", \"cataclysm:*\"]")
               .define("whitelisted_entities", new ArrayList<>());
       builder.pop();
 

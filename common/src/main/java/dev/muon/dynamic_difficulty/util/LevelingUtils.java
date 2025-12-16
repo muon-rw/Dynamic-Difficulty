@@ -1,6 +1,7 @@
 package dev.muon.dynamic_difficulty.util;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
+import dev.muon.dynamic_difficulty.LevelingEvents;
 import dev.muon.dynamic_difficulty.api.BiomeBonus;
 import dev.muon.dynamic_difficulty.api.StructureBonus;
 import dev.muon.dynamic_difficulty.config.Config;
@@ -42,7 +43,7 @@ public class LevelingUtils {
 
     /**
      * Reloads the cached whitelist/blacklist configuration.
-     * Should be called when config is reloaded.
+     * @see LevelingEvents#onConfigReload()
      */
     public static void reloadConfigCache() {
         synchronized (BLACKLISTED_NAMESPACES) {
