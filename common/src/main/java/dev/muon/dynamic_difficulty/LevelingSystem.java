@@ -240,32 +240,45 @@ public class LevelingSystem {
     /**
      * Calculates bonuses that do NOT bypass the max level cap.
      * These are applied before the cap check, so they can be limited by maxLevel.
-     * Examples: biome bonuses with bypasses_cap=false, structure bonuses with bypasses_cap=false
+     * Examples: biome bonuses with bypasses_cap=false, structure bonuses with bypasses_cap=false,
+     * player bonuses when playerLevelBypassesCap=false
      */
     private static int calculateNonBypassingBonuses(LivingEntity entity) {
         if (!(entity.level() instanceof ServerLevel serverLevel)) return 0;
         
+        int bonusLevels = 0;
         BlockPos pos = entity.blockPosition();
         BonusResults results = calculateLocationBonuses(serverLevel, pos);
+        bonusLevels += results.biomeNonBypassing + results.structureNonBypassing;
         
-        if (results.structureNonBypassing > 0 || results.biomeNonBypassing > 0) {
-            DynamicDifficulty.LOGGER.debug("{} non-bypassing bonuses: biome={}, structure={}", 
-                entity.getType().getDescription().getString(), results.biomeNonBypassing, results.structureNonBypassing);
+        // Player bonus is non-bypassing when playerLevelBypassesCap is false
+        int playerBonus = 0;
+        if (Config.COMMON.applyPlayerBasedLeveling.get() && !Config.COMMON.playerLevelBypassesCap.get()) {
+            playerBonus = LevelingAPI.getLevelsFromNearbyPlayers(serverLevel, entity);
+            bonusLevels += playerBonus;
         }
         
-        return results.biomeNonBypassing + results.structureNonBypassing;
+        if (results.structureNonBypassing > 0 || results.biomeNonBypassing > 0 || playerBonus > 0) {
+            DynamicDifficulty.LOGGER.debug("{} non-bypassing bonuses: biome={}, structure={}, player={}", 
+                entity.getType().getDescription().getString(), results.biomeNonBypassing, results.structureNonBypassing, playerBonus);
+        }
+        
+        return bonusLevels;
     }
 
     /**
      * Calculates bonuses that DO bypass the max level cap.
      * These are applied after the cap check, allowing them to exceed maxLevel.
-     * Examples: structure bonuses with bypasses_cap=true, player bonuses, biome bonuses with bypasses_cap=true
+     * Examples: structure bonuses with bypasses_cap=true, biome bonuses with bypasses_cap=true,
+     * player bonuses when playerLevelBypassesCap=true (default)
      */
     private static int calculateBypassingBonuses(LivingEntity entity) {
         int bonusLevels = 0;
         int playerBonus = 0;
         
-        if (Config.COMMON.applyPlayerBasedLeveling.get() && entity.level() instanceof ServerLevel serverLevel) {
+        // Player bonus is bypassing when playerLevelBypassesCap is true (default)
+        if (Config.COMMON.applyPlayerBasedLeveling.get() && Config.COMMON.playerLevelBypassesCap.get() 
+                && entity.level() instanceof ServerLevel serverLevel) {
             playerBonus = LevelingAPI.getLevelsFromNearbyPlayers(serverLevel, entity);
             bonusLevels += playerBonus;
         }

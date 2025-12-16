@@ -1,11 +1,15 @@
 package dev.muon.dynamic_difficulty;
 
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
+import dev.muon.dynamic_difficulty.attribute.ModAttributesNeoForge;
+import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyAttachmentNeoForge;
 import dev.muon.dynamic_difficulty.compat.puffish.PuffishSkillsProviderNeoForge;
 import dev.muon.dynamic_difficulty.compat.reskillable.ReskillableReimaginedProvider;
 import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.item.ModItemsNeoForge;
+import dev.muon.dynamic_difficulty.loot.condition.ModLootConditionsNeoForge;
+import dev.muon.dynamic_difficulty.loot.modifier.ModLootModifiersNeoForge;
 import dev.muon.dynamic_difficulty.platform.PlatformHelperNeoForge;
-import dev.muon.dynamic_difficulty.platform.PlatformRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.Pack;
@@ -33,17 +37,29 @@ public class DynamicDifficultyNeoForge {
         if (DynamicDifficulty.isModLoaded("reskillable")) {
             LevelingAPI.registerPlayerLevelProvider(new ReskillableReimaginedProvider());
         }
+        if (DynamicDifficulty.isModLoaded("dungeon_difficulty")) {
+            DungeonDifficultyAttachmentNeoForge.REGISTRY.register(eventBus);
+        }
 
-        // Register all platform-specific registries and populate common references
-        PlatformRegistries.registerAll(eventBus);
+        // Registries
+        ModAttributesNeoForge.REGISTRY.register(eventBus);
+        ModItemsNeoForge.REGISTRY.register(eventBus);
+        ModLootConditionsNeoForge.REGISTRY.register(eventBus);
+        ModLootModifiersNeoForge.REGISTRY.register(eventBus);
+        EntityLevelAttachmentNeoForge.REGISTRY.register(eventBus);
+
+        ModAttributesNeoForge.init();
+        ModItemsNeoForge.init();
+        ModLootConditionsNeoForge.init();
         
-        // Register built-in datapack
+        // Built-in datapack
         eventBus.addListener(this::addPackFinders);
         
         // Register config
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.COMMON_SPEC);
         modContainer.registerConfig(ModConfig.Type.CLIENT, Config.CLIENT_SPEC);
     }
+
     
     private void addPackFinders(AddPackFindersEvent event) {
         if (Config.COMMON.useDefaultLevelingSettings.get()) {

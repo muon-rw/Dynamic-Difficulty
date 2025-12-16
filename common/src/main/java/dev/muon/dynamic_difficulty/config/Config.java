@@ -78,6 +78,7 @@ public class Config {
     public final ConfigValue<Double> playerLevelRadius;
     public final ModConfigSpec.DoubleValue playerLevelMultiplier;
     public final ConfigValue<Boolean> applyPlayerBasedLeveling;
+    public final ConfigValue<Boolean> playerLevelBypassesCap;
     public final ModConfigSpec.EnumValue<PlayerLevelDisplayStrategy> playerLevelDisplayStrategy;
     public final ConfigValue<Integer> playerLevelUpdateInterval;
     
@@ -171,6 +172,12 @@ public class Config {
       applyPlayerBasedLeveling = builder
               .comment("Whether to factor in player levels when calculating mob levels")
               .define("enable_player_based_leveling", true);
+      playerLevelBypassesCap = builder
+              .comment("Whether player level bonuses bypass the maximum level cap",
+                      "When true (default), player bonuses are applied after the cap, allowing mobs to exceed max level",
+                      "When false, player bonuses are applied before the cap and can be limited by max level",
+                      "Similar to how structure/biome bonuses can have bypasses_cap set in their data files")
+              .define("player_level_bypasses_cap", true);
       playerLevelDisplayStrategy = builder
               .comment("How to aggregate multiple player level providers for display purposes",
                       "This only affects what level is shown above the player's head.",

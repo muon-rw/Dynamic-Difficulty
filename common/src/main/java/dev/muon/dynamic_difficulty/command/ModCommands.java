@@ -312,7 +312,7 @@ public class ModCommands {
     DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension, dimensionRegistry);
     
     // Get spawn position (considering override)
-    BlockPos spawnPos = dimSettings.spawnPosOverride() != null ? 
+    BlockPos spawnPos = dimSettings.spawnPosOverride() != null ?
         dimSettings.spawnPosOverride() : level.getSharedSpawnPos();
     int spawnX = spawnPos.getX();
     int spawnZ = spawnPos.getZ();
@@ -363,6 +363,7 @@ public class ModCommands {
     
     // Player bonus
     int playerBonus = 0;
+    boolean playerBypassesCap = Config.COMMON.playerLevelBypassesCap.get();
     if (Config.COMMON.applyPlayerBasedLeveling.get()) {
       int rawBonus = PlayerLevelProvider.getProviders().stream()
           .filter(PlayerLevelProvider::isEnabled)
@@ -372,9 +373,9 @@ public class ModCommands {
       playerBonus = (int) (rawBonus * multiplier);
     }
     
-    // Calculate totals
-    int totalCapped = structureBonus.nonBypassingBonus() + biomeBonus.nonBypassingBonus();
-    int totalBypassing = structureBonus.bypassingBonus() + biomeBonus.bypassingBonus() + playerBonus;
+    // Calculate totals - player bonus goes to capped or bypassing based on config
+    int totalCapped = structureBonus.nonBypassingBonus() + biomeBonus.nonBypassingBonus() + (playerBypassesCap ? 0 : playerBonus);
+    int totalBypassing = structureBonus.bypassingBonus() + biomeBonus.bypassingBonus() + (playerBypassesCap ? playerBonus : 0);
     int randomBonus = dimSettings.randomLevelBonus();
     
     // Final level calculation with ranges (random is applied before cap)
@@ -438,8 +439,8 @@ public class ModCommands {
     }
     
     // Player line
-    source.sendSystemMessage(Component.literal("§7Player: §f+" + playerBonus + " §7(bypasses cap)"));
-    source.sendSystemMessage(Component.literal(""));
+    String playerCapBehavior = playerBypassesCap ? "bypasses cap" : "respects cap";
+    source.sendSystemMessage(Component.literal("§7Player: §f+" + playerBonus + " §7(" + playerCapBehavior + ")"));source.sendSystemMessage(Component.literal(""));
     
     // Final line with ranges
     String baseStr = formatRange(baseLow, baseHigh);

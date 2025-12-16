@@ -1,3 +1,6 @@
+## 1.0.8
+- Whether player level bonuses bypass the max level cap is now configurable
+
 ## 1.0.7
 - Change default `#c:is_cold/overworld` biome level bonus to `#c:is_icy`
 

@@ -44,6 +44,7 @@
   "dynamic_difficulty.configuration.enable_player_based_leveling": "Enable player-based leveling",
   "dynamic_difficulty.configuration.player_level_display_strategy": "Player level display strategy",
   "dynamic_difficulty.configuration.player_level_update_interval": "Player level update interval",
+  "dynamic_difficulty.configuration.player_level_bypasses_cap": "Player bonuses bypass max level",
   "dynamic_difficulty.configuration.enable_playtime_scaling": "Enable playtime scaling",
   "dynamic_difficulty.configuration.levels_per_playtime_hour": "Levels per playtime hour",
   "dynamic_difficulty.configuration.disable_passive_mob_leveling": "Disable passive mob leveling",
