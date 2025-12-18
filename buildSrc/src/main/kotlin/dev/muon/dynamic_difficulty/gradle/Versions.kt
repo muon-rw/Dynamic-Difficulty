@@ -1,7 +1,7 @@
 package dev.muon.dynamic_difficulty.gradle
 
 object Versions {
-    const val MOD = "1.0.8"
+    const val MOD = "1.0.9"
 
     const val MINECRAFT = "1.21.1"
     const val PARCHMENT_MINECRAFT = "1.21.1"

@@ -98,7 +98,9 @@ public class LevelingEvents {
             NetworkDispatcher.syncLevelToPlayer(trackedEntity, trackingPlayer);
         }
         // Sync Dungeon Difficulty data if present
-        NetworkDispatcher.syncDungeonDifficultyToPlayer(trackedEntity, trackingPlayer);
+        if (DynamicDifficulty.isModLoaded("dungeon_difficulty")) {
+            NetworkDispatcher.syncDungeonDifficultyToPlayer(trackedEntity, trackingPlayer);
+        }
     }
 
     /**

@@ -4,6 +4,7 @@ import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyData;
 import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.platform.Platform;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
@@ -17,7 +18,7 @@ import net.minecraft.world.phys.HitResult;
  * Common level plate rendering logic.
  * Platform-specific code (NeoForge event / Fabric mixin) should call these methods.
  */
-public class LevelPlateRenderer {
+public class LevelPlateHandler {
 
     /**
      * Modifies the name tag component to include level information.
@@ -52,7 +53,7 @@ public class LevelPlateRenderer {
         }
 
         // Add Dungeon Difficulty info if available and enabled
-        if (Config.CLIENT.showDungeonDifficultyInfo.get()) {
+        if (Config.CLIENT.showDungeonDifficultyInfo.get() && DynamicDifficulty.isModLoaded("dungeon_difficulty")) {
             DungeonDifficultyData ddData = DynamicDifficulty.getHelper().getDungeonDifficultyAttachmentHelper().getData(entity);
             if (ddData != null && !ddData.isEmpty()) {
                 // Use Dungeon Difficulty's translation keys to get proper icons/formatting

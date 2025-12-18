@@ -2,7 +2,7 @@ package dev.muon.dynamic_difficulty.mixin.client;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
-import dev.muon.dynamic_difficulty.client.LevelPlateRenderer;
+import dev.muon.dynamic_difficulty.client.LevelPlateHandler;
 import dev.muon.dynamic_difficulty.config.Config;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -32,7 +32,7 @@ public class EntityRendererMixin {
             return false;
         }
 
-        return LevelPlateRenderer.shouldShowName(living);
+        return LevelPlateHandler.shouldShowName(living);
     }
 
     @ModifyVariable(
@@ -44,7 +44,7 @@ public class EntityRendererMixin {
     )
     private Component modifyDisplayName(Component displayName, Entity entity) {
         if (entity instanceof LivingEntity livingEntity) {
-            return LevelPlateRenderer.modifyNameTag(displayName, livingEntity);
+            return LevelPlateHandler.modifyNameTag(displayName, livingEntity);
         }
         return displayName;
     }

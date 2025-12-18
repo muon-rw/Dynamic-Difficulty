@@ -1,3 +1,6 @@
+## 1.0.9
+- Fix "Trying to access Unbound Value" on Neoforge 
+
 ## 1.0.8
 - Whether player level bonuses bypass the max level cap is now configurable
 - Entity blacklist/whitelists now support modid wildcards (`cataclysm:*`) (This was already supported, but undocumented)
