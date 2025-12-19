@@ -54,7 +54,6 @@ dependencies {
     compileOnly("net.fabricmc:sponge-mixin:${Versions.FABRIC_MIXIN}")
 
     compileOnly("mezz.jei:jei-${Versions.MINECRAFT}-common-api:${Versions.JEI}")
-    compileOnly("dev.emi:emi-xplat-mojmap:${Versions.EMI}:api")
 
     compileOnlyApi("org.jetbrains:annotations:24.1.0")
 

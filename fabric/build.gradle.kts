@@ -67,8 +67,8 @@ dependencies {
     modLocalRuntime("com.terraformersmc:modmenu:${Versions.MOD_MENU}")
 
     // Jade
-    modCompileOnly("curse.maven:jade-324717:6738760")
-    modLocalRuntime("curse.maven:jade-324717:6738760")
+    modCompileOnly("curse.maven:jade-324717:7056468")
+    modLocalRuntime("curse.maven:jade-324717:7056468")
 
     // Skill Tree
     modCompileOnly("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}:fabric")

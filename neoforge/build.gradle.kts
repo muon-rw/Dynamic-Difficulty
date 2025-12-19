@@ -130,20 +130,20 @@ dependencies {
 
     // Optional Compats:
     // Jade
-    compileOnly("snownee.jade:Jade-NeoForge:${Versions.MINECRAFT}-${Versions.JADE}")
-    localRuntime("snownee.jade:Jade-NeoForge:${Versions.MINECRAFT}-${Versions.JADE}")
+    compileOnly("curse.maven:jade-324717:7056468")
+    localRuntime("curse.maven:jade-324717:7056468")
 
     // Apotheosis
-    compileOnly("dev.shadowsoffire:Placebo:${Versions.MINECRAFT}-${Versions.PLACEBO}")
-    localRuntime("dev.shadowsoffire:Placebo:${Versions.MINECRAFT}-${Versions.PLACEBO}")
-    compileOnly("dev.shadowsoffire:Apotheosis:${Versions.MINECRAFT}-${Versions.APOTHEOSIS}")
-    localRuntime("dev.shadowsoffire:Apotheosis:${Versions.MINECRAFT}-${Versions.APOTHEOSIS}")
-    compileOnly("dev.shadowsoffire:ApothicAttributes:${Versions.MINECRAFT}-${Versions.APOTHIC_ATTRIBUTES}")
-    localRuntime("dev.shadowsoffire:ApothicAttributes:${Versions.MINECRAFT}-${Versions.APOTHIC_ATTRIBUTES}")
-    compileOnly("dev.shadowsoffire:ApothicSpawners:${Versions.MINECRAFT}-${Versions.APOTHIC_SPAWNERS}")
-    localRuntime("dev.shadowsoffire:ApothicSpawners:${Versions.MINECRAFT}-${Versions.APOTHIC_SPAWNERS}")
-    compileOnly("dev.shadowsoffire:ApothicEnchanting:${Versions.MINECRAFT}-${Versions.APOTHIC_ENCHANTING}")
-    localRuntime("dev.shadowsoffire:ApothicEnchanting:${Versions.MINECRAFT}-${Versions.APOTHIC_ENCHANTING}")
+    // compileOnly("dev.shadowsoffire:Placebo:${Versions.MINECRAFT}-${Versions.PLACEBO}")
+    // localRuntime("dev.shadowsoffire:Placebo:${Versions.MINECRAFT}-${Versions.PLACEBO}")
+    // compileOnly("dev.shadowsoffire:Apotheosis:${Versions.MINECRAFT}-${Versions.APOTHEOSIS}")
+    // localRuntime("dev.shadowsoffire:Apotheosis:${Versions.MINECRAFT}-${Versions.APOTHEOSIS}")
+    // compileOnly("dev.shadowsoffire:ApothicAttributes:${Versions.MINECRAFT}-${Versions.APOTHIC_ATTRIBUTES}")
+    // localRuntime("dev.shadowsoffire:ApothicAttributes:${Versions.MINECRAFT}-${Versions.APOTHIC_ATTRIBUTES}")
+    // compileOnly("dev.shadowsoffire:ApothicSpawners:${Versions.MINECRAFT}-${Versions.APOTHIC_SPAWNERS}")
+    // localRuntime("dev.shadowsoffire:ApothicSpawners:${Versions.MINECRAFT}-${Versions.APOTHIC_SPAWNERS}")
+    // compileOnly("dev.shadowsoffire:ApothicEnchanting:${Versions.MINECRAFT}-${Versions.APOTHIC_ENCHANTING}")
+    // localRuntime("dev.shadowsoffire:ApothicEnchanting:${Versions.MINECRAFT}-${Versions.APOTHIC_ENCHANTING}")
 
     // Puffish
     compileOnly("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}:neoforge")
