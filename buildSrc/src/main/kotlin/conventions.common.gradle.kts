@@ -134,8 +134,8 @@ publishing {
             name = "Muon"
             url = uri("https://maven.muon.rip/releases")
             credentials {
-                username = System.getenv("MAVEN_USERNAME")
-                password = System.getenv("MAVEN_PASSWORD")
+                username = findProperty("MAVEN_USERNAME") as String?
+                password = findProperty("MAVEN_PASSWORD") as String?
             }
             authentication {
                 create<BasicAuthentication>("basic")

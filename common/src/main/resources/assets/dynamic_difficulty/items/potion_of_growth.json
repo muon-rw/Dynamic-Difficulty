@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "dynamic_difficulty:item/potion_of_growth"
+  }
+}

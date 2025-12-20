@@ -7,13 +7,10 @@
     "PPP"
   ],
   "key": {
-    "P": {
-      "item": "dynamic_difficulty:potion_of_growth"
-    }
+    "P": "dynamic_difficulty:potion_of_growth"
   },
   "result": {
     "id": "dynamic_difficulty:elixir_of_nurturing",
     "count": 1
   }
 }
-

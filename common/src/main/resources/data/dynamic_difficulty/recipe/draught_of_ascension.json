@@ -7,9 +7,7 @@
     "EEE"
   ],
   "key": {
-    "E": {
-      "item": "dynamic_difficulty:elixir_of_nurturing"
-    }
+    "E": "dynamic_difficulty:elixir_of_nurturing"
   },
   "result": {
     "id": "dynamic_difficulty:draught_of_ascension",
