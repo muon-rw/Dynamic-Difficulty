@@ -6,7 +6,6 @@
   "compatibilityLevel": "JAVA_21",
   "plugin": "dev.muon.dynamic_difficulty.MixinConfigPlugin",
   "mixins": [
-    "LivingEntityAccessor",
     "LivingEntityMixin"
   ],
   "client": [

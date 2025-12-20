@@ -47,7 +47,7 @@ public class InjectLootTableModifier extends LootModifier {
             return generatedLoot;
         }
 
-        if (!(context.getParamOrNull(LootContextParams.THIS_ENTITY) instanceof LivingEntity)) {
+        if (!(context.getOptionalParameter(LootContextParams.THIS_ENTITY) instanceof LivingEntity)) {
             return generatedLoot;
         }
 
@@ -85,9 +85,9 @@ public class InjectLootTableModifier extends LootModifier {
      */
     @Nullable
     private Player findPlayer(LootContext ctx) {
-        if (ctx.getParamOrNull(LootContextParams.ATTACKING_ENTITY) instanceof Player p) return p;
-        if (ctx.getParamOrNull(LootContextParams.DIRECT_ATTACKING_ENTITY) instanceof Player p) return p;
-        if (ctx.getParamOrNull(LootContextParams.LAST_DAMAGE_PLAYER) != null) return ctx.getParamOrNull(LootContextParams.LAST_DAMAGE_PLAYER);
+        if (ctx.getOptionalParameter(LootContextParams.ATTACKING_ENTITY) instanceof Player p) return p;
+        if (ctx.getOptionalParameter(LootContextParams.DIRECT_ATTACKING_ENTITY) instanceof Player p) return p;
+        if (ctx.getOptionalParameter(LootContextParams.LAST_DAMAGE_PLAYER) != null) return ctx.getOptionalParameter(LootContextParams.LAST_DAMAGE_PLAYER);
         return null;
     }
 

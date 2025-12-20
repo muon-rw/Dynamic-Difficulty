@@ -32,7 +32,7 @@ public class BiomeLevelingSettingsReloader {
     }
     
     // Check biome tags
-    Optional<Holder.Reference<Biome>> optHolder = biomeRegistry.getHolder(biomeId);
+    Optional<Holder.Reference<Biome>> optHolder = biomeRegistry.get(biomeId);
     if (optHolder.isPresent()) {
       Holder<Biome> biomeHolder = optHolder.get();
       // Find the highest bonus from matching tags

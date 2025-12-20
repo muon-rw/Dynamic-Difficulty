@@ -6,10 +6,8 @@
   "compatibilityLevel": "JAVA_21",
   "plugin": "dev.muon.dynamic_difficulty.MixinConfigPluginFabric",
   "mixins": [
-    "LivingEntityAccessor",
     "LivingEntityMixinFabric",
     "LootTableMixin",
-    "compat.dungeon_difficulty.EntityScalingMixin",
     "compat.puffish_skills.SkillsModMixin"
   ],
   "client": [

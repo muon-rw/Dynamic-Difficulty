@@ -105,7 +105,7 @@ public record EntityLevelingSettings(
               list -> {
                 Map<Attribute, AttributeModifier> map = new HashMap<>();
                 for (AttributeModifierEntry entry : list) {
-                  Attribute attribute = BuiltInRegistries.ATTRIBUTE.get(entry.attribute());
+                  Attribute attribute = BuiltInRegistries.ATTRIBUTE.getValue(entry.attribute());
                   if (attribute != null) {
                     AttributeModifier.Operation operation = parseOperation(entry.operation());
                     ResourceLocation modifierId = DynamicDifficulty.loc(

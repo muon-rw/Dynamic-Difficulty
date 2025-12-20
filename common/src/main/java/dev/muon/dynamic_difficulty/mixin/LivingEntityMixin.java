@@ -1,5 +1,6 @@
 package dev.muon.dynamic_difficulty.mixin;
 
+import com.llamalad7.mixinextras.sugar.Local;
 import dev.muon.dynamic_difficulty.attribute.ModAttributes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -26,12 +27,12 @@ public class LivingEntityMixin {
     );
 
     @ModifyVariable(
-            method = "hurt",
+            method = "hurtServer",
             at = @At("HEAD"),
             argsOnly = true,
-            index = 2
+            index = 3
     )
-    private float modifyDamageAmount(float damageAmount, DamageSource damageSource) {
+    private float modifyDamageAmount(float damageAmount, @Local(argsOnly = true) DamageSource damageSource) {
         if (damageAmount <= 0) {
             return damageAmount;
         }

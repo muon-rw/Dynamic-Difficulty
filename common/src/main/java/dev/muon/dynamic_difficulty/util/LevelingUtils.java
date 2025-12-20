@@ -230,7 +230,7 @@ public class LevelingUtils {
      * @return The base level at this position
      */
     public static int calculateBaseEntityLevel(ServerPlayer player, BlockPos pos) {
-        return calculateBaseEntityLevel(player.serverLevel(), pos);
+        return calculateBaseEntityLevel(player.level(), pos);
     }
 
     /**
@@ -253,11 +253,11 @@ public class LevelingUtils {
     public static int calculateBaseEntityLevel(ServerLevel level, BlockPos pos) {
         // Get dimension-specific settings (or fall back to global config)
         ResourceKey<Level> dimension = level.dimension();
-        DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension, level.registryAccess().registryOrThrow(Registries.DIMENSION));
+        DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension, level.registryAccess().lookupOrThrow(Registries.DIMENSION));
 
         // Get spawn position (may be overridden by dimension settings)
         BlockPos spawnPos = dimSettings.spawnPosOverride() != null ?
-                dimSettings.spawnPosOverride() : level.getSharedSpawnPos();
+                dimSettings.spawnPosOverride() : level.getRespawnData().pos();
         // Use 2D horizontal distance (ignore Y) for distance-based scaling
         double dx = spawnPos.getX() - pos.getX();
         double dz = spawnPos.getZ() - pos.getZ();
@@ -297,8 +297,8 @@ public class LevelingUtils {
      */
     public static int calculateDisplayedLevel(ServerPlayer player, int baseLevel,
                                                StructureBonus structureBonus, BiomeBonus biomeBonus) {
-        ServerLevel level = player.serverLevel();
-        var dimensionSettings = DimensionsLevelingSettingsReloader.get(level.dimension(), level.registryAccess().registryOrThrow(Registries.DIMENSION));
+        ServerLevel level = player.level();
+        var dimensionSettings = DimensionsLevelingSettingsReloader.get(level.dimension(), level.registryAccess().lookupOrThrow(Registries.DIMENSION));
         
         return calculateFinalDisplayLevel(baseLevel, structureBonus, biomeBonus, 0, dimensionSettings);
     }

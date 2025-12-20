@@ -1,25 +1,23 @@
 package dev.muon.dynamic_difficulty.data;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.settings.EntityLevelingSettings;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
+import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
 import java.util.Map;
 
-public class EntityTagLevelingSettingsReloaderFabric extends SimpleJsonResourceReloadListener implements IdentifiableResourceReloadListener {
-    private static final Gson GSON = new Gson();
+public class EntityTagLevelingSettingsReloaderFabric extends SimpleJsonResourceReloadListener<EntityLevelingSettings.RawSettings> implements IdentifiableResourceReloadListener {
     private static final ResourceLocation RELOADER_ID = DynamicDifficulty.loc("entity_tag_leveling_settings");
+    private static final FileToIdConverter FILE_TO_ID = FileToIdConverter.json("leveling_settings/entity_tags");
 
     public EntityTagLevelingSettingsReloaderFabric() {
-        super(GSON, "leveling_settings/entity_tags");
+        super(EntityLevelingSettings.RAW_CODEC, FILE_TO_ID);
     }
 
     @Override
@@ -28,14 +26,10 @@ public class EntityTagLevelingSettingsReloaderFabric extends SimpleJsonResourceR
     }
 
     @Override
-    protected void apply(Map<ResourceLocation, JsonElement> prepared, @NotNull ResourceManager resourceManager, @NotNull ProfilerFiller profiler) {
-        Map<ResourceLocation, EntityLevelingSettings.RawSettings> settings = new HashMap<>();
-        var ops = com.mojang.serialization.JsonOps.INSTANCE;
-        for (Map.Entry<ResourceLocation, JsonElement> entry : prepared.entrySet()) {
-            EntityLevelingSettings.RAW_CODEC.decode(ops, entry.getValue())
-                    .result()
-                    .ifPresent(pair -> settings.put(entry.getKey(), pair.getFirst()));
-        }
-        EntityLevelingSettingsReloader.loadTagSettings(settings);
+    protected void apply(
+            Map<ResourceLocation, EntityLevelingSettings.RawSettings> prepared,
+            @NotNull ResourceManager resourceManager,
+            @NotNull ProfilerFiller profiler) {
+        EntityLevelingSettingsReloader.loadTagSettings(prepared);
     }
 }

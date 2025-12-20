@@ -40,12 +40,12 @@ public abstract class LootTableMixin {
             return;
         }
         
-        if (!context.hasParam(LootContextParams.THIS_ENTITY)) {
+        if (!context.hasParameter(LootContextParams.THIS_ENTITY)) {
             original.call(context, output);
             return;
         }
 
-        Entity entity = context.getParamOrNull(LootContextParams.THIS_ENTITY);
+        Entity entity = context.getOptionalParameter(LootContextParams.THIS_ENTITY);
         if (!(entity instanceof LivingEntity living) || !LevelingAPI.hasLevel(living)) {
             original.call(context, output);
             return;
@@ -96,9 +96,9 @@ public abstract class LootTableMixin {
     @Unique
     @Nullable
     private Player findPlayer(LootContext ctx) {
-        if (ctx.getParamOrNull(LootContextParams.ATTACKING_ENTITY) instanceof Player p) return p;
-        if (ctx.getParamOrNull(LootContextParams.DIRECT_ATTACKING_ENTITY) instanceof Player p) return p;
-        if (ctx.getParamOrNull(LootContextParams.LAST_DAMAGE_PLAYER) != null) return ctx.getParamOrNull(LootContextParams.LAST_DAMAGE_PLAYER);
+        if (ctx.getOptionalParameter(LootContextParams.ATTACKING_ENTITY) instanceof Player p) return p;
+        if (ctx.getOptionalParameter(LootContextParams.DIRECT_ATTACKING_ENTITY) instanceof Player p) return p;
+        if (ctx.getOptionalParameter(LootContextParams.LAST_DAMAGE_PLAYER) != null) return ctx.getOptionalParameter(LootContextParams.LAST_DAMAGE_PLAYER);
         return null;
     }
 }

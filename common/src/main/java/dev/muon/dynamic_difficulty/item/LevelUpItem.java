@@ -10,15 +10,17 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
  * An item that increases a mob's level when used on it.
  * Cannot be used on players (they use the PlayerLevelProvider system).
- * 
+ * <p>
  * Max level is retrieved from config at runtime, allowing config changes without restart.
  */
 public class LevelUpItem extends Item {
@@ -28,11 +30,11 @@ public class LevelUpItem extends Item {
 
     /**
      * Creates a level-up item.
-     * 
-     * @param properties Item properties
-     * @param levelsToAdd How many levels to add per use
+     *
+     * @param properties       Item properties
+     * @param levelsToAdd      How many levels to add per use
      * @param maxLevelSupplier Supplier that provides the max level from config
-     * @param hasGlint Whether this item should have an enchantment glint
+     * @param hasGlint         Whether this item should have an enchantment glint
      */
     public LevelUpItem(Item.Properties properties, int levelsToAdd, Supplier<Integer> maxLevelSupplier, boolean hasGlint) {
         super(properties);
@@ -40,7 +42,7 @@ public class LevelUpItem extends Item {
         this.maxLevelSupplier = maxLevelSupplier;
         this.hasGlint = hasGlint;
     }
-    
+
     /**
      * Gets the current max level for this item from config.
      */
@@ -60,9 +62,9 @@ public class LevelUpItem extends Item {
         if (target instanceof Player) {
             if (!player.level().isClientSide()) {
                 player.displayClientMessage(
-                    Component.translatable("item.dynamic_difficulty.level_up.cannot_use_on_player")
-                        .withStyle(ChatFormatting.RED),
-                    true
+                        Component.translatable("item.dynamic_difficulty.level_up.cannot_use_on_player")
+                                .withStyle(ChatFormatting.RED),
+                        true
                 );
             }
             return InteractionResult.FAIL;
@@ -72,9 +74,9 @@ public class LevelUpItem extends Item {
         if (!LevelingAPI.canHaveLevel(target)) {
             if (!player.level().isClientSide()) {
                 player.displayClientMessage(
-                    Component.translatable("item.dynamic_difficulty.level_up.cannot_level_entity")
-                        .withStyle(ChatFormatting.RED),
-                    true
+                        Component.translatable("item.dynamic_difficulty.level_up.cannot_level_entity")
+                                .withStyle(ChatFormatting.RED),
+                        true
                 );
             }
             return InteractionResult.FAIL;
@@ -83,29 +85,29 @@ public class LevelUpItem extends Item {
         if (!player.level().isClientSide()) {
             int currentLevel = LevelingAPI.getLevel(target);
             int maxLevel = getMaxLevel();
-            
+
             // Check if already at or above max level for this item
             if (currentLevel >= maxLevel) {
                 player.displayClientMessage(
-                    Component.translatable("item.dynamic_difficulty.level_up.max_level_reached", maxLevel)
-                        .withStyle(ChatFormatting.YELLOW),
-                    true
+                        Component.translatable("item.dynamic_difficulty.level_up.max_level_reached", maxLevel)
+                                .withStyle(ChatFormatting.YELLOW),
+                        true
                 );
                 return InteractionResult.FAIL;
             }
 
             // Add levels, but cap at maxLevel
             int newLevel = Math.min(currentLevel + levelsToAdd, maxLevel);
-            
+
             try {
                 LevelingAPI.setAndUpdateLevel(target, newLevel);
-                
+
                 // Success message
                 player.displayClientMessage(
-                    Component.translatable("item.dynamic_difficulty.level_up.success", 
-                        target.getDisplayName(), currentLevel, newLevel)
-                        .withStyle(ChatFormatting.GREEN),
-                    true
+                        Component.translatable("item.dynamic_difficulty.level_up.success",
+                                        target.getDisplayName(), currentLevel, newLevel)
+                                .withStyle(ChatFormatting.GREEN),
+                        true
                 );
 
                 // Consume item in survival mode
@@ -117,8 +119,8 @@ public class LevelUpItem extends Item {
             } catch (IllegalArgumentException e) {
                 // Shouldn't happen, but handle gracefully
                 player.displayClientMessage(
-                    Component.literal(e.getMessage()).withStyle(ChatFormatting.RED),
-                    true
+                        Component.literal(e.getMessage()).withStyle(ChatFormatting.RED),
+                        true
                 );
                 return InteractionResult.FAIL;
             }
@@ -128,18 +130,19 @@ public class LevelUpItem extends Item {
     }
 
     @Override
-    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, List<Component> tooltipComponents, @NotNull TooltipFlag tooltipFlag) {
-        tooltipComponents.add(
-            Component.translatable("item.dynamic_difficulty.level_up.tooltip.levels", levelsToAdd)
-                .withStyle(ChatFormatting.GRAY)
+    @Deprecated
+    public void appendHoverText(@NotNull ItemStack stack, @NotNull Item.TooltipContext context, @NotNull TooltipDisplay tooltipDisplay, @NotNull Consumer<Component> tooltipAdder, @NotNull TooltipFlag tooltipFlag) {
+        tooltipAdder.accept(
+                Component.translatable("item.dynamic_difficulty.level_up.tooltip.levels", levelsToAdd)
+                        .withStyle(ChatFormatting.GRAY)
         );
-        tooltipComponents.add(
-            Component.translatable("item.dynamic_difficulty.level_up.tooltip.max_level", getMaxLevel())
-                .withStyle(ChatFormatting.DARK_GRAY)
+        tooltipAdder.accept(
+                Component.translatable("item.dynamic_difficulty.level_up.tooltip.max_level", getMaxLevel())
+                        .withStyle(ChatFormatting.DARK_GRAY)
         );
-        tooltipComponents.add(
-            Component.translatable("item.dynamic_difficulty.level_up.tooltip.usage")
-                .withStyle(ChatFormatting.DARK_AQUA)
+        tooltipAdder.accept(
+                Component.translatable("item.dynamic_difficulty.level_up.tooltip.usage")
+                        .withStyle(ChatFormatting.DARK_AQUA)
         );
     }
 }

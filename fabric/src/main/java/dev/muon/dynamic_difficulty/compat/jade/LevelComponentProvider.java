@@ -12,10 +12,8 @@ import net.minecraft.world.entity.LivingEntity;
 import snownee.jade.api.EntityAccessor;
 import snownee.jade.api.IEntityComponentProvider;
 import snownee.jade.api.ITooltip;
-import snownee.jade.api.WailaPlugin;
 import snownee.jade.api.config.IPluginConfig;
 
-@WailaPlugin
 public enum LevelComponentProvider implements IEntityComponentProvider {
     INSTANCE;
 

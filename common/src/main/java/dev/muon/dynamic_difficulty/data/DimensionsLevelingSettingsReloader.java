@@ -48,7 +48,7 @@ public class DimensionsLevelingSettingsReloader {
     }
     
     // Check dimension tags
-    Optional<Holder.Reference<Level>> optHolder = dimensionRegistry.getHolder(dimension);
+    Optional<Holder.Reference<Level>> optHolder = dimensionRegistry.get(dimension);
     if (optHolder.isPresent()) {
       Holder<Level> dimensionHolder = optHolder.get();
       // Find the first matching tag (tags are checked in order, first match wins)
@@ -74,7 +74,7 @@ public class DimensionsLevelingSettingsReloader {
       return true;
     }
     
-    Optional<Holder.Reference<Level>> optHolder = dimensionRegistry.getHolder(dimension);
+    Optional<Holder.Reference<Level>> optHolder = dimensionRegistry.get(dimension);
     if (optHolder.isPresent()) {
       Holder<Level> dimensionHolder = optHolder.get();
       for (Map.Entry<ResourceLocation, DimensionLevelingSettings> tagEntry : TAG_SETTINGS.entrySet()) {

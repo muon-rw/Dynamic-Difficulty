@@ -41,7 +41,7 @@ public record EntityLevelCondition(Optional<Integer> min, Optional<Integer> max,
 
     @Override
     public boolean test(LootContext context) {
-        Entity entity = context.getParamOrNull(LootContextParams.THIS_ENTITY);
+        Entity entity = context.getOptionalParameter(LootContextParams.THIS_ENTITY);
         
         if (!(entity instanceof LivingEntity living)) {
             return false;

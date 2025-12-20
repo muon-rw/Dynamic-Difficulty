@@ -32,7 +32,7 @@ public class StructureLevelingSettingsReloader {
     }
     
     // Check structure tags
-    Optional<Holder.Reference<Structure>> optHolder = structureRegistry.getHolder(structureId);
+    Optional<Holder.Reference<Structure>> optHolder = structureRegistry.get(structureId);
     if (optHolder.isPresent()) {
       Holder<Structure> structureHolder = optHolder.get();
       // Find the highest bonus from matching tags

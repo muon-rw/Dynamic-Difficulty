@@ -40,7 +40,7 @@ public class EntityLevelingSettingsReloader {
     }
     
     // Check entity tags
-    Optional<Holder.Reference<EntityType<?>>> optHolder = BuiltInRegistries.ENTITY_TYPE.getHolder(entityId);
+    Optional<Holder.Reference<EntityType<?>>> optHolder = BuiltInRegistries.ENTITY_TYPE.get(entityId);
     if (optHolder.isPresent()) {
       Holder<EntityType<?>> entityHolder = optHolder.get();
       // Find the first matching tag (tags are checked in order, first match wins)
@@ -65,7 +65,7 @@ public class EntityLevelingSettingsReloader {
       return true;
     }
     
-    Optional<Holder.Reference<EntityType<?>>> optHolder = BuiltInRegistries.ENTITY_TYPE.getHolder(entityId);
+    Optional<Holder.Reference<EntityType<?>>> optHolder = BuiltInRegistries.ENTITY_TYPE.get(entityId);
     if (optHolder.isPresent()) {
       Holder<EntityType<?>> entityHolder = optHolder.get();
       for (Map.Entry<ResourceLocation, EntityLevelingSettings.RawSettings> tagEntry : TAG_SETTINGS.entrySet()) {

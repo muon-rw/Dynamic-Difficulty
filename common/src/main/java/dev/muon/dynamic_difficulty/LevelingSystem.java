@@ -326,7 +326,7 @@ public class LevelingSystem {
 
     public static void applyAllLevelAttributes(LivingEntity entity) {
         getAttributeBonuses(entity).forEach((attributeKey, modifier) -> {
-            Optional<? extends Holder<Attribute>> optAttributeHolder = BuiltInRegistries.ATTRIBUTE.getHolder(attributeKey);
+            Optional<? extends Holder<Attribute>> optAttributeHolder = BuiltInRegistries.ATTRIBUTE.get(attributeKey);
             if (optAttributeHolder.isPresent()) {
                 applyAttributeBonus(entity, optAttributeHolder.get(), modifier);
             } else {
@@ -396,7 +396,7 @@ public class LevelingSystem {
         DimensionLevelingSettings settings = DimensionsLevelingSettingsReloader.get(dimension);
         return settings.spawnPosOverride() != null ?
                 settings.spawnPosOverride() :
-                entity.level().getSharedSpawnPos();
+                entity.level().getRespawnData().pos();
     }
 
     static LevelingSettings getLevelingSettings(LivingEntity entity) {

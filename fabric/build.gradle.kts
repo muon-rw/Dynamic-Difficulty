@@ -56,7 +56,7 @@ dependencies {
     }
 
     // Dev Env
-    modLocalRuntime("curse.maven:emi-580555:6420930")
+    modLocalRuntime("mezz.jei:jei-${Versions.MINECRAFT}-fabric:${Versions.JEI}")
 
     // Config
     modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${Versions.FCAP}")
@@ -67,8 +67,8 @@ dependencies {
     modLocalRuntime("com.terraformersmc:modmenu:${Versions.MOD_MENU}")
 
     // Jade
-    modCompileOnly("curse.maven:jade-324717:7056468")
-    modLocalRuntime("curse.maven:jade-324717:7056468")
+    modCompileOnly("curse.maven:jade-324717:7056475")
+    modLocalRuntime("curse.maven:jade-324717:7056475")
 
     // Skill Tree
     modCompileOnly("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}:fabric")
@@ -77,9 +77,9 @@ dependencies {
     modLocalRuntime("curse.maven:default-skill-trees-1074229:5852412")
 
     // Dungeon Difficulty
-    modCompileOnly("curse.maven:dungeon-difficulty-645559:7279793")
-    modLocalRuntime("curse.maven:dungeon-difficulty-645559:7279793")
-    modLocalRuntime("maven.modrinth:tiny-config:3.0.0-fabric")
+    // modCompileOnly("curse.maven:dungeon-difficulty-645559:7279793")
+    // modLocalRuntime("curse.maven:dungeon-difficulty-645559:7279793")
+    // modLocalRuntime("maven.modrinth:tiny-config:3.0.0-fabric")
 
 }
 
@@ -102,6 +102,7 @@ loom {
             configName = "Fabric Client"
             setSource(sourceSets["test"])
             ideConfigGenerated(true)
+            runDir("runs/client")
             vmArgs("-Dmixin.debug.verbose=true", "-Dmixin.debug.export=true")
         }
         named("server") {
@@ -109,6 +110,7 @@ loom {
             configName = "Fabric Server"
             setSource(sourceSets["test"])
             ideConfigGenerated(true)
+            runDir("runs/server")
             vmArgs("-Dmixin.debug.verbose=true", "-Dmixin.debug.export=true")
         }
         register("datagen") {
@@ -142,7 +144,6 @@ publishMods {
         accessToken = providers.environmentVariable("CF_TOKEN")
 
         minecraftVersions.add(Versions.MINECRAFT)
-        javaVersions.add(JavaVersion.VERSION_21)
 
         clientRequired = true
         serverRequired = true

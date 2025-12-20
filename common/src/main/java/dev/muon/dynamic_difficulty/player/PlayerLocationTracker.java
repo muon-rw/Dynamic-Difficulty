@@ -121,7 +121,7 @@ public class PlayerLocationTracker {
      */
     public static void updatePlayerLocation(ServerPlayer player) {
         BlockPos playerPos = player.blockPosition();
-        ServerLevel level = player.serverLevel();
+        ServerLevel level = player.level();
         UUID playerId = player.getUUID();
         ResourceKey<Level> currentDimension = level.dimension();
 

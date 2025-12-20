@@ -2,7 +2,6 @@ package dev.muon.dynamic_difficulty.client;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
-import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyData;
 import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.platform.Platform;
 import net.minecraft.client.Minecraft;
@@ -41,29 +40,6 @@ public class LevelPlateHandler {
         MutableComponent levelComponent = Component.literal(" ")
                 .append(Component.translatable("dynamic_difficulty.level", entityLevel))
                 .withStyle(style -> style.withColor(getLevelColor(Minecraft.getInstance().player, entity)));
-
-        // Add Apotheosis world tier if available and enabled
-        if (Config.CLIENT.showApotheosisWorldTier.get()) {
-            String worldTier = ApotheosisClientCache.getWorldTier(entity);
-            if (worldTier != null) {
-                MutableComponent tierComponent = Component.literal(" [" + worldTier + "]")
-                        .withStyle(style -> style.withColor(getTierColor(worldTier)));
-                levelComponent.append(tierComponent);
-            }
-        }
-
-        // Add Dungeon Difficulty info if available and enabled
-        if (Config.CLIENT.showDungeonDifficultyInfo.get() && DynamicDifficulty.isModLoaded("dungeon_difficulty")) {
-            DungeonDifficultyData ddData = DynamicDifficulty.getHelper().getDungeonDifficultyAttachmentHelper().getData(entity);
-            if (ddData != null && !ddData.isEmpty()) {
-                // Use Dungeon Difficulty's translation keys to get proper icons/formatting
-                MutableComponent ddComponent = Component.literal(" [")
-                        .append(Component.translatable(ddData.getTranslationKey()))
-                        .append(Component.literal(" " + ddData.level() + "]"))
-                        .withStyle(style -> style.withColor(getDungeonDifficultyColor(ddData)));
-                levelComponent.append(ddComponent);
-            }
-        }
 
         fullDisplayName.append(levelComponent);
         return fullDisplayName;
@@ -115,23 +91,6 @@ public class LevelPlateHandler {
             case "Pinnacle" -> 0xFFDC143C;   // Crimson
             default -> 0xFFFFFFFF;          // White
         };
-    }
-
-    /**
-     * Get the color for Dungeon Difficulty display based on the difficulty level.
-     * Higher levels get more intense colors.
-     *
-     * @param data The Dungeon Difficulty data
-     * @return ARGB color value
-     */
-    public static int getDungeonDifficultyColor(DungeonDifficultyData data) {
-        int level = data.level();
-        // Color scale based on level (ARGB format)
-        if (level <= 2) return 0xFF90EE90;      // Light green - easy
-        if (level <= 4) return 0xFF3CB371;      // Medium sea green
-        if (level <= 6) return 0xFFFFD700;      // Gold - medium
-        if (level <= 8) return 0xFFFF8C00;      // Dark orange
-        return 0xFFDC143C;                      // Crimson - hard
     }
 
     public static boolean shouldShowName(LivingEntity entity) {

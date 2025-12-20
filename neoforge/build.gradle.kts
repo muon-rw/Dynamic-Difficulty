@@ -126,7 +126,6 @@ dependencies {
 
     // Dev Env
     localRuntime("mezz.jei:jei-${Versions.MINECRAFT}-neoforge:${Versions.JEI}")
-    localRuntime("curse.maven:configured-457570:5873783")
 
     // Optional Compats:
     // Jade
@@ -153,11 +152,11 @@ dependencies {
 
     // Reskillable Reimagined
     // https://www.curseforge.com/minecraft/mc-mods/reskillable-reimagined/files/
-    compileOnly("curse.maven:reskillable-reimagined-1170464:7266884")
-    localRuntime("curse.maven:reskillable-reimagined-1170464:7266884")
+    // compileOnly("curse.maven:reskillable-reimagined-1170464:7266884")
+    // localRuntime("curse.maven:reskillable-reimagined-1170464:7266884")
 
     // Dungeon Difficulty
-    compileOnly("curse.maven:dungeon-difficulty-645559:7279795")
+    // compileOnly("curse.maven:dungeon-difficulty-645559:7279795")
     // localRuntime("curse.maven:dungeon-difficulty-645559:7279795") Requires FFAPI. Rather not rn
 }
 
@@ -173,7 +172,6 @@ publishMods {
         accessToken = providers.environmentVariable("CF_TOKEN")
 
         minecraftVersions.add(Versions.MINECRAFT)
-        javaVersions.add(JavaVersion.VERSION_21)
 
         clientRequired = true
         serverRequired = true

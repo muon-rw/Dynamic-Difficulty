@@ -8,7 +8,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.util.FastColor;
+import net.minecraft.util.ARGB;
 
 public class LevelInfoRenderer extends TitleRenderer<Void> {
     private Component displayedLevelInfo = null;
@@ -52,24 +52,25 @@ public class LevelInfoRenderer extends TitleRenderer<Void> {
 
         int opacity = getOpacity(partialTicks);
         if (opacity > 8) {
-            guiGraphics.pose().pushPose();
+            guiGraphics.nextStratum();
+            guiGraphics.pose().pushMatrix();
 
             // Calculate anchor position
             float[] anchorPos = getAnchorPosition(guiGraphics, anchor.get());
-            guiGraphics.pose().translate(anchorPos[0], anchorPos[1], 0.0f);
+            guiGraphics.pose().translate(anchorPos[0], anchorPos[1]);
 
-            int color = FastColor.ARGB32.color(opacity, getTitleTextColor());
+            int color = ARGB.color(opacity, getTitleTextColor());
             Font fontRenderer = Minecraft.getInstance().font;
 
             renderLevelInfo(guiGraphics, fontRenderer, color);
-            guiGraphics.pose().popPose();
+            guiGraphics.pose().popMatrix();
         }
     }
 
     private void renderLevelInfo(GuiGraphics guiGraphics, Font fontRenderer, int color) {
-        guiGraphics.pose().pushPose();
+        guiGraphics.pose().pushMatrix();
         float textSizeValue = textSize.get().floatValue();
-        guiGraphics.pose().scale(textSizeValue, textSizeValue, 1.0f);
+        guiGraphics.pose().scale(textSizeValue, textSizeValue);
 
         int levelInfoWidth = fontRenderer.width(displayedLevelInfo);
         // Derive alignment from anchor point
@@ -86,7 +87,7 @@ public class LevelInfoRenderer extends TitleRenderer<Void> {
 
         guiGraphics.drawString(fontRenderer, displayedLevelInfo, xOffsetValue, yOffsetValue,
                 color, renderShadow.get());
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().popMatrix();
     }
 
     /**

@@ -9,7 +9,7 @@ import dev.muon.dynamic_difficulty.item.ModItemsFabric;
 import dev.muon.dynamic_difficulty.loot.condition.ModLootConditionsFabric;
 import dev.muon.dynamic_difficulty.network.NetworkRegistration;
 import dev.muon.dynamic_difficulty.platform.PlatformHelperFabric;
-import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeConfigRegistry;
+import fuzs.forgeconfigapiport.fabric.api.v5.ConfigRegistry;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.ResourcePackActivationType;
@@ -25,8 +25,8 @@ public class DynamicDifficultyFabric implements ModInitializer {
         // Initialize platform helper first
         DynamicDifficulty.setHelper(new PlatformHelperFabric());
 
-        NeoForgeConfigRegistry.INSTANCE.register(DynamicDifficulty.MODID, ModConfig.Type.COMMON, Config.COMMON_SPEC);
-        NeoForgeConfigRegistry.INSTANCE.register(DynamicDifficulty.MODID, ModConfig.Type.CLIENT, Config.CLIENT_SPEC);
+        ConfigRegistry.INSTANCE.register(DynamicDifficulty.MODID, ModConfig.Type.COMMON, Config.COMMON_SPEC);
+        ConfigRegistry.INSTANCE.register(DynamicDifficulty.MODID, ModConfig.Type.CLIENT, Config.CLIENT_SPEC);
         
         // Register built-in datapack with default settings (if enabled in config)
         if (Config.COMMON.useDefaultLevelingSettings.get()) {
@@ -47,9 +47,6 @@ public class DynamicDifficultyFabric implements ModInitializer {
         // Register attachment types early - MUST happen before networking to ensure
         // attachments are registered on clients before sync packets arrive
         EntityLevelAttachmentFabric.init();
-        if (DynamicDifficulty.isModLoaded("dungeon_difficulty")) {
-            dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyAttachmentFabric.init();
-        }
         
         ModAttributesFabric.init();
         ModItemsFabric.init();

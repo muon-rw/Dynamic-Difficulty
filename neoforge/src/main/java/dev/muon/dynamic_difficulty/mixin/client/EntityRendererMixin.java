@@ -14,7 +14,12 @@ import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-// Replaces RenderNameTagEvent
+/**
+ * Mixin to handle entity name tag rendering with level display.
+ * Temporary workaround for RenderNametagEvent.CanRender not being posted
+ * 
+ * @see dev.muon.dynamic_difficulty.client.ClientEventsNeoForge
+ */
 @Mixin(EntityRenderer.class)
 public class EntityRendererMixin {
 
@@ -49,3 +54,4 @@ public class EntityRendererMixin {
     }
 
 }
+

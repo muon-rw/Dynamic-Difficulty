@@ -1,7 +1,5 @@
 package dev.muon.dynamic_difficulty.platform;
 
-import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyAttachmentHelper;
-import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyAttachmentHelperNeoForge;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
@@ -11,7 +9,6 @@ public class PlatformHelperNeoForge implements PlatformHelper {
     
     private static final LevelAttachmentHelper LEVEL_ATTACHMENT_HELPER = new LevelAttachmentHelperNeoForge();
     private static final NetworkHelper NETWORK_HELPER = new NetworkHelperNeoForge();
-    private static final DungeonDifficultyAttachmentHelper DUNGEON_DIFFICULTY_ATTACHMENT_HELPER = new DungeonDifficultyAttachmentHelperNeoForge();
 
     @Override
     public Platform getPlatform() {
@@ -21,14 +18,14 @@ public class PlatformHelperNeoForge implements PlatformHelper {
     @Override
     public boolean isModLoaded(String modId) {
         if (ModList.get() == null) {
-            return LoadingModList.get().getMods().stream().map(ModInfo::getModId).anyMatch(modId::equals);
+            return FMLLoader.getCurrent().getLoadingModList().getMods().stream().map(ModInfo::getModId).anyMatch(modId::equals);
         }
         return ModList.get().isLoaded(modId);
     }
 
     @Override
     public boolean isDevelopmentEnvironment() {
-        return !FMLLoader.isProduction();
+        return !FMLLoader.getCurrent().isProduction();
     }
     
     @Override
@@ -40,9 +37,5 @@ public class PlatformHelperNeoForge implements PlatformHelper {
     public NetworkHelper getNetworkHelper() {
         return NETWORK_HELPER;
     }
-    
-    @Override
-    public DungeonDifficultyAttachmentHelper getDungeonDifficultyAttachmentHelper() {
-        return DUNGEON_DIFFICULTY_ATTACHMENT_HELPER;
-    }
+
 }

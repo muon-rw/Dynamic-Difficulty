@@ -2,10 +2,12 @@ package dev.muon.dynamic_difficulty.item;
 
 import dev.muon.dynamic_difficulty.config.Config;
 import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
 
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 /**
  * Common item definitions and registry references.
@@ -21,39 +23,35 @@ public class ModItems {
     public static Holder<Item> CRYSTAL_OF_AWAKENING;
     
     // Item factories - shared definitions, platform code uses these for registration
-    public static final Supplier<LevelUpItem> POTION_OF_GROWTH_SUPPLIER = () -> new LevelUpItem(
-            new Item.Properties().stacksTo(16).rarity(Rarity.COMMON),
-            1,
-            Config.COMMON.potionOfGrowthMaxLevel,
-            false
-    );
+    // These accept a ResourceKey and set the ID on properties before creating the item
+    public static final Function<ResourceKey<Item>, LevelUpItem> POTION_OF_GROWTH_FACTORY = (key) -> {
+        Item.Properties props = new Item.Properties().stacksTo(16).rarity(Rarity.COMMON);
+        props = props.setId(key);
+        return new LevelUpItem(props, 1, Config.COMMON.potionOfGrowthMaxLevel, false);
+    };
     
-    public static final Supplier<LevelUpItem> ELIXIR_OF_NURTURING_SUPPLIER = () -> new LevelUpItem(
-            new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON),
-            1,
-            Config.COMMON.elixirOfNurturingMaxLevel,
-            false
-    );
+    public static final Function<ResourceKey<Item>, LevelUpItem> ELIXIR_OF_NURTURING_FACTORY = (key) -> {
+        Item.Properties props = new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON);
+        props = props.setId(key);
+        return new LevelUpItem(props, 1, Config.COMMON.elixirOfNurturingMaxLevel, false);
+    };
     
-    public static final Supplier<LevelUpItem> DRAUGHT_OF_ASCENSION_SUPPLIER = () -> new LevelUpItem(
-            new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
-            1,
-            Config.COMMON.draughtOfAscensionMaxLevel,
-            false
-    );
+    public static final Function<ResourceKey<Item>, LevelUpItem> DRAUGHT_OF_ASCENSION_FACTORY = (key) -> {
+        Item.Properties props = new Item.Properties().stacksTo(16).rarity(Rarity.RARE);
+        props = props.setId(key);
+        return new LevelUpItem(props, 1, Config.COMMON.draughtOfAscensionMaxLevel, false);
+    };
     
-    public static final Supplier<LevelUpItem> ESSENCE_OF_VITALITY_SUPPLIER = () -> new LevelUpItem(
-            new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
-            1,
-            Config.COMMON.essenceOfVitalityMaxLevel,
-            false
-    );
+    public static final Function<ResourceKey<Item>, LevelUpItem> ESSENCE_OF_VITALITY_FACTORY = (key) -> {
+        Item.Properties props = new Item.Properties().stacksTo(16).rarity(Rarity.RARE);
+        props = props.setId(key);
+        return new LevelUpItem(props, 1, Config.COMMON.essenceOfVitalityMaxLevel, false);
+    };
     
-    public static final Supplier<LevelUpItem> CRYSTAL_OF_AWAKENING_SUPPLIER = () -> new LevelUpItem(
-            new Item.Properties().stacksTo(16).rarity(Rarity.EPIC),
-            1,
-            Config.COMMON.crystalOfAwakeningMaxLevel,
-            true  // Has enchantment glint
-    );
+    public static final Function<ResourceKey<Item>, LevelUpItem> CRYSTAL_OF_AWAKENING_FACTORY = (key) -> {
+        Item.Properties props = new Item.Properties().stacksTo(16).rarity(Rarity.EPIC);
+        props = props.setId(key);
+        return new LevelUpItem(props, 1, Config.COMMON.crystalOfAwakeningMaxLevel, true);  // Has enchantment glint
+    };
     
 }

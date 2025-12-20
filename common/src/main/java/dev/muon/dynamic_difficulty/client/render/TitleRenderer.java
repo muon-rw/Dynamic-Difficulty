@@ -6,7 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FastColor;
+import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 
 import java.util.LinkedList;
@@ -74,17 +74,18 @@ public class TitleRenderer<T> {
 
         int opacity = getOpacity(partialTicks);
         if (opacity > 8) {
-            guiGraphics.pose().pushPose();
+            guiGraphics.nextStratum();
+            guiGraphics.pose().pushMatrix();
 
             float[] anchorPos = getAnchorPosition(guiGraphics, anchor.get());
-            guiGraphics.pose().translate(anchorPos[0], anchorPos[1], 0.0f);
+            guiGraphics.pose().translate(anchorPos[0], anchorPos[1]);
 
-            int color = FastColor.ARGB32.color(opacity, getTitleTextColor());
+            int color = ARGB.color(opacity, getTitleTextColor());
             Font fontRenderer = Minecraft.getInstance().font;
 
             renderTitle(guiGraphics, fontRenderer, color);
 
-            guiGraphics.pose().popPose();
+            guiGraphics.pose().popMatrix();
         }
     }
 
@@ -168,9 +169,9 @@ public class TitleRenderer<T> {
     }
 
     private void renderTitle(GuiGraphics guiGraphics, Font fontRenderer, int color) {
-        guiGraphics.pose().pushPose();
+        guiGraphics.pose().pushMatrix();
         float textSizeValue = textSize.get().floatValue();
-        guiGraphics.pose().scale(textSizeValue, textSizeValue, 1.0f);
+        guiGraphics.pose().scale(textSizeValue, textSizeValue);
         int titleWidth = fontRenderer.width(displayedTitle);
 
         Config.AnchorPoint anchorPoint = anchor.get();
@@ -186,7 +187,7 @@ public class TitleRenderer<T> {
 
         guiGraphics.drawString(fontRenderer, displayedTitle, xOffsetValue, yOffsetValue,
                 color, renderShadow.get());
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().popMatrix();
     }
 
     protected boolean isTopAnchor(Config.AnchorPoint anchorPoint) {

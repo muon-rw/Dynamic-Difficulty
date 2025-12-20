@@ -1,28 +1,26 @@
 package dev.muon.dynamic_difficulty.data;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.settings.BiomeBonusSettings;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
+import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Fabric-specific reload listener for biome leveling settings.
  */
-public class BiomeLevelingSettingsReloaderFabric extends SimpleJsonResourceReloadListener implements IdentifiableResourceReloadListener {
-    private static final Gson GSON = new Gson();
+public class BiomeLevelingSettingsReloaderFabric extends SimpleJsonResourceReloadListener<BiomeBonusSettings> implements IdentifiableResourceReloadListener {
     private static final ResourceLocation RELOADER_ID = DynamicDifficulty.loc("biome_leveling_settings");
+    private static final FileToIdConverter FILE_TO_ID = FileToIdConverter.json("leveling_settings/biomes");
 
     public BiomeLevelingSettingsReloaderFabric() {
-        super(GSON, "leveling_settings/biomes");
+        super(BiomeBonusSettings.CODEC, FILE_TO_ID);
     }
 
     @Override
@@ -32,18 +30,9 @@ public class BiomeLevelingSettingsReloaderFabric extends SimpleJsonResourceReloa
 
     @Override
     protected void apply(
-            Map<ResourceLocation, JsonElement> prepared,
+            Map<ResourceLocation, BiomeBonusSettings> prepared,
             @NotNull ResourceManager resourceManager,
             @NotNull ProfilerFiller profiler) {
-        Map<ResourceLocation, BiomeBonusSettings> settings = new HashMap<>();
-        var ops = com.mojang.serialization.JsonOps.INSTANCE;
-        
-        for (Map.Entry<ResourceLocation, JsonElement> entry : prepared.entrySet()) {
-            BiomeBonusSettings.CODEC.decode(ops, entry.getValue())
-                    .result()
-                    .ifPresent(pair -> settings.put(entry.getKey(), pair.getFirst()));
-        }
-        
-        BiomeLevelingSettingsReloader.loadSettings(settings);
+        BiomeLevelingSettingsReloader.loadSettings(prepared);
     }
 }

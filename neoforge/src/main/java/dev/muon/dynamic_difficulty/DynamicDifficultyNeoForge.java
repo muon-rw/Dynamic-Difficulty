@@ -2,9 +2,7 @@ package dev.muon.dynamic_difficulty;
 
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.attribute.ModAttributesNeoForge;
-import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyAttachmentNeoForge;
 import dev.muon.dynamic_difficulty.compat.puffish.PuffishSkillsProviderNeoForge;
-import dev.muon.dynamic_difficulty.compat.reskillable.ReskillableReimaginedProvider;
 import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.item.ModItemsNeoForge;
 import dev.muon.dynamic_difficulty.loot.condition.ModLootConditionsNeoForge;
@@ -33,12 +31,6 @@ public class DynamicDifficultyNeoForge {
         // Compat providers
         if (DynamicDifficulty.isModLoaded("puffish_skills")) {
             LevelingAPI.registerPlayerLevelProvider(new PuffishSkillsProviderNeoForge());
-        }
-        if (DynamicDifficulty.isModLoaded("reskillable")) {
-            LevelingAPI.registerPlayerLevelProvider(new ReskillableReimaginedProvider());
-        }
-        if (DynamicDifficulty.isModLoaded("dungeon_difficulty")) {
-            DungeonDifficultyAttachmentNeoForge.REGISTRY.register(eventBus);
         }
 
         // Registries

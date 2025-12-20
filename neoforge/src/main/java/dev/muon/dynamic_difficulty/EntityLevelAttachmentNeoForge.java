@@ -25,7 +25,7 @@ public class EntityLevelAttachmentNeoForge {
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<Integer>> LEVEL = REGISTRY.register(
             "level",
             () -> AttachmentType.builder(() -> 1)
-                    .serialize(Codec.INT)
+                    .serialize(Codec.INT.fieldOf("level"))
                     .sync(ByteBufCodecs.VAR_INT.cast())
                     .build()
     );

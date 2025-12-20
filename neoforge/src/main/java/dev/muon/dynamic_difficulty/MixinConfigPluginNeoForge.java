@@ -1,6 +1,7 @@
 package dev.muon.dynamic_difficulty;
 
 import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -77,7 +78,7 @@ public class MixinConfigPluginNeoForge implements IMixinConfigPlugin {
 
     private static boolean isModLoaded(String modId) {
         if (ModList.get() == null) {
-            return LoadingModList.get().getModFileById(modId) != null;
+            return FMLLoader.getCurrent().getLoadingModList().getModFileById(modId) != null;
         }
         return ModList.get().isLoaded(modId);
     }

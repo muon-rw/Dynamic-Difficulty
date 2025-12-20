@@ -35,7 +35,7 @@ public final class LocationBonusUtils {
      * @return The structure bonus info (structureId may be null if no structure at position)
      */
     public static StructureBonus getStructureAt(ServerLevel level, BlockPos pos, boolean onlyWithBonuses) {
-        Registry<Structure> structureRegistry = level.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        Registry<Structure> structureRegistry = level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
         ChunkPos chunkPos = new ChunkPos(pos);
         
         ResourceLocation bestStructureId = null;
@@ -55,7 +55,7 @@ public final class LocationBonusUtils {
             
             // Get holder for LocationPredicate
             ResourceKey<Structure> structureKey = ResourceKey.create(Registries.STRUCTURE, structureId);
-            Holder<Structure> structureHolder = structureRegistry.getHolderOrThrow(structureKey);
+            Holder<Structure> structureHolder = structureRegistry.getOrThrow(structureKey);
             
             // Check if player is actually inside this structure's bounds
             if (!LocationPredicate.Builder.inStructure(structureHolder).build().matches(level, pos.getX(), pos.getY(), pos.getZ())) {
@@ -97,7 +97,7 @@ public final class LocationBonusUtils {
      * @return The biome bonus info (biomeId may be null if lookup fails)
      */
     public static BiomeBonus getBiomeAt(ServerLevel level, BlockPos pos) {
-        Registry<Biome> biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
+        Registry<Biome> biomeRegistry = level.registryAccess().lookupOrThrow(Registries.BIOME);
         Biome biome = level.getBiome(pos).value();
         Optional<ResourceKey<Biome>> optKey = biomeRegistry.getResourceKey(biome);
         

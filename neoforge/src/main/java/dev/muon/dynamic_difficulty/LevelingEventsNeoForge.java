@@ -2,6 +2,7 @@ package dev.muon.dynamic_difficulty;
 
 import dev.muon.dynamic_difficulty.command.ModCommands;
 import dev.muon.dynamic_difficulty.data.*;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -9,7 +10,7 @@ import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.config.ModConfigEvent;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
@@ -46,19 +47,22 @@ public class LevelingEventsNeoForge {
 
     @SubscribeEvent
     public static void dropAdditionalLoot(LivingDropsEvent event) {
-        LevelingEvents.dropAdditionalLoot(event.getEntity(), event.getEntity()::spawnAtLocation, event.getSource());
+        if (!(event.getEntity().level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        LevelingEvents.dropAdditionalLoot(event.getEntity(), itemStack -> event.getEntity().spawnAtLocation(serverLevel, itemStack), event.getSource());
     }
 
     @SubscribeEvent
-    public static void reloadSettings(AddReloadListenerEvent event) {
-        event.addListener(new DimensionsLevelingSettingsReloaderNeoForge());
-        event.addListener(new DimensionTagLevelingSettingsReloaderNeoForge());
-        event.addListener(new EntityLevelingSettingsReloaderNeoForge());
-        event.addListener(new EntityTagLevelingSettingsReloaderNeoForge());
-        event.addListener(new StructureLevelingSettingsReloaderNeoForge());
-        event.addListener(new StructureTagLevelingSettingsReloaderNeoForge());
-        event.addListener(new BiomeLevelingSettingsReloaderNeoForge());
-        event.addListener(new BiomeTagLevelingSettingsReloaderNeoForge());
+    public static void reloadSettings(AddServerReloadListenersEvent event) {
+        event.addListener(DynamicDifficulty.loc("dimension_leveling_settings"), new DimensionsLevelingSettingsReloaderNeoForge());
+        event.addListener(DynamicDifficulty.loc("dimension_tag_leveling_settings"), new DimensionTagLevelingSettingsReloaderNeoForge());
+        event.addListener(DynamicDifficulty.loc("entity_leveling_settings"), new EntityLevelingSettingsReloaderNeoForge());
+        event.addListener(DynamicDifficulty.loc("entity_tag_leveling_settings"), new EntityTagLevelingSettingsReloaderNeoForge());
+        event.addListener(DynamicDifficulty.loc("structure_leveling_settings"), new StructureLevelingSettingsReloaderNeoForge());
+        event.addListener(DynamicDifficulty.loc("structure_tag_leveling_settings"), new StructureTagLevelingSettingsReloaderNeoForge());
+        event.addListener(DynamicDifficulty.loc("biome_leveling_settings"), new BiomeLevelingSettingsReloaderNeoForge());
+        event.addListener(DynamicDifficulty.loc("biome_tag_leveling_settings"), new BiomeTagLevelingSettingsReloaderNeoForge());
     }
 
     @SubscribeEvent

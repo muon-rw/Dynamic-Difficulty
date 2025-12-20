@@ -2,7 +2,6 @@ package dev.muon.dynamic_difficulty.network;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.network.message.LocationEntryPacket;
-import dev.muon.dynamic_difficulty.network.message.SyncDungeonDifficultyData;
 import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -32,12 +31,7 @@ public class NetworkRegistration {
                 LocationEntryPacket.CODEC,
                 NetworkRegistration::handleLocationEntry
         );
-        
-        registrar.playToClient(
-                SyncDungeonDifficultyData.TYPE,
-                SyncDungeonDifficultyData.CODEC,
-                NetworkRegistration::handleSyncDungeonDifficultyData
-        );
+
     }
     
     private static void handleSyncLevelingData(final SyncLevelingData msg, final IPayloadContext context) {
@@ -55,12 +49,5 @@ public class NetworkRegistration {
             }
         });
     }
-    
-    private static void handleSyncDungeonDifficultyData(final SyncDungeonDifficultyData msg, final IPayloadContext context) {
-        context.enqueueWork(() -> {
-            if (context.flow().isClientbound()) {
-                SyncDungeonDifficultyData.handleOnClient(msg);
-            }
-        });
-    }
+
 }

@@ -1,7 +1,5 @@
 package dev.muon.dynamic_difficulty.platform;
 
-import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyAttachmentHelper;
-
 public interface PlatformHelper {
 
     /**
@@ -40,10 +38,4 @@ public interface PlatformHelper {
      */
     NetworkHelper getNetworkHelper();
 
-    /**
-     * Gets the platform-specific helper for Dungeon Difficulty data attachments.
-     *
-     * @return The Dungeon Difficulty attachment helper for this platform.
-     */
-    DungeonDifficultyAttachmentHelper getDungeonDifficultyAttachmentHelper();
 }

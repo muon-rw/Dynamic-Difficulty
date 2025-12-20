@@ -170,7 +170,7 @@ public class TitleRenderManager {
                 Level world = Minecraft.getInstance().level;
                 if (world != null) {
                     shouldDisplay = DimensionsLevelingSettingsReloader.hasCustomSettings(
-                            world.dimension(), world.registryAccess().registryOrThrow(Registries.DIMENSION));
+                            world.dimension(), world.registryAccess().lookupOrThrow(Registries.DIMENSION));
                 }
             }
             
@@ -201,7 +201,7 @@ public class TitleRenderManager {
         boolean shouldDisplay = true;
         if (Config.CLIENT.dimensionTitleOnlyAnnounceIfModified.get()) {
             shouldDisplay = DimensionsLevelingSettingsReloader.hasCustomSettings(
-                    world.dimension(), world.registryAccess().registryOrThrow(Registries.DIMENSION));
+                    world.dimension(), world.registryAccess().lookupOrThrow(Registries.DIMENSION));
         }
 
         if (shouldDisplay) {
@@ -227,11 +227,11 @@ public class TitleRenderManager {
         }
 
         Holder<Biome> biomeHolder = world.getBiome(playerPos);
-        ResourceLocation biomeBaseKey = world.registryAccess().registryOrThrow(Registries.BIOME).getKey(biomeHolder.value());
+        ResourceLocation biomeBaseKey = world.registryAccess().lookupOrThrow(Registries.BIOME).getKey(biomeHolder.value());
 
         if (biomeBaseKey != null &&
                 !biomeTitleRenderer.matchesAnyRecentEntry(b -> {
-                    ResourceLocation bKey = world.registryAccess().registryOrThrow(Registries.BIOME).getKey(b);
+                    ResourceLocation bKey = world.registryAccess().lookupOrThrow(Registries.BIOME).getKey(b);
                     return bKey != null && bKey.equals(biomeBaseKey);
                 })) {
 

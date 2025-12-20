@@ -1,7 +1,6 @@
 package dev.muon.dynamic_difficulty.util;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
-import dev.muon.dynamic_difficulty.mixin.LivingEntityAccessor;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -60,7 +59,6 @@ public class LootUtils {
      * Creates loot parameters for entity death/drops.
      */
     public static LootParams createLootParams(LivingEntity entity, DamageSource damageSource) {
-        LivingEntityAccessor accessor = (LivingEntityAccessor) entity;
         ServerLevel level = (ServerLevel) entity.level();
         LootParams.Builder builder =
                 new LootParams.Builder(level)
@@ -70,9 +68,8 @@ public class LootUtils {
                         .withOptionalParameter(LootContextParams.ATTACKING_ENTITY, damageSource.getEntity())
                         .withOptionalParameter(
                                 LootContextParams.DIRECT_ATTACKING_ENTITY, damageSource.getDirectEntity());
-        int lastHurtByPlayerTime = accessor.getLastHurtByPlayerTime();
-        Player lastHurtByPlayer = accessor.getLastHurtByPlayer();
-        if (lastHurtByPlayerTime > 0 && lastHurtByPlayer != null) {
+        Player lastHurtByPlayer = entity.getLastHurtByPlayer();
+        if (lastHurtByPlayer != null) {
             builder =
                     builder
                             .withParameter(LootContextParams.LAST_DAMAGE_PLAYER, lastHurtByPlayer)

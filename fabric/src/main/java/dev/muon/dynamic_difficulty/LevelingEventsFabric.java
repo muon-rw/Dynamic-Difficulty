@@ -1,7 +1,7 @@
 package dev.muon.dynamic_difficulty;
 
 import dev.muon.dynamic_difficulty.command.ModCommands;
-import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeModConfigEvents;
+import fuzs.forgeconfigapiport.fabric.api.v5.ModConfigEvents;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -92,7 +92,7 @@ public class LevelingEventsFabric {
         });
 
         // Config reload
-        NeoForgeModConfigEvents.reloading(DynamicDifficulty.MODID).register(config -> {
+        ModConfigEvents.reloading(DynamicDifficulty.MODID).register(config -> {
             if (config.getType() == ModConfig.Type.COMMON) {
                 LevelingEvents.onConfigReload();
             }

@@ -58,7 +58,7 @@ public class Config {
   public static class Common {
     // Built-in Datapack
     public final ConfigValue<Boolean> useDefaultLevelingSettings;
-    
+
     // Base Leveling
     public final ConfigValue<Integer> startingLevel;
     public final ConfigValue<Integer> maxLevel;
@@ -81,14 +81,14 @@ public class Config {
     public final ConfigValue<Boolean> playerLevelBypassesCap;
     public final ModConfigSpec.EnumValue<PlayerLevelDisplayStrategy> playerLevelDisplayStrategy;
     public final ConfigValue<Integer> playerLevelUpdateInterval;
-    
+
     // Playtime-Based Scaling
     public final ConfigValue<Boolean> enablePlaytimeScaling;
     public final ConfigValue<Double> levelsPerPlaytimeHour;
-    
+
     // Puffish Skills Integration
     public final ConfigValue<List<? extends String>> puffishSkillsTreeBlacklist;
-    
+
     // Reskillable Integration
     public final ConfigValue<List<? extends String>> reskillableSkillBlacklist;
 
@@ -106,7 +106,7 @@ public class Config {
     public final ConfigValue<Integer> draughtOfAscensionMaxLevel;
     public final ConfigValue<Integer> essenceOfVitalityMaxLevel;
     public final ConfigValue<Integer> crystalOfAwakeningMaxLevel;
-    
+
     // Level-Based Drops
     public final ConfigValue<Boolean> enableLevelBasedDrops;
 
@@ -119,7 +119,7 @@ public class Config {
                       "Requires a game restart to take effect")
               .define("use_default_leveling_settings", true);
       builder.pop();
-      
+
       builder.push("base_leveling");
       startingLevel = builder
               .comment("Base level for all entities")
@@ -194,7 +194,7 @@ public class Config {
                       "Set to 0 to disable periodic updates (only event-driven updates will occur)")
               .defineInRange("player_level_update_interval", 600, 0, 1200);
       builder.pop();
-      
+
       builder.push("playtime_based_scaling");
       enablePlaytimeScaling = builder
               .comment("Enable playtime-based level scaling",
@@ -234,7 +234,7 @@ public class Config {
                           if (obj instanceof String skillName) {
                               // Validate that it's a non-empty string that looks like a valid enum name
                               // (letters and underscores). Actual validation happens in the provider.
-                              return !skillName.trim().isEmpty() && 
+                              return !skillName.trim().isEmpty() &&
                                      skillName.matches("^[A-Za-z_]+$");
                           }
                           return false;
@@ -266,7 +266,7 @@ public class Config {
                       "Leave empty to disable all attribute bonuses")
               .defineListAllowEmpty("level_bonus_per_attribute",
                       Config::getDefaultAttributeBonuses,
-                      () -> Arrays.asList("minecraft:generic.attack_damage", 0.0, "add_value"),
+                      () -> Arrays.asList("minecraft:attack_damage", 0.0, "add_value"),
                       Config::isValidAttributeBonus);
       builder.pop();
 
@@ -307,10 +307,10 @@ public class Config {
     public final ConfigValue<Boolean> showApotheosisWorldTier;
     public final ConfigValue<Boolean> showDungeonDifficultyInfo;
     public final ConfigValue<Boolean> enableLineOfSightCheck;
-    
+
     // Integration Options
     public final ConfigValue<Boolean> enableJadeIntegration;
-    
+
     // Structure Title Display
     public final ConfigValue<Boolean> showStructureTitles;
     public final ConfigValue<Boolean> structureTitleOnlyAnnounceIfModified;
@@ -323,7 +323,7 @@ public class Config {
     public final ModConfigSpec.EnumValue<AnchorPoint> structureTitleAnchor;
     public final ConfigValue<Integer> structureTitleXOffset;
     public final ConfigValue<Integer> structureTitleYOffset;
-    
+
     // Biome Title Display
     public final ConfigValue<Boolean> showBiomeTitles;
     public final ConfigValue<Boolean> biomeTitleOnlyAnnounceIfModified;
@@ -338,7 +338,7 @@ public class Config {
     public final ConfigValue<Integer> biomeTitleYOffset;
     public final ConfigValue<Integer> biomeTitleCooldownTime;
     public final ConfigValue<Integer> biomeRecentCacheSize;
-    
+
     // Dimension Title Display
     public final ConfigValue<Boolean> showDimensionTitles;
     public final ConfigValue<Boolean> dimensionTitleOnlyAnnounceIfModified;
@@ -351,7 +351,7 @@ public class Config {
     public final ModConfigSpec.EnumValue<AnchorPoint> dimensionTitleAnchor;
     public final ConfigValue<Integer> dimensionTitleXOffset;
     public final ConfigValue<Integer> dimensionTitleYOffset;
-    
+
     // Level Info Display
     public final ConfigValue<Integer> levelInfoFadeInTime;
     public final ConfigValue<Integer> levelInfoDisplayTime;
@@ -385,17 +385,17 @@ public class Config {
                       "When disabled, levels are shown based on distance and render behavior only (better performance)")
               .define("enable_line_of_sight_check", true);
       builder.pop();
-      
+
       builder.push("integration_options");
       enableJadeIntegration = builder
               .comment("Show entity levels in Jade tooltips (requires Jade to be installed)")
               .define("enable_jade_integration", true);
       builder.pop();
-      
+
       builder.push("entity_settings");
       hiddenLevelEntities = builder.define("entities_with_hidden_levels", new ArrayList<>());
       builder.pop();
-      
+
       builder.push("structure_title_display");
       boolean defaultShowStructureTitles = !DynamicDifficulty.isModLoaded("structurecredits");
       showStructureTitles = builder
@@ -435,7 +435,7 @@ public class Config {
               .comment("Y offset from anchor point for structure title position")
               .define("structure_title_y_offset", -82);
       builder.pop();
-      
+
       builder.push("biome_title_display");
       boolean defaultShowBiomeTitles = !DynamicDifficulty.isModLoaded("travelerstitles");
       showBiomeTitles = builder
@@ -481,7 +481,7 @@ public class Config {
               .comment("Number of recent biomes to cache (prevents spam)")
               .defineInRange("biome_recent_cache_size", 5, 0, 20);
       builder.pop();
-      
+
       builder.push("dimension_title_display");
       boolean defaultShowDimensionTitles = !DynamicDifficulty.isModLoaded("travelerstitles");
       showDimensionTitles = builder
@@ -521,7 +521,7 @@ public class Config {
               .comment("Y offset from anchor point for dimension title position")
               .define("dimension_title_y_offset", -35);
       builder.pop();
-      
+
       builder.push("level_info_display");
       levelInfoFadeInTime = builder
               .comment("Time in ticks for level info to fade in")
@@ -558,9 +558,9 @@ public class Config {
     List<List<Object>> attributeBonuses = new ArrayList<>();
     // Format: [attribute_id, bonus_per_level, operation]
     // Operation uses serialized names: add_value, add_multiplied_base, add_multiplied_total
-    attributeBonuses.add(Arrays.asList("minecraft:generic.attack_damage", 0.25, "add_value"));
-    attributeBonuses.add(Arrays.asList("minecraft:generic.armor", 0.2, "add_value"));
-    attributeBonuses.add(Arrays.asList("minecraft:generic.max_health", 0.05, "add_multiplied_base"));
+    attributeBonuses.add(Arrays.asList("minecraft:attack_damage", 0.25, "add_value"));
+    attributeBonuses.add(Arrays.asList("minecraft:armor", 0.2, "add_value"));
+    attributeBonuses.add(Arrays.asList("minecraft:max_health", 0.05, "add_multiplied_base"));
     attributeBonuses.add(Arrays.asList("dynamic_difficulty:projectile_damage_bonus", 0.25, "add_value"));
     attributeBonuses.add(Arrays.asList("dynamic_difficulty:magic_damage_bonus", 0.25, "add_value"));
     attributeBonuses.add(Arrays.asList("dynamic_difficulty:explosion_damage_bonus", 0.25, "add_value"));
@@ -609,7 +609,7 @@ public class Config {
         DynamicDifficulty.LOGGER.error("Attribute ID '{}' is invalid!", attributeBonusConfig.get(0));
         return;
     }
-    Attribute attribute = BuiltInRegistries.ATTRIBUTE.get(attributeRL);
+    Attribute attribute = BuiltInRegistries.ATTRIBUTE.getValue(attributeRL);
     float attributeBonus = ((Double) attributeBonusConfig.get(1)).floatValue();
 
     if (attribute == null) {
@@ -636,18 +636,18 @@ public class Config {
         break;
       }
     }
-    
+
     if (operation == null) {
-      DynamicDifficulty.LOGGER.error("Invalid operation '{}' for attribute {}. Must be one of: add_value, add_multiplied_base, add_multiplied_total. Defaulting to add_value.", 
+      DynamicDifficulty.LOGGER.error("Invalid operation '{}' for attribute {}. Must be one of: add_value, add_multiplied_base, add_multiplied_total. Defaulting to add_value.",
           operationStr, attributeRL);
       operation = AttributeModifier.Operation.ADD_VALUE;
     }
 
     AttributeModifier modifier =
             new AttributeModifier(modifierId, attributeBonus, operation);
-    
+
     ATTRIBUTE_BONUSES.put(attributeKey, modifier);
-    DynamicDifficulty.LOGGER.info("Config: Registered attribute bonus for ResourceKey {} ({}) with amount {}/level, operation {}, ModID {}", 
+    DynamicDifficulty.LOGGER.info("Config: Registered attribute bonus for ResourceKey {} ({}) with amount {}/level, operation {}, ModID {}",
                                 attributeKey.location(), attribute.getDescriptionId(), attributeBonus, operation, modifierId);
   }
 

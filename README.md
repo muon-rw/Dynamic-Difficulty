@@ -25,9 +25,9 @@ repositories {
 Set a mod version in `gradle.properties`
 
 ```properties
-dynamic_difficulty_version=1.0.1+1.21.1
+dynamic_difficulty_version=1.0.9+1.21.10
 # Only required for Fabric Client/Server runs:
-fcap_version=21.1.3
+fcap_version=21.10.1
 ```
 Find all available mod versions at: [maven.muon.rip/#/releases/](https://maven.muon.rip/#/releases/)
 
@@ -57,8 +57,8 @@ compileOnly("dev.muon.dynamic_difficulty:dynamic_difficulty-common:${dynamic_dif
 ---
 
 # Datapack Guide
-### NOTE: This guide is for 1.21.1 Only!
-*For information on 1.21.10, make sure to select the 1.21.10 branch!*
+### NOTE: This guide is for 1.21.10 Only!
+*For information on 1.21.1, make sure to select the 1.21.1 branch!*
 
 ### Built-in Default Settings
 
@@ -166,7 +166,7 @@ data/<namespace>/leveling_settings/dimension_tags/<tag_id>.json
   "levels_per_deepness": 0.05,
   "attribute_modifiers": [
     {
-      "attribute": "minecraft:generic.attack_damage",
+      "attribute": "minecraft:attack_damage",
       "amount": 0.3,
       "operation": "add_value"
     }
@@ -258,7 +258,7 @@ data/<namespace>/leveling_settings/entity_tags/<tag_id>.json
   "max_level": 50,
   "attribute_modifiers": [
     {
-      "attribute": "minecraft:generic.attack_damage",
+      "attribute": "minecraft:attack_damage",
       "amount": 0.5,
       "operation": "add_value"
     }
@@ -299,12 +299,12 @@ Optional array of attribute bonuses applied per entity level:
 ```json
 "attribute_modifiers": [
   {
-    "attribute": "minecraft:generic.attack_damage",
+    "attribute": "minecraft:attack_damage",
     "amount": 0.2,
     "operation": "add_value"
   },
   {
-    "attribute": "minecraft:generic.max_health",
+    "attribute": "minecraft:max_health",
     "amount": 0.05,
     "operation": "add_multiplied_base"
   },
@@ -324,12 +324,12 @@ Optional array of attribute bonuses applied per entity level:
 **Note:** Legacy numeric operation IDs (`0`, `1`, `2`) are deprecated but still functional for backwards compatibility. They will log a deprecation warning and may be removed in a future version. Please use the enum serialized names shown above.
 
 **Common Attributes:**
-- `minecraft:generic.attack_damage` - Attack damage
-- `minecraft:generic.max_health` - Maximum health
-- `minecraft:generic.armor` - Armor points
-- `minecraft:generic.armor_toughness` - Armor toughness
-- `minecraft:generic.knockback_resistance` - Knockback resistance
-- `minecraft:generic.movement_speed` - Movement speed
+- `minecraft:attack_damage` - Attack damage
+- `minecraft:max_health` - Maximum health
+- `minecraft:armor` - Armor points
+- `minecraft:armor_toughness` - Armor toughness
+- `minecraft:knockback_resistance` - Knockback resistance
+- `minecraft:movement_speed` - Movement speed
 
 **Built-in Mod Attributes:**
 - `dynamic_difficulty:projectile_damage_bonus` - Bonus projectile damage

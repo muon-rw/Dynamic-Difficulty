@@ -17,6 +17,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -218,7 +219,7 @@ public class ModCommands {
     DynamicDifficulty.LOGGER.info("Structure dump initiated by command from: " + source.getTextName());
     
     try {
-      Registry<Structure> structureRegistry = server.registryAccess().registryOrThrow(Registries.STRUCTURE);
+      Registry<Structure> structureRegistry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
       
       // Get all structure IDs from target namespaces
       Set<ResourceLocation> allStructureIdsInTargetNamespaces = structureRegistry.keySet().stream()
@@ -234,29 +235,30 @@ public class ModCommands {
       DynamicDifficulty.LOGGER.info("--- Dumping Structure IDs by Tags ---");
       
       // Dump structures by all available tags (users can configure bonuses via datapacks)
-      for (TagKey<Structure> tagKey : structureRegistry.getTagNames()
-          .sorted((a, b) -> a.location().compareTo(b.location()))
-          .collect(Collectors.toList())) {
-        
-        List<ResourceLocation> structuresInThisTag = new ArrayList<>();
-        
-        structureRegistry.getTagOrEmpty(tagKey).forEach(holder -> {
-          ResourceLocation id = holder.unwrapKey().get().location();
-          if (allStructureIdsInTargetNamespaces.contains(id)) {
-            structuresInThisTag.add(id);
-          }
-        });
-        
-        if (!structuresInThisTag.isEmpty()) {
-          DynamicDifficulty.LOGGER.info("--- Structures in Tag: " + tagKey.location() + " ---");
-          structuresInThisTag.stream()
-              .sorted(ResourceLocation::compareTo)
-              .forEach(id -> {
-                DynamicDifficulty.LOGGER.info(id.toString());
-                categorizedStructureIds.add(id);
-              });
+        for (TagKey<Structure> tagKey : structureRegistry.getTags()
+                .map(HolderSet.Named::key)
+                .sorted((a, b) -> a.location().compareTo(b.location()))
+                .collect(Collectors.toList())) {
+
+            List<ResourceLocation> structuresInThisTag = new ArrayList<>();
+
+            structureRegistry.getTagOrEmpty(tagKey).forEach(holder -> {
+                ResourceLocation id = holder.unwrapKey().get().location();
+                if (allStructureIdsInTargetNamespaces.contains(id)) {
+                    structuresInThisTag.add(id);
+                }
+            });
+
+            if (!structuresInThisTag.isEmpty()) {
+                DynamicDifficulty.LOGGER.info("--- Structures in Tag: " + tagKey.location() + " ---");
+                structuresInThisTag.stream()
+                        .sorted(ResourceLocation::compareTo)
+                        .forEach(id -> {
+                            DynamicDifficulty.LOGGER.info(id.toString());
+                            categorizedStructureIds.add(id);
+                        });
+            }
         }
-      }
       
       // Dump uncategorized structures
       DynamicDifficulty.LOGGER.info("--- Uncategorized Structures (from target namespaces) ---");
@@ -273,15 +275,16 @@ public class ModCommands {
       
       // Also dump all structure tags that exist
       DynamicDifficulty.LOGGER.info("--- All Available Structure Tags ---");
-      structureRegistry.getTagNames()
-          .sorted((a, b) -> a.location().compareTo(b.location()))
-          .forEach(tagKey -> {
-            List<ResourceLocation> structuresInTag = new ArrayList<>();
-            structureRegistry.getTagOrEmpty(tagKey).forEach(holder -> {
-              structuresInTag.add(holder.unwrapKey().get().location());
-            });
-            DynamicDifficulty.LOGGER.info(tagKey.location() + " (" + structuresInTag.size() + " structures)");
-          });
+        structureRegistry.getTags()
+                .map(HolderSet.Named::key)
+                .sorted((a, b) -> a.location().compareTo(b.location()))
+                .forEach(tagKey -> {
+                    List<ResourceLocation> structuresInTag = new ArrayList<>();
+                    structureRegistry.getTagOrEmpty(tagKey).forEach(holder -> {
+                        structuresInTag.add(holder.unwrapKey().get().location());
+                    });
+                    DynamicDifficulty.LOGGER.info(tagKey.location() + " (" + structuresInTag.size() + " structures)");
+                });
       
       DynamicDifficulty.LOGGER.info("--- Structure ID Dump Complete ---");
       source.sendSystemMessage(Component.literal("Structure dump complete. Total structures in target namespaces: " + allStructureIdsInTargetNamespaces.size()));
@@ -302,18 +305,18 @@ public class ModCommands {
       return 0;
     }
     
-    ServerLevel level = player.serverLevel();
+    ServerLevel level = player.level();
     BlockPos pos = player.blockPosition();
     
     // Get dimension settings
     ResourceKey<Level> dimension = level.dimension();
     ResourceLocation dimensionId = dimension.location();
-    Registry<Level> dimensionRegistry = level.registryAccess().registryOrThrow(Registries.DIMENSION);
+    Registry<Level> dimensionRegistry = level.registryAccess().lookupOrThrow(Registries.DIMENSION);
     DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension, dimensionRegistry);
     
     // Get spawn position (considering override)
     BlockPos spawnPos = dimSettings.spawnPosOverride() != null ?
-        dimSettings.spawnPosOverride() : level.getSharedSpawnPos();
+        dimSettings.spawnPosOverride() : level.getRespawnData().pos();
     int spawnX = spawnPos.getX();
     int spawnZ = spawnPos.getZ();
     
