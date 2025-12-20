@@ -56,7 +56,7 @@ dependencies {
     }
 
     // Dev Env
-    modLocalRuntime("mezz.jei:jei-${Versions.MINECRAFT}-fabric:${Versions.JEI}")
+    // modLocalRuntime("mezz.jei:jei-${Versions.MINECRAFT}-fabric:${Versions.JEI}")
 
     // Config
     modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${Versions.FCAP}")
