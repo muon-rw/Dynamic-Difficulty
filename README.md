@@ -25,9 +25,9 @@ repositories {
 Set a mod version in `gradle.properties`
 
 ```properties
-dynamic_difficulty_version=1.0.9+1.21.10
+dynamic_difficulty_version=1.0.9b+1.21.11
 # Only required for Fabric Client/Server runs:
-fcap_version=21.10.1
+fcap_version=21.11.1
 ```
 Find all available mod versions at: [maven.muon.rip/#/releases/](https://maven.muon.rip/#/releases/)
 
