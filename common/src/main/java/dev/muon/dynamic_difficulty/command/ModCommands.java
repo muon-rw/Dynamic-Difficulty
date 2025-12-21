@@ -361,21 +361,38 @@ public class ModCommands {
     BiomeBonus biomeBonus = LevelingAPI.getBiomeBonus(level, pos);
     StructureBonus structureBonus = LevelingAPI.getStructureBonus(level, pos);
     
+    // Get player multiplier override (dimension -> config)
+    Double playerMultiplierOverride = dimSettings.playerLevelMultiplier();
+    double playerMultiplier = playerMultiplierOverride != null ? playerMultiplierOverride : Config.COMMON.playerLevelMultiplier.get();
+    String multiplierSource = playerMultiplierOverride != null ? "dimension override" : "config";
+    
+    // Get apply level bonuses override (dimension -> config)
+    DimensionLevelingSettings.ApplyLevelBonuses applyBonusesOverride = dimSettings.applyLevelBonuses();
+    boolean applyBiome = applyBonusesOverride == null || applyBonusesOverride.biome();
+    boolean applyStructure = applyBonusesOverride == null || applyBonusesOverride.structure();
+    boolean applyPlayer = applyBonusesOverride == null || applyBonusesOverride.player();
+    String bonusesSource = applyBonusesOverride != null ? "dimension override" : "config";
+    
     // Player bonus
     int playerBonus = 0;
     boolean playerBypassesCap = Config.COMMON.playerLevelBypassesCap.get();
-    if (Config.COMMON.applyPlayerBasedLeveling.get()) {
+    if (Config.COMMON.applyPlayerBasedLeveling.get() && applyPlayer) {
       int rawBonus = PlayerLevelProvider.getProviders().stream()
           .filter(PlayerLevelProvider::isEnabled)
           .mapToInt(provider -> provider.calculateBonusLevels(List.of(player)))
           .sum();
-      double multiplier = Config.COMMON.playerLevelMultiplier.get();
-      playerBonus = (int) (rawBonus * multiplier);
+      playerBonus = (int) (rawBonus * playerMultiplier);
     }
     
     // Calculate totals - player bonus goes to capped or bypassing based on config
-    int totalCapped = structureBonus.nonBypassingBonus() + biomeBonus.nonBypassingBonus() + (playerBypassesCap ? 0 : playerBonus);
-    int totalBypassing = structureBonus.bypassingBonus() + biomeBonus.bypassingBonus() + (playerBypassesCap ? playerBonus : 0);
+    // Apply apply_level_bonuses overrides
+    int structureNonBypassing = applyStructure ? structureBonus.nonBypassingBonus() : 0;
+    int structureBypassing = applyStructure ? structureBonus.bypassingBonus() : 0;
+    int biomeNonBypassing = applyBiome ? biomeBonus.nonBypassingBonus() : 0;
+    int biomeBypassing = applyBiome ? biomeBonus.bypassingBonus() : 0;
+    
+    int totalCapped = structureNonBypassing + biomeNonBypassing + (playerBypassesCap ? 0 : playerBonus);
+    int totalBypassing = structureBypassing + biomeBypassing + (playerBypassesCap ? playerBonus : 0);
     int randomBonus = dimSettings.randomLevelBonus();
     
     // Final level calculation with ranges (random is applied before cap)
@@ -396,6 +413,18 @@ public class ModCommands {
     source.sendSystemMessage(Component.literal("§7Position: §f" + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()));
     source.sendSystemMessage(Component.literal("§7Dimension: §f" + dimensionId +" §7(sea lvl: §f" + seaLevel + "§7, spawn: §f" + spawnX + ", " + spawnZ + "§7)"));
     source.sendSystemMessage(Component.literal("§7Scaling: §f" + dimSettings.levelsPerDistance() + "§7/dist, §f" + dimSettings.levelsPerDeepness() + "§7/depth, §f" + dimSettings.levelsPerHeight() + "§7/height, §f" + dimSettings.levelsPerDay() + "§7/day, §f" + dimSettings.levelsPerLocalDifficulty() + "§7/local, random: §f0-" + dimSettings.randomLevelBonus()));
+    
+    // Show overrides if present
+    if (playerMultiplierOverride != null || applyBonusesOverride != null) {
+      source.sendSystemMessage(Component.literal(""));
+      source.sendSystemMessage(Component.literal("§7Overrides:"));
+      if (playerMultiplierOverride != null) {
+        source.sendSystemMessage(Component.literal("§7  Player Multiplier: §f" + playerMultiplier + " §7(" + multiplierSource + ")"));
+      }
+      if (applyBonusesOverride != null) {
+        source.sendSystemMessage(Component.literal("§7  Apply Bonuses: §fbiome=" + applyBiome + ", structure=" + applyStructure + ", player=" + applyPlayer + " §7(" + bonusesSource + ")"));
+      }
+    }
     source.sendSystemMessage(Component.literal(""));
     
     // Location line
@@ -424,23 +453,27 @@ public class ModCommands {
     
     // Biome line
     if (biomeBonus.biomeId() != null) {
-      String biomeBonusStr = formatBonus(biomeBonus.nonBypassingBonus(), biomeBonus.bypassingBonus());
-      source.sendSystemMessage(Component.literal("§7Biome: §f" + biomeBonus.biomeId() + " §7→ " + biomeBonusStr));
+      String biomeBonusStr = applyBiome ? formatBonus(biomeBonus.nonBypassingBonus(), biomeBonus.bypassingBonus()) : "§cdisabled";
+      String biomeStatus = applyBiome ? "" : " §7(disabled by override)";
+      source.sendSystemMessage(Component.literal("§7Biome: §f" + biomeBonus.biomeId() + " §7→ " + biomeBonusStr + biomeStatus));
     } else {
       source.sendSystemMessage(Component.literal("§7Biome: §cunknown"));
     }
     
     // Structure line
     if (structureBonus.hasStructure()) {
-      String structureBonusStr = formatBonus(structureBonus.nonBypassingBonus(), structureBonus.bypassingBonus());
-      source.sendSystemMessage(Component.literal("§7Structure: §f" + structureBonus.structureId() + " §7→ " + structureBonusStr));
+      String structureBonusStr = applyStructure ? formatBonus(structureBonus.nonBypassingBonus(), structureBonus.bypassingBonus()) : "§cdisabled";
+      String structureStatus = applyStructure ? "" : " §7(disabled by override)";
+      source.sendSystemMessage(Component.literal("§7Structure: §f" + structureBonus.structureId() + " §7→ " + structureBonusStr + structureStatus));
     } else {
       source.sendSystemMessage(Component.literal("§7Structure: §fnone"));
     }
     
     // Player line
     String playerCapBehavior = playerBypassesCap ? "bypasses cap" : "respects cap";
-    source.sendSystemMessage(Component.literal("§7Player: §f+" + playerBonus + " §7(" + playerCapBehavior + ")"));source.sendSystemMessage(Component.literal(""));
+    String playerStatus = applyPlayer ? "" : " §7(disabled by override)";
+    source.sendSystemMessage(Component.literal("§7Player: §f+" + playerBonus + " §7(" + playerCapBehavior + ")" + playerStatus));
+    source.sendSystemMessage(Component.literal(""));
     
     // Final line with ranges
     String baseStr = formatRange(baseLow, baseHigh);

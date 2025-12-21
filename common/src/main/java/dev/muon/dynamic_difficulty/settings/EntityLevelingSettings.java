@@ -30,7 +30,9 @@ public record EntityLevelingSettings(
     float levelsPerDay,
     float levelsPerLocalDifficulty,
     int randomLevelBonus,
-    @Nullable Map<Attribute, AttributeModifier> attributeModifiers)
+    @Nullable Map<Attribute, AttributeModifier> attributeModifiers,
+    @Nullable Double playerLevelMultiplier,
+    @Nullable DimensionLevelingSettings.ApplyLevelBonuses applyLevelBonuses)
     implements LevelingSettings {
 
   /**
@@ -45,7 +47,9 @@ public record EntityLevelingSettings(
       Optional<Float> levelsPerDay,
       Optional<Float> levelsPerLocalDifficulty,
       Optional<Integer> randomLevelBonus,
-      Optional<Map<Attribute, AttributeModifier>> attributeModifiers
+      Optional<Map<Attribute, AttributeModifier>> attributeModifiers,
+      Optional<Double> playerLevelMultiplier,
+      Optional<DimensionLevelingSettings.ApplyLevelBonuses> applyLevelBonuses
   ) {
     /**
      * Resolve raw settings into final settings, using dimension settings as fallback.
@@ -60,7 +64,9 @@ public record EntityLevelingSettings(
           levelsPerDay.orElse(dimSettings.levelsPerDay()),
           levelsPerLocalDifficulty.orElse(dimSettings.levelsPerLocalDifficulty()),
           randomLevelBonus.orElse(dimSettings.randomLevelBonus()),
-          attributeModifiers.orElse(dimSettings.attributeModifiers())
+          attributeModifiers.orElse(dimSettings.attributeModifiers()),
+          playerLevelMultiplier.orElse(dimSettings.playerLevelMultiplier()),
+          applyLevelBonuses.orElse(dimSettings.applyLevelBonuses())
       );
     }
   }
@@ -137,6 +143,8 @@ public record EntityLevelingSettings(
       Codec.FLOAT.optionalFieldOf("levels_per_day").forGetter(RawSettings::levelsPerDay),
       Codec.FLOAT.optionalFieldOf("levels_per_local_difficulty").forGetter(RawSettings::levelsPerLocalDifficulty),
       Codec.INT.optionalFieldOf("random_level_bonus").forGetter(RawSettings::randomLevelBonus),
-      ATTRIBUTE_MODIFIERS_CODEC.optionalFieldOf("attribute_modifiers").forGetter(RawSettings::attributeModifiers)
+      ATTRIBUTE_MODIFIERS_CODEC.optionalFieldOf("attribute_modifiers").forGetter(RawSettings::attributeModifiers),
+      Codec.DOUBLE.optionalFieldOf("player_level_multiplier").forGetter(RawSettings::playerLevelMultiplier),
+      DimensionLevelingSettings.ApplyLevelBonuses.CODEC.optionalFieldOf("apply_level_bonuses").forGetter(RawSettings::applyLevelBonuses)
   ).apply(instance, RawSettings::new));
 }

@@ -197,6 +197,23 @@ data/<namespace>/leveling_settings/dimension_tags/<tag_id>.json
 }
 ```
 
+**Example 5: Override player multiplier and control which bonuses apply**
+```json
+{
+  "player_level_multiplier": 0.0,
+  "apply_level_bonuses": {
+    "biome": true,
+    "structure": false,
+    "player": false
+  }
+}
+```
+
+This example:
+- Sets player level multiplier to 0.0 for entities in this dimension, note that this is identical to setting `"player"` to `false`
+- Allows biome bonuses to apply
+- Disables structure-based bonuses entirely for this dimension
+
 ### Fields
 
 | Field                 | Type | Default | Description                                                      |
@@ -212,10 +229,26 @@ data/<namespace>/leveling_settings/dimension_tags/<tag_id>.json
 | `spawn_pos_override`  | Object | `null` | Override spawn position (x, z only) for horizontal distance calculations |
 | `sea_level`           | Integer | 64 | Reference Y coordinate for depth/height calculations             |
 | `attribute_modifiers` | Array | config | Custom attribute bonuses per level                               |
+| `player_level_multiplier` | Double | config | Override the config `player_level_multiplier` for entities in this dimension |
+| `apply_level_bonuses` | Object | `null` | Control which bonuses are applied (see below)                    |
 
 **Note:** All fields are optional. Omitting a field uses the value from `dynamic_difficulty-common.toml` config. For `attribute_modifiers`, use an empty array `[]` to explicitly disable modifiers for this dimension.
 
 **Note:** Dimension settings are used as fallback when no entity-specific settings exist. Dimensions can also override attribute modifiers, using the same format as entity settings (see [Attribute Modifiers](#attribute-modifiers) below).
+
+**`apply_level_bonuses` Object:**
+
+Controls which level bonuses are applied to entities in this dimension. If the entire object is omitted, all bonuses are applied based on config settings.
+
+**Important:** When the `apply_level_bonuses` object is present, **all three fields are required**. You cannot omit individual fields within the object.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `biome` | Boolean | Yes (if object present) | Whether biome bonuses are applied |
+| `structure` | Boolean | Yes (if object present) | Whether structure bonuses are applied |
+| `player` | Boolean | Yes (if object present) | Whether player-based bonuses are applied |
+
+**Note:** When `apply_level_bonuses` is set, only bonuses with `true` values are applied. For example, setting `"player": false` will disable player-based level scaling entirely for entities in this dimension, regardless of the config setting.
 
 **Important:**
 - Deepness-based scaling (`levels_per_deepness`) only applies when Y < `sea_level` (default: 64). It does not affect entities above sea level.
@@ -274,6 +307,23 @@ data/<namespace>/leveling_settings/entity_tags/<tag_id>.json
 }
 ```
 
+**Example 4: Override player multiplier and disable structure bonuses for a specific entity**
+```json
+{
+  "player_level_multiplier": 2.0,
+  "apply_level_bonuses": {
+    "biome": true,
+    "structure": false,
+    "player": true
+  }
+}
+```
+
+This example:
+- Doubles the player multiplier for this entity type (overrides dimension/config)
+- Allows biome and player bonuses
+- Disables structure bonuses for this entity type
+
 ### Fields
 
 | Field | Type | Default | Description                                    |
@@ -287,8 +337,24 @@ data/<namespace>/leveling_settings/entity_tags/<tag_id>.json
 | `levels_per_local_difficulty` | Float | dimension | Levels added per point of local difficulty     |
 | `random_level_bonus` | Integer | dimension | Random bonus levels (0 to this value)          |
 | `attribute_modifiers` | Array | dimension | Custom attribute bonuses per level             |
+| `player_level_multiplier` | Double | dimension | Override the player level multiplier (entity → dimension → config) |
+| `apply_level_bonuses` | Object | dimension | Control which bonuses are applied (see below) |
 
 **Note:** All fields are optional. Omitting a field uses the value from the dimension settings, which in turn falls back to config. For `attribute_modifiers`, use an empty array `[]` to explicitly disable modifiers for this entity.
+
+**`apply_level_bonuses` Object:**
+
+Controls which level bonuses are applied to this entity type. If the entire object is omitted, inherits from dimension settings (which fall back to config defaults).
+
+**Important:** When the `apply_level_bonuses` object is present, **all three fields are required**. You cannot omit individual fields within the object.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `biome` | Boolean | Yes (if object present) | Whether biome bonuses are applied |
+| `structure` | Boolean | Yes (if object present) | Whether structure bonuses are applied |
+| `player` | Boolean | Yes (if object present) | Whether player-based bonuses are applied |
+
+**Note:** Entity-level `apply_level_bonuses` overrides dimension-level settings. For example, if a dimension disables player bonuses but an entity enables them, that entity will still receive player bonuses. The lookup priority is: entity → dimension → config.
 
 ### Attribute Modifiers
 

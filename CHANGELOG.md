@@ -1,3 +1,6 @@
+## 1.1.0
+- Allow Entities or Dimensions to set a player scaling multiplier, or disable biome/structure/player bonuses entirely. See README for usage
+
 ## 1.0.9
 - Fix "Trying to access Unbound Value" on Neoforge 
 
