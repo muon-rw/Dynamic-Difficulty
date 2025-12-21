@@ -1,7 +1,6 @@
 package dev.muon.dynamic_difficulty;
 
 import com.mojang.serialization.Codec;
-import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 
@@ -19,7 +18,7 @@ public class EntityLevelAttachmentFabric {
      * - Synced: No (manual sync via SyncLevelingData packet to handle entity load timing)
      */
     public static final AttachmentType<Integer> LEVEL = AttachmentRegistry.create(
-            DynamicDifficulty.loc("level"),
+            DynamicDifficulty.id("level"),
             builder -> builder
                     .initializer(() -> 1)
                     .persistent(Codec.INT)

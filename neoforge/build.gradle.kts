@@ -17,10 +17,10 @@ tasks {
 
 neoForge {
     version = Versions.NEOFORGE
-    parchment {
-        minecraftVersion = Versions.PARCHMENT_MINECRAFT
-        mappingsVersion = Versions.PARCHMENT
-    }
+//    parchment {
+//        minecraftVersion = Versions.PARCHMENT_MINECRAFT
+//        mappingsVersion = Versions.PARCHMENT
+//    }
     addModdingDependenciesTo(sourceSets["test"])
 
     val at = project(":common").file("src/main/resources/${Properties.MOD_ID}.cfg")
@@ -125,12 +125,12 @@ configurations {
 dependencies {
 
     // Dev Env
-    localRuntime("mezz.jei:jei-${Versions.MINECRAFT}-neoforge:${Versions.JEI}")
+    // localRuntime("mezz.jei:jei-${Versions.MINECRAFT}-neoforge:${Versions.JEI}")
 
     // Optional Compats:
     // Jade
-    compileOnly("curse.maven:jade-324717:7056468")
-    localRuntime("curse.maven:jade-324717:7056468")
+    compileOnly("curse.maven:jade-324717:7313008")
+    localRuntime("curse.maven:jade-324717:7313008")
 
     // Apotheosis
     // compileOnly("dev.shadowsoffire:Placebo:${Versions.MINECRAFT}-${Versions.PLACEBO}")

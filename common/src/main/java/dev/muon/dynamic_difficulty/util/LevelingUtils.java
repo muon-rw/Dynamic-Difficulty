@@ -11,7 +11,7 @@ import dev.muon.dynamic_difficulty.settings.LevelingSettings;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
@@ -32,13 +32,13 @@ import java.util.Set;
  */
 public class LevelingUtils {
     private static final TagKey<EntityType<?>> PASSIVE_WHITELIST = TagKey.create(Registries.ENTITY_TYPE,
-            DynamicDifficulty.loc("passive_whitelist"));
+            DynamicDifficulty.id("passive_whitelist"));
 
     // Cached config values to avoid string concatenation on hot path
     private static final Set<String> BLACKLISTED_NAMESPACES = new HashSet<>();
-    private static final Set<ResourceLocation> BLACKLISTED_IDS = new HashSet<>();
+    private static final Set<Identifier> BLACKLISTED_IDS = new HashSet<>();
     private static final Set<String> WHITELISTED_NAMESPACES = new HashSet<>();
-    private static final Set<ResourceLocation> WHITELISTED_IDS = new HashSet<>();
+    private static final Set<Identifier> WHITELISTED_IDS = new HashSet<>();
     private static boolean configCacheInitialized = false;
 
     /**
@@ -57,7 +57,7 @@ public class LevelingUtils {
                     BLACKLISTED_NAMESPACES.add(entry.substring(0, entry.length() - 2));
                 } else {
                     try {
-                        BLACKLISTED_IDS.add(ResourceLocation.parse(entry));
+                        BLACKLISTED_IDS.add(Identifier.parse(entry));
                     } catch (Exception e) {
                         DynamicDifficulty.LOGGER.warn("Invalid blacklist entry: {}", entry, e);
                     }
@@ -69,7 +69,7 @@ public class LevelingUtils {
                     WHITELISTED_NAMESPACES.add(entry.substring(0, entry.length() - 2));
                 } else {
                     try {
-                        WHITELISTED_IDS.add(ResourceLocation.parse(entry));
+                        WHITELISTED_IDS.add(Identifier.parse(entry));
                     } catch (Exception e) {
                         DynamicDifficulty.LOGGER.warn("Invalid whitelist entry: {}", entry, e);
                     }
@@ -104,7 +104,7 @@ public class LevelingUtils {
      * Checks if an entity's level should be displayed based on configuration
      */
     public static boolean shouldShowLevel(Entity entity) {
-        ResourceLocation entityId = EntityType.getKey(entity.getType());
+        Identifier entityId = EntityType.getKey(entity.getType());
         List<String> blacklist = Config.CLIENT.hiddenLevelEntities.get();
         return !blacklist.contains(entityId.toString()) &&
                 !blacklist.contains(entityId.getNamespace() + ":*");
@@ -167,7 +167,7 @@ public class LevelingUtils {
             reloadConfigCache();
         }
 
-        ResourceLocation entityId = EntityType.getKey(entity.getType());
+        Identifier entityId = EntityType.getKey(entity.getType());
         String namespace = entityId.getNamespace();
 
         // Check blacklist using cached sets (no string concatenation)

@@ -22,13 +22,14 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.structure.Structure;
 
@@ -190,7 +191,7 @@ public class ModCommands {
   }
 
   private static boolean hasPermission(CommandSourceStack commandSourceStack) {
-    return commandSourceStack.hasPermission(2);
+    return commandSourceStack.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER);
   }
   
   private static final List<String> TARGET_NAMESPACES = Arrays.asList(
@@ -222,11 +223,11 @@ public class ModCommands {
       Registry<Structure> structureRegistry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
       
       // Get all structure IDs from target namespaces
-      Set<ResourceLocation> allStructureIdsInTargetNamespaces = structureRegistry.keySet().stream()
+      Set<Identifier> allStructureIdsInTargetNamespaces = structureRegistry.keySet().stream()
           .filter(id -> TARGET_NAMESPACES.contains(id.getNamespace()))
           .collect(Collectors.toSet());
       
-      Set<ResourceLocation> categorizedStructureIds = new HashSet<>();
+      Set<Identifier> categorizedStructureIds = new HashSet<>();
       
       DynamicDifficulty.LOGGER.info("--- Note: Structure level bonuses are now configured via datapacks ---");
       DynamicDifficulty.LOGGER.info("--- Place structure settings in: data/<namespace>/leveling_settings/structures/<structure_id>.json ---");
@@ -240,10 +241,10 @@ public class ModCommands {
                 .sorted((a, b) -> a.location().compareTo(b.location()))
                 .collect(Collectors.toList())) {
 
-            List<ResourceLocation> structuresInThisTag = new ArrayList<>();
+            List<Identifier> structuresInThisTag = new ArrayList<>();
 
             structureRegistry.getTagOrEmpty(tagKey).forEach(holder -> {
-                ResourceLocation id = holder.unwrapKey().get().location();
+                Identifier id = holder.unwrapKey().get().identifier();
                 if (allStructureIdsInTargetNamespaces.contains(id)) {
                     structuresInThisTag.add(id);
                 }
@@ -252,7 +253,7 @@ public class ModCommands {
             if (!structuresInThisTag.isEmpty()) {
                 DynamicDifficulty.LOGGER.info("--- Structures in Tag: " + tagKey.location() + " ---");
                 structuresInThisTag.stream()
-                        .sorted(ResourceLocation::compareTo)
+                        .sorted(Identifier::compareTo)
                         .forEach(id -> {
                             DynamicDifficulty.LOGGER.info(id.toString());
                             categorizedStructureIds.add(id);
@@ -262,9 +263,9 @@ public class ModCommands {
       
       // Dump uncategorized structures
       DynamicDifficulty.LOGGER.info("--- Uncategorized Structures (from target namespaces) ---");
-      List<ResourceLocation> uncategorizedStructures = allStructureIdsInTargetNamespaces.stream()
+      List<Identifier> uncategorizedStructures = allStructureIdsInTargetNamespaces.stream()
           .filter(id -> !categorizedStructureIds.contains(id))
-          .sorted(ResourceLocation::compareTo)
+          .sorted(Identifier::compareTo)
           .collect(Collectors.toList());
       
       if (uncategorizedStructures.isEmpty()) {
@@ -279,9 +280,9 @@ public class ModCommands {
                 .map(HolderSet.Named::key)
                 .sorted((a, b) -> a.location().compareTo(b.location()))
                 .forEach(tagKey -> {
-                    List<ResourceLocation> structuresInTag = new ArrayList<>();
+                    List<Identifier> structuresInTag = new ArrayList<>();
                     structureRegistry.getTagOrEmpty(tagKey).forEach(holder -> {
-                        structuresInTag.add(holder.unwrapKey().get().location());
+                        structuresInTag.add(holder.unwrapKey().get().identifier());
                     });
                     DynamicDifficulty.LOGGER.info(tagKey.location() + " (" + structuresInTag.size() + " structures)");
                 });
@@ -310,7 +311,7 @@ public class ModCommands {
     
     // Get dimension settings
     ResourceKey<Level> dimension = level.dimension();
-    ResourceLocation dimensionId = dimension.location();
+    Identifier dimensionId = dimension.identifier();
     Registry<Level> dimensionRegistry = level.registryAccess().lookupOrThrow(Registries.DIMENSION);
     DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension, dimensionRegistry);
     

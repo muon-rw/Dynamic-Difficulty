@@ -3,7 +3,7 @@ package dev.muon.dynamic_difficulty.util;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
@@ -40,8 +40,8 @@ public class LootUtils {
      */
     private static LootTable getEquipmentLootTableForSlot(
             MinecraftServer server, LivingEntity entity, EquipmentSlot slot) {
-        ResourceLocation entityId = net.minecraft.world.entity.EntityType.getKey(entity.getType());
-        ResourceLocation lootTableIdRL = getEquipmentTableId(slot, entityId);
+        Identifier entityId = net.minecraft.world.entity.EntityType.getKey(entity.getType());
+        Identifier lootTableIdRL = getEquipmentTableId(slot, entityId);
         ResourceKey<LootTable> lootTableKey = ResourceKey.create(Registries.LOOT_TABLE, lootTableIdRL);
         return server.reloadableRegistries().getLootTable(lootTableKey);
     }
@@ -49,10 +49,10 @@ public class LootUtils {
     /**
      * Generates the equipment loot table ID for a slot and entity type.
      */
-    private static ResourceLocation getEquipmentTableId(
-            EquipmentSlot slot, ResourceLocation entityId) {
+    private static Identifier getEquipmentTableId(
+            EquipmentSlot slot, Identifier entityId) {
         String path = "equipment/" + entityId.getPath() + "_" + slot.getName();
-        return ResourceLocation.fromNamespaceAndPath(entityId.getNamespace(), path);
+        return Identifier.fromNamespaceAndPath(entityId.getNamespace(), path);
     }
 
     /**

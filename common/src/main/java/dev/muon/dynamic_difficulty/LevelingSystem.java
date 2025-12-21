@@ -9,7 +9,6 @@ import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.data.EntityLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.network.NetworkDispatcher;
 import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
-import dev.muon.dynamic_difficulty.settings.EntityLevelingSettings;
 import dev.muon.dynamic_difficulty.settings.LevelingSettings;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
 import dev.muon.dynamic_difficulty.util.LocationBonusUtils;
@@ -20,7 +19,6 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.stats.Stats;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -30,7 +28,6 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.DifficultyInstance;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -59,7 +56,7 @@ import java.util.Optional;
  */
 public class LevelingSystem {
     private static final TagKey<EntityType<?>> FIXED_LEVEL_ENTITIES = TagKey.create(Registries.ENTITY_TYPE,
-            DynamicDifficulty.loc("fixed_level_entities"));
+            DynamicDifficulty.id("fixed_level_entities"));
 
     public static boolean hasLevel(Entity entity) {
         if (entity instanceof LivingEntity living) {
@@ -331,7 +328,7 @@ public class LevelingSystem {
                 applyAttributeBonus(entity, optAttributeHolder.get(), modifier);
             } else {
                 DynamicDifficulty.LOGGER.warn("Entity {}: Could not find attribute holder for key {} when applying all attributes.", 
-                                            EntityType.getKey(entity.getType()), attributeKey.location());
+                                            EntityType.getKey(entity.getType()), attributeKey.identifier());
             }
         });
     }

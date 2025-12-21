@@ -6,7 +6,7 @@ import dev.muon.dynamic_difficulty.settings.EntityLevelingSettings;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EntityType;
 import org.jetbrains.annotations.Nullable;
@@ -23,8 +23,8 @@ import java.util.Optional;
 public class EntityLevelingSettingsReloader {
   private static final Logger LOGGER = LogUtils.getLogger();
   // Store raw settings - they get resolved at lookup time with dimension fallback
-  private static final Map<ResourceLocation, EntityLevelingSettings.RawSettings> INDIVIDUAL_SETTINGS = new HashMap<>();
-  private static final Map<ResourceLocation, EntityLevelingSettings.RawSettings> TAG_SETTINGS = new HashMap<>();
+  private static final Map<Identifier, EntityLevelingSettings.RawSettings> INDIVIDUAL_SETTINGS = new HashMap<>();
+  private static final Map<Identifier, EntityLevelingSettings.RawSettings> TAG_SETTINGS = new HashMap<>();
 
   /**
    * Gets resolved entity settings, falling back to dimension settings for any omitted fields.
@@ -32,7 +32,7 @@ public class EntityLevelingSettingsReloader {
    */
   @Nullable
   public static EntityLevelingSettings get(EntityType<?> entityType, DimensionLevelingSettings dimSettings) {
-    ResourceLocation entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
+    Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
     
     // Check individual entity settings first (they take precedence)
     if (INDIVIDUAL_SETTINGS.containsKey(entityId)) {
@@ -44,7 +44,7 @@ public class EntityLevelingSettingsReloader {
     if (optHolder.isPresent()) {
       Holder<EntityType<?>> entityHolder = optHolder.get();
       // Find the first matching tag (tags are checked in order, first match wins)
-      for (Map.Entry<ResourceLocation, EntityLevelingSettings.RawSettings> tagEntry : TAG_SETTINGS.entrySet()) {
+      for (Map.Entry<Identifier, EntityLevelingSettings.RawSettings> tagEntry : TAG_SETTINGS.entrySet()) {
         TagKey<EntityType<?>> entityTag = TagKey.create(Registries.ENTITY_TYPE, tagEntry.getKey());
         if (entityHolder.is(entityTag)) {
           return tagEntry.getValue().resolve(dimSettings);
@@ -59,7 +59,7 @@ public class EntityLevelingSettingsReloader {
    * Checks if an entity type has custom settings (individual or tag-based).
    */
   public static boolean hasCustomSettings(EntityType<?> entityType) {
-    ResourceLocation entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
+    Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
     
     if (INDIVIDUAL_SETTINGS.containsKey(entityId)) {
       return true;
@@ -68,7 +68,7 @@ public class EntityLevelingSettingsReloader {
     Optional<Holder.Reference<EntityType<?>>> optHolder = BuiltInRegistries.ENTITY_TYPE.get(entityId);
     if (optHolder.isPresent()) {
       Holder<EntityType<?>> entityHolder = optHolder.get();
-      for (Map.Entry<ResourceLocation, EntityLevelingSettings.RawSettings> tagEntry : TAG_SETTINGS.entrySet()) {
+      for (Map.Entry<Identifier, EntityLevelingSettings.RawSettings> tagEntry : TAG_SETTINGS.entrySet()) {
         TagKey<EntityType<?>> entityTag = TagKey.create(Registries.ENTITY_TYPE, tagEntry.getKey());
         if (entityHolder.is(entityTag)) {
           return true;
@@ -82,7 +82,7 @@ public class EntityLevelingSettingsReloader {
   /**
    * Load individual entity settings. Called by platform-specific reloaders.
    */
-  public static void loadSettings(Map<ResourceLocation, EntityLevelingSettings.RawSettings> settings) {
+  public static void loadSettings(Map<Identifier, EntityLevelingSettings.RawSettings> settings) {
     INDIVIDUAL_SETTINGS.clear();
     INDIVIDUAL_SETTINGS.putAll(settings);
     LOGGER.info("Loaded {} individual entity leveling settings from 'leveling_settings/entities'", INDIVIDUAL_SETTINGS.size());
@@ -91,7 +91,7 @@ public class EntityLevelingSettingsReloader {
   /**
    * Load tag-based entity settings. Called by platform-specific reloaders.
    */
-  public static void loadTagSettings(Map<ResourceLocation, EntityLevelingSettings.RawSettings> tagSettings) {
+  public static void loadTagSettings(Map<Identifier, EntityLevelingSettings.RawSettings> tagSettings) {
     TAG_SETTINGS.clear();
     TAG_SETTINGS.putAll(tagSettings);
     LOGGER.info("Loaded {} entity tag leveling settings from 'leveling_settings/entity_tags'", TAG_SETTINGS.size());

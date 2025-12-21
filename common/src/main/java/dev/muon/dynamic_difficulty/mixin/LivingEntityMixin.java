@@ -3,7 +3,7 @@ package dev.muon.dynamic_difficulty.mixin;
 import com.llamalad7.mixinextras.sugar.Local;
 import dev.muon.dynamic_difficulty.attribute.ModAttributes;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.damagesource.DamageSource;
@@ -23,7 +23,7 @@ public class LivingEntityMixin {
     @Unique
     private static final TagKey<DamageType> MAGIC_DAMAGE = TagKey.create(
             Registries.DAMAGE_TYPE,
-            ResourceLocation.fromNamespaceAndPath("c", "is_magic")
+            Identifier.fromNamespaceAndPath("c", "is_magic")
     );
 
     @ModifyVariable(

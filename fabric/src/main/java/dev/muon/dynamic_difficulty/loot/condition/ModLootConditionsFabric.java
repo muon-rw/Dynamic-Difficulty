@@ -10,7 +10,7 @@ public class ModLootConditionsFabric {
     
     public static final Holder<LootItemConditionType> ENTITY_LEVEL = Registry.registerForHolder(
             BuiltInRegistries.LOOT_CONDITION_TYPE,
-            DynamicDifficulty.loc("entity_level"),
+            DynamicDifficulty.id("entity_level"),
             new LootItemConditionType(EntityLevelCondition.CODEC)
     );
     

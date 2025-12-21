@@ -56,7 +56,7 @@ public class DynamicDifficultyNeoForge {
     private void addPackFinders(AddPackFindersEvent event) {
         if (Config.COMMON.useDefaultLevelingSettings.get()) {
             event.addPackFinders(
-                    DynamicDifficulty.loc("resourcepacks/default"),
+                    DynamicDifficulty.id("resourcepacks/default"),
                     PackType.SERVER_DATA,
                     Component.literal("Dynamic Difficulty Defaults"),
                     PackSource.BUILT_IN,

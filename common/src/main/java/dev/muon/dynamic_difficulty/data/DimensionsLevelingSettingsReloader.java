@@ -6,7 +6,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
@@ -22,12 +22,12 @@ import java.util.Optional;
  */
 public class DimensionsLevelingSettingsReloader {
   private static final Logger LOGGER = LogUtils.getLogger();
-  private static final Map<ResourceLocation, DimensionLevelingSettings> INDIVIDUAL_SETTINGS = new HashMap<>();
-  private static final Map<ResourceLocation, DimensionLevelingSettings> TAG_SETTINGS = new HashMap<>();
+  private static final Map<Identifier, DimensionLevelingSettings> INDIVIDUAL_SETTINGS = new HashMap<>();
+  private static final Map<Identifier, DimensionLevelingSettings> TAG_SETTINGS = new HashMap<>();
 
   @NotNull
   public static DimensionLevelingSettings get(ResourceKey<Level> dimension) {
-    ResourceLocation dimensionId = dimension.location();
+    Identifier dimensionId = dimension.identifier();
     
     // Check individual dimension settings first (they take precedence)
     if (INDIVIDUAL_SETTINGS.containsKey(dimensionId)) {
@@ -40,7 +40,7 @@ public class DimensionsLevelingSettingsReloader {
   
   @NotNull
   public static DimensionLevelingSettings get(ResourceKey<Level> dimension, Registry<Level> dimensionRegistry) {
-    ResourceLocation dimensionId = dimension.location();
+    Identifier dimensionId = dimension.identifier();
     
     // Check individual dimension settings first (they take precedence)
     if (INDIVIDUAL_SETTINGS.containsKey(dimensionId)) {
@@ -52,7 +52,7 @@ public class DimensionsLevelingSettingsReloader {
     if (optHolder.isPresent()) {
       Holder<Level> dimensionHolder = optHolder.get();
       // Find the first matching tag (tags are checked in order, first match wins)
-      for (Map.Entry<ResourceLocation, DimensionLevelingSettings> tagEntry : TAG_SETTINGS.entrySet()) {
+      for (Map.Entry<Identifier, DimensionLevelingSettings> tagEntry : TAG_SETTINGS.entrySet()) {
         TagKey<Level> dimensionTag = TagKey.create(Registries.DIMENSION, tagEntry.getKey());
         if (dimensionHolder.is(dimensionTag)) {
           return tagEntry.getValue();
@@ -68,7 +68,7 @@ public class DimensionsLevelingSettingsReloader {
    * Checks if a dimension has custom leveling settings (either individual or tag-based).
    */
   public static boolean hasCustomSettings(ResourceKey<Level> dimension, Registry<Level> dimensionRegistry) {
-    ResourceLocation dimensionId = dimension.location();
+    Identifier dimensionId = dimension.identifier();
     
     if (INDIVIDUAL_SETTINGS.containsKey(dimensionId)) {
       return true;
@@ -77,7 +77,7 @@ public class DimensionsLevelingSettingsReloader {
     Optional<Holder.Reference<Level>> optHolder = dimensionRegistry.get(dimension);
     if (optHolder.isPresent()) {
       Holder<Level> dimensionHolder = optHolder.get();
-      for (Map.Entry<ResourceLocation, DimensionLevelingSettings> tagEntry : TAG_SETTINGS.entrySet()) {
+      for (Map.Entry<Identifier, DimensionLevelingSettings> tagEntry : TAG_SETTINGS.entrySet()) {
         TagKey<Level> dimensionTag = TagKey.create(Registries.DIMENSION, tagEntry.getKey());
         if (dimensionHolder.is(dimensionTag)) {
           return true;
@@ -91,7 +91,7 @@ public class DimensionsLevelingSettingsReloader {
   /**
    * Load individual dimension settings. Called by platform-specific reloaders.
    */
-  public static void loadSettings(Map<ResourceLocation, DimensionLevelingSettings> settings) {
+  public static void loadSettings(Map<Identifier, DimensionLevelingSettings> settings) {
     INDIVIDUAL_SETTINGS.clear();
     INDIVIDUAL_SETTINGS.putAll(settings);
     LOGGER.info("Loaded {} individual dimension leveling settings from 'leveling_settings/dimensions'", INDIVIDUAL_SETTINGS.size());
@@ -100,7 +100,7 @@ public class DimensionsLevelingSettingsReloader {
   /**
    * Load tag-based dimension settings. Called by platform-specific reloaders.
    */
-  public static void loadTagSettings(Map<ResourceLocation, DimensionLevelingSettings> tagSettings) {
+  public static void loadTagSettings(Map<Identifier, DimensionLevelingSettings> tagSettings) {
     TAG_SETTINGS.clear();
     TAG_SETTINGS.putAll(tagSettings);
     LOGGER.info("Loaded {} dimension tag leveling settings from 'leveling_settings/dimension_tags'", TAG_SETTINGS.size());

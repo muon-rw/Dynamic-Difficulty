@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import dev.muon.dynamic_difficulty.settings.StructureBonusSettings;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.neoforged.neoforge.resource.ContextAwareReloadListener;
@@ -27,9 +27,9 @@ public class StructureTagLevelingSettingsReloaderNeoForge extends ContextAwareRe
         ResourceManager resourceManager = sharedState.resourceManager();
         
         return CompletableFuture.supplyAsync(() -> {
-            Map<ResourceLocation, JsonElement> prepared = new HashMap<>();
+            Map<Identifier, JsonElement> prepared = new HashMap<>();
             for (var entry : resourceManager.listResources(DIRECTORY, location -> location.getPath().endsWith(".json")).entrySet()) {
-                ResourceLocation resourceLocation = entry.getKey();
+                Identifier resourceLocation = entry.getKey();
                 try (var reader = entry.getValue().openAsReader()) {
                     JsonElement jsonElement = GSON.fromJson(reader, JsonElement.class);
                     prepared.put(resourceLocation, jsonElement);
@@ -48,10 +48,10 @@ public class StructureTagLevelingSettingsReloaderNeoForge extends ContextAwareRe
         return "Structure Tag Leveling Settings";
     }
 
-    protected void apply(Map<ResourceLocation, JsonElement> prepared) {
-        Map<ResourceLocation, StructureBonusSettings> settings = new HashMap<>();
+    protected void apply(Map<Identifier, JsonElement> prepared) {
+        Map<Identifier, StructureBonusSettings> settings = new HashMap<>();
         var ops = makeConditionalOps();
-        for (Map.Entry<ResourceLocation, JsonElement> entry : prepared.entrySet()) {
+        for (Map.Entry<Identifier, JsonElement> entry : prepared.entrySet()) {
             StructureBonusSettings.CODEC.decode(ops, entry.getValue())
                     .result()
                     .ifPresent(pair -> settings.put(entry.getKey(), pair.getFirst()));

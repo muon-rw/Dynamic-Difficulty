@@ -32,7 +32,7 @@ public class DynamicDifficultyFabric implements ModInitializer {
         if (Config.COMMON.useDefaultLevelingSettings.get()) {
             FabricLoader.getInstance().getModContainer(DynamicDifficulty.MODID).ifPresent(container -> {
                 ResourceManagerHelper.registerBuiltinResourcePack(
-                        DynamicDifficulty.loc("default"),
+                        DynamicDifficulty.id("default"),
                         container,
                         Component.literal("Dynamic Difficulty Defaults"),
                         ResourcePackActivationType.DEFAULT_ENABLED

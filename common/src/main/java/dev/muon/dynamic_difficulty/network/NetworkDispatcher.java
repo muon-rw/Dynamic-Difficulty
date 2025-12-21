@@ -4,7 +4,7 @@ import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
 import dev.muon.dynamic_difficulty.network.message.LocationEntryPacket;
 import dev.muon.dynamic_difficulty.platform.NetworkHelper;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 
@@ -50,7 +50,7 @@ public class NetworkDispatcher {
     getHelper().sendToAllPlayers(entity.level().getServer(), new SyncLevelingData(entity));
   }
   
-  public static void sendLocationEntry(ServerPlayer player, LocationEntryPacket.EntryType entryType, ResourceLocation locationId, int locationBonus, int baseLevel, int playerBonus, int displayedLevel) {
+  public static void sendLocationEntry(ServerPlayer player, LocationEntryPacket.EntryType entryType, Identifier locationId, int locationBonus, int baseLevel, int playerBonus, int displayedLevel) {
     getHelper().sendToPlayer(player, new LocationEntryPacket(entryType, locationId, locationBonus, baseLevel, playerBonus, displayedLevel));
   }
 

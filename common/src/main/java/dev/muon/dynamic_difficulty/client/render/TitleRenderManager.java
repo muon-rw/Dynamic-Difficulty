@@ -2,7 +2,7 @@ package dev.muon.dynamic_difficulty.client.render;
 
 import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
@@ -11,7 +11,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
@@ -20,7 +20,7 @@ import net.minecraft.world.level.dimension.DimensionType;
 public class TitleRenderManager {
     private static TitleRenderManager instance;
 
-    public final StructureTitleRenderer<ResourceLocation> structureTitleRenderer;
+    public final StructureTitleRenderer<Identifier> structureTitleRenderer;
     public final BiomeTitleRenderer biomeTitleRenderer;
     public final DimensionTitleRenderer dimensionTitleRenderer;
     public final LevelInfoRenderer levelInfoRenderer;
@@ -100,7 +100,7 @@ public class TitleRenderManager {
     /**
      * Display structure title when notified by server
      */
-    public void displayStructureTitle(ResourceLocation structureId, int structureBonus, int baseLevel, int playerBonus, int displayedLevel) {
+    public void displayStructureTitle(Identifier structureId, int structureBonus, int baseLevel, int playerBonus, int displayedLevel) {
         // Update level info only if displayed values changed
         if (shouldUpdateLevelInfo(displayedLevel, playerBonus)) {
             levelInfoRenderer.displayLevelInfo(displayedLevel, playerBonus);
@@ -121,7 +121,7 @@ public class TitleRenderManager {
     /**
      * Display biome title when notified by server
      */
-    public void displayBiomeTitle(ResourceLocation biomeId, int biomeBonus, int baseLevel, int playerBonus, int displayedLevel) {
+    public void displayBiomeTitle(Identifier biomeId, int biomeBonus, int baseLevel, int playerBonus, int displayedLevel) {
         // Update level info only if displayed values changed
         if (shouldUpdateLevelInfo(displayedLevel, playerBonus)) {
             levelInfoRenderer.displayLevelInfo(displayedLevel, playerBonus);
@@ -156,7 +156,7 @@ public class TitleRenderManager {
      * Display dimension title when notified by server
      * Note: Dimensions affect base level through settings, not bonuses
      */
-    public void displayDimensionTitle(ResourceLocation dimensionId, int baseLevel, int playerBonus, int displayedLevel) {
+    public void displayDimensionTitle(Identifier dimensionId, int baseLevel, int playerBonus, int displayedLevel) {
         // Update level info only if displayed values changed
         if (shouldUpdateLevelInfo(displayedLevel, playerBonus)) {
             levelInfoRenderer.displayLevelInfo(displayedLevel, playerBonus);
@@ -207,7 +207,7 @@ public class TitleRenderManager {
         if (shouldDisplay) {
             DimensionType currDimension = world.dimensionType();
             if (!dimensionTitleRenderer.matchesAnyRecentEntry(d -> d == currDimension)) {
-                ResourceLocation dimensionBaseKey = world.dimension().location();
+                Identifier dimensionBaseKey = world.dimension().identifier();
                 Component dimensionTitle = getDimensionName(dimensionBaseKey);
 
                 if (dimensionTitle != null) {
@@ -227,11 +227,11 @@ public class TitleRenderManager {
         }
 
         Holder<Biome> biomeHolder = world.getBiome(playerPos);
-        ResourceLocation biomeBaseKey = world.registryAccess().lookupOrThrow(Registries.BIOME).getKey(biomeHolder.value());
+        Identifier biomeBaseKey = world.registryAccess().lookupOrThrow(Registries.BIOME).getKey(biomeHolder.value());
 
         if (biomeBaseKey != null &&
                 !biomeTitleRenderer.matchesAnyRecentEntry(b -> {
-                    ResourceLocation bKey = world.registryAccess().lookupOrThrow(Registries.BIOME).getKey(b);
+                    Identifier bKey = world.registryAccess().lookupOrThrow(Registries.BIOME).getKey(b);
                     return bKey != null && bKey.equals(biomeBaseKey);
                 })) {
 
@@ -264,7 +264,7 @@ public class TitleRenderManager {
         return lastDisplayedLevel != displayedLevel || lastPlayerBonus != playerBonus;
     }
 
-    private Component getStructureName(ResourceLocation structureId) {
+    private Component getStructureName(Identifier structureId) {
         String structureNameKey = "structure." + structureId.getNamespace() + "." + structureId.getPath();
 
         if (Language.getInstance().has(structureNameKey)) {
@@ -293,7 +293,7 @@ public class TitleRenderManager {
      * Get dimension name with Traveler's Titles preference.
      * Falls back to standard dimension key, then formatted ID if no translation found.
      */
-    private Component getDimensionName(ResourceLocation dimensionBaseKey) {
+    private Component getDimensionName(Identifier dimensionBaseKey) {
         Language language = Language.getInstance();
 
         String travelersTitlesKey = Util.makeDescriptionId(TRAVELERS_TITLES_MOD_ID, dimensionBaseKey);
@@ -328,7 +328,7 @@ public class TitleRenderManager {
      * Get biome name with Traveler's Titles preference.
      * Falls back to standard biome key. Returns null if no translation found.
      */
-    private Component getBiomeName(ResourceLocation biomeBaseKey) {
+    private Component getBiomeName(Identifier biomeBaseKey) {
         Language language = Language.getInstance();
 
         String travelersTitlesOverrideKey = Util.makeDescriptionId(TRAVELERS_TITLES_MOD_ID + ".biome", biomeBaseKey);

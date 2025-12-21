@@ -9,7 +9,7 @@ import dev.muon.dynamic_difficulty.player.PlayerLevelUpdateHandler;
 import dev.muon.dynamic_difficulty.player.PlayerLocationTracker;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -69,7 +69,7 @@ public class LevelingEvents {
      */
     public static void dropAdditionalLoot(LivingEntity entity, java.util.function.Consumer<net.minecraft.world.item.ItemStack> dropConsumer, net.minecraft.world.damagesource.DamageSource source) {
         if (!LevelingAPI.hasLevel(entity)) return;
-        ResourceLocation lootTableIdRL = DynamicDifficulty.loc("gameplay/leveled_mobs");
+        Identifier lootTableIdRL = DynamicDifficulty.id("gameplay/leveled_mobs");
         MinecraftServer server = entity.level().getServer();
         if (server == null) return;
         ResourceKey<LootTable> lootTableKey = ResourceKey.create(Registries.LOOT_TABLE, lootTableIdRL);

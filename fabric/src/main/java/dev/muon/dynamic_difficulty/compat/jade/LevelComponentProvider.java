@@ -6,7 +6,7 @@ import dev.muon.dynamic_difficulty.client.LevelPlateHandler;
 import dev.muon.dynamic_difficulty.config.Config;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import snownee.jade.api.EntityAccessor;
@@ -18,8 +18,8 @@ public enum LevelComponentProvider implements IEntityComponentProvider {
     INSTANCE;
 
     @Override
-    public ResourceLocation getUid() {
-        return DynamicDifficulty.loc("level");
+    public Identifier getUid() {
+        return DynamicDifficulty.id("level");
     }
 
     @Override

@@ -3,7 +3,7 @@ package dev.muon.dynamic_difficulty.config;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.player.PlayerLevelDisplayStrategy;
 import java.util.*;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.neoforged.neoforge.common.ModConfigSpec;
@@ -217,7 +217,7 @@ public class Config {
               .defineListAllowEmpty("puffish_skills_tree_blacklist",
                       () -> Arrays.asList("puffish_skills:mining"),
                       () -> "puffish_skills:mining",
-                      obj -> obj instanceof String && ResourceLocation.tryParse((String) obj) != null);
+                      obj -> obj instanceof String && Identifier.tryParse((String) obj) != null);
       builder.pop();
 
       builder.push("reskillable_integration");
@@ -604,7 +604,7 @@ public class Config {
   }
 
   private static void readAttributeBonus(List<Object> attributeBonusConfig) {
-    ResourceLocation attributeRL = ResourceLocation.tryParse((String) attributeBonusConfig.get(0));
+    Identifier attributeRL = Identifier.tryParse((String) attributeBonusConfig.get(0));
     if (attributeRL == null) {
         DynamicDifficulty.LOGGER.error("Attribute ID '{}' is invalid!", attributeBonusConfig.get(0));
         return;
@@ -625,7 +625,7 @@ public class Config {
     ResourceKey<Attribute> attributeKey = optAttributeKey.get();
 
     String uniqueModifierName = "config_bonus_" + attributeRL.getNamespace().replace(":", "_") + "_" + attributeRL.getPath().replace("/", "_");
-    ResourceLocation modifierId = DynamicDifficulty.loc(uniqueModifierName);
+    Identifier modifierId = DynamicDifficulty.id(uniqueModifierName);
 
     // Parse operation enum from serialized name
     String operationStr = (String) attributeBonusConfig.get(2);
@@ -648,7 +648,7 @@ public class Config {
 
     ATTRIBUTE_BONUSES.put(attributeKey, modifier);
     DynamicDifficulty.LOGGER.info("Config: Registered attribute bonus for ResourceKey {} ({}) with amount {}/level, operation {}, ModID {}",
-                                attributeKey.location(), attribute.getDescriptionId(), attributeBonus, operation, modifierId);
+                                attributeKey.identifier(), attribute.getDescriptionId(), attributeBonus, operation, modifierId);
   }
 
 }

@@ -596,7 +596,7 @@ On NeoForge, the mod includes a Global Loot Modifier (GLM) that injects a custom
 | Field | Type | Description |
 |-------|------|-------------|
 | `conditions` | Array | Standard NeoForge loot conditions |
-| `loot_table` | ResourceLocation | The loot table to inject into entity drops |
+| `loot_table` | Identifier | The loot table to inject into entity drops |
 
 **Note:** On Fabric, the loot table injection is handled via mixin instead. The same loot table (`dynamic_difficulty:inject/level_based_drops`) is used on both platforms.
 

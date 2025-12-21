@@ -8,7 +8,7 @@ import dev.muon.dynamic_difficulty.config.Config;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -70,7 +70,7 @@ public abstract class LootTableMixin {
             original.call(context, collector);
 
             if (context.getLevel() instanceof ServerLevel serverLevel) {
-                ResourceLocation levelDropsTable = ResourceLocation.fromNamespaceAndPath(
+                Identifier levelDropsTable = Identifier.fromNamespaceAndPath(
                     DynamicDifficulty.MODID, "inject/level_based_drops");
                 ResourceKey<LootTable> levelDropsKey = ResourceKey.create(
                     Registries.LOOT_TABLE, levelDropsTable);

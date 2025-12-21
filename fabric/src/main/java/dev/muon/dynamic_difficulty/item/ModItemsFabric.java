@@ -12,41 +12,41 @@ public class ModItemsFabric {
     
     public static final Holder<Item> POTION_OF_GROWTH = Registry.registerForHolder(
             BuiltInRegistries.ITEM,
-            DynamicDifficulty.loc("potion_of_growth"),
+            DynamicDifficulty.id("potion_of_growth"),
             ModItems.POTION_OF_GROWTH_FACTORY.apply(
-                    ResourceKey.create(Registries.ITEM, DynamicDifficulty.loc("potion_of_growth"))
+                    ResourceKey.create(Registries.ITEM, DynamicDifficulty.id("potion_of_growth"))
             )
     );
 
     public static final Holder<Item> ELIXIR_OF_NURTURING = Registry.registerForHolder(
             BuiltInRegistries.ITEM,
-            DynamicDifficulty.loc("elixir_of_nurturing"),
+            DynamicDifficulty.id("elixir_of_nurturing"),
             ModItems.ELIXIR_OF_NURTURING_FACTORY.apply(
-                    ResourceKey.create(Registries.ITEM, DynamicDifficulty.loc("elixir_of_nurturing"))
+                    ResourceKey.create(Registries.ITEM, DynamicDifficulty.id("elixir_of_nurturing"))
             )
     );
 
     public static final Holder<Item> DRAUGHT_OF_ASCENSION = Registry.registerForHolder(
             BuiltInRegistries.ITEM,
-            DynamicDifficulty.loc("draught_of_ascension"),
+            DynamicDifficulty.id("draught_of_ascension"),
             ModItems.DRAUGHT_OF_ASCENSION_FACTORY.apply(
-                    ResourceKey.create(Registries.ITEM, DynamicDifficulty.loc("draught_of_ascension"))
+                    ResourceKey.create(Registries.ITEM, DynamicDifficulty.id("draught_of_ascension"))
             )
     );
 
     public static final Holder<Item> ESSENCE_OF_VITALITY = Registry.registerForHolder(
             BuiltInRegistries.ITEM,
-            DynamicDifficulty.loc("essence_of_vitality"),
+            DynamicDifficulty.id("essence_of_vitality"),
             ModItems.ESSENCE_OF_VITALITY_FACTORY.apply(
-                    ResourceKey.create(Registries.ITEM, DynamicDifficulty.loc("essence_of_vitality"))
+                    ResourceKey.create(Registries.ITEM, DynamicDifficulty.id("essence_of_vitality"))
             )
     );
 
     public static final Holder<Item> CRYSTAL_OF_AWAKENING = Registry.registerForHolder(
             BuiltInRegistries.ITEM,
-            DynamicDifficulty.loc("crystal_of_awakening"),
+            DynamicDifficulty.id("crystal_of_awakening"),
             ModItems.CRYSTAL_OF_AWAKENING_FACTORY.apply(
-                    ResourceKey.create(Registries.ITEM, DynamicDifficulty.loc("crystal_of_awakening"))
+                    ResourceKey.create(Registries.ITEM, DynamicDifficulty.id("crystal_of_awakening"))
             )
     );
     

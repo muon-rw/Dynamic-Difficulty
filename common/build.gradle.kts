@@ -18,10 +18,10 @@ sourceSets {
 
 neoForge {
     neoFormVersion = Versions.NEOFORM
-    parchment {
-        minecraftVersion = Versions.PARCHMENT_MINECRAFT
-        mappingsVersion = Versions.PARCHMENT
-    }
+//    parchment {
+//        minecraftVersion = Versions.PARCHMENT_MINECRAFT
+//        mappingsVersion = Versions.PARCHMENT
+//    }
     // addModdingDependenciesTo(sourceSets["main"])
     addModdingDependenciesTo(sourceSets["test"])
 
@@ -53,7 +53,7 @@ dependencies {
     annotationProcessor("io.github.llamalad7:mixinextras-common:${Versions.MIXIN_EXTRAS}")
     compileOnly("net.fabricmc:sponge-mixin:${Versions.FABRIC_MIXIN}")
 
-    compileOnly("mezz.jei:jei-${Versions.MINECRAFT}-common-api:${Versions.JEI}")
+    // compileOnly("mezz.jei:jei-${Versions.MINECRAFT}-common-api:${Versions.JEI}")
 
     compileOnlyApi("org.jetbrains:annotations:24.1.0")
 

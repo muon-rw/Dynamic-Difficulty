@@ -12,7 +12,7 @@ import dev.muon.dynamic_difficulty.util.LevelingUtils;
 import dev.muon.dynamic_difficulty.util.LocationBonusUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -36,20 +36,20 @@ public class PlayerLocationTracker {
      * Record holding all tracked location state for a player.
      */
     private record PlayerLocationState(
-        ResourceLocation structureId,
+        Identifier structureId,
         int structureBonus,
-        ResourceLocation biomeId,
+        Identifier biomeId,
         int biomeBonus,
         ResourceKey<Level> dimension,
         int lastBaseLevel
     ) {
         static final PlayerLocationState EMPTY = new PlayerLocationState(null, 0, null, 0, null, 0);
         
-        PlayerLocationState withStructure(ResourceLocation structureId, int bonus) {
+        PlayerLocationState withStructure(Identifier structureId, int bonus) {
             return new PlayerLocationState(structureId, bonus, biomeId, biomeBonus, dimension, lastBaseLevel);
         }
         
-        PlayerLocationState withBiome(ResourceLocation biomeId, int bonus) {
+        PlayerLocationState withBiome(Identifier biomeId, int bonus) {
             return new PlayerLocationState(structureId, structureBonus, biomeId, bonus, dimension, lastBaseLevel);
         }
         
@@ -109,7 +109,7 @@ public class PlayerLocationTracker {
      * Sends a location entry packet with all calculated values.
      */
     private static void sendLocationPacket(ServerPlayer player, LocationEntryPacket.EntryType entryType,
-                                          ResourceLocation locationId, int locationBonus, int baseLevel,
+                                          Identifier locationId, int locationBonus, int baseLevel,
                                           int playerBonus, int displayedLevel) {
         NetworkDispatcher.sendLocationEntry(player, entryType, locationId, locationBonus, baseLevel, playerBonus, displayedLevel);
     }
@@ -136,8 +136,8 @@ public class PlayerLocationTracker {
         StructureBonus structureBonus = LocationBonusUtils.getStructureAt(level, playerPos, false);
         BiomeBonus biomeBonus = LevelingAPI.getBiomeBonus(level, playerPos);
 
-        ResourceLocation currentStructure = structureBonus.structureId();
-        ResourceLocation currentBiome = biomeBonus.biomeId();
+        Identifier currentStructure = structureBonus.structureId();
+        Identifier currentBiome = biomeBonus.biomeId();
 
         // Check for changes (priority: dimension > structure > biome > base level)
         boolean dimensionChanged = !currentDimension.equals(state.dimension());
@@ -158,7 +158,7 @@ public class PlayerLocationTracker {
                     player.getName().getString(), currentBaseLevel, playerBonus);
 
             sendLocationPacket(player, LocationEntryPacket.EntryType.DIMENSION,
-                    currentDimension.location(), 0, currentBaseLevel, playerBonus, displayedLevel);
+                    currentDimension.identifier(), 0, currentBaseLevel, playerBonus, displayedLevel);
             return;
         }
 
@@ -166,7 +166,7 @@ public class PlayerLocationTracker {
             PlayerLocationState newState = state.withStructure(currentStructure, structureBonus.totalBonus());
             playerStates.put(playerId, newState);
 
-            ResourceLocation sentId = currentStructure != null ? currentStructure : state.structureId();
+            Identifier sentId = currentStructure != null ? currentStructure : state.structureId();
             int sentBonus = currentStructure != null ? structureBonus.totalBonus() : 0;
 
             int displayedLevel = LevelingUtils.calculateDisplayedLevel(player, currentBaseLevel, structureBonus, biomeBonus);
@@ -206,7 +206,7 @@ public class PlayerLocationTracker {
                         biomeBonus.totalBonus(), currentBaseLevel, playerBonus, displayedLevel);
             } else {
                 sendLocationPacket(player, LocationEntryPacket.EntryType.DIMENSION,
-                        currentDimension.location(), 0, currentBaseLevel, playerBonus, displayedLevel);
+                        currentDimension.identifier(), 0, currentBaseLevel, playerBonus, displayedLevel);
             }
 
             DynamicDifficulty.LOGGER.debug("Base level update for {}: base={} (was {}), structure={}, biome={}, player={}",

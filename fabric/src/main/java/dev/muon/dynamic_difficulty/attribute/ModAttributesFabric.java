@@ -12,42 +12,42 @@ public class ModAttributesFabric {
     
     public static final Holder<Attribute> PROJECTILE_DAMAGE_BONUS = Registry.registerForHolder(
             BuiltInRegistries.ATTRIBUTE,
-            DynamicDifficulty.loc("projectile_damage_bonus"),
+            DynamicDifficulty.id("projectile_damage_bonus"),
             ModAttributes.PROJECTILE_DAMAGE_BONUS_SUPPLIER.get()
     );
     public static final Holder<Attribute> PROJECTILE_DAMAGE_MULTIPLIER = Registry.registerForHolder(
             BuiltInRegistries.ATTRIBUTE,
-            DynamicDifficulty.loc("projectile_damage_multiplier"),
+            DynamicDifficulty.id("projectile_damage_multiplier"),
             ModAttributes.PROJECTILE_DAMAGE_MULTIPLIER_SUPPLIER.get()
     );
     public static final Holder<Attribute> EXPLOSION_DAMAGE_BONUS = Registry.registerForHolder(
             BuiltInRegistries.ATTRIBUTE,
-            DynamicDifficulty.loc("explosion_damage_bonus"),
+            DynamicDifficulty.id("explosion_damage_bonus"),
             ModAttributes.EXPLOSION_DAMAGE_BONUS_SUPPLIER.get()
     );
     public static final Holder<Attribute> EXPLOSION_DAMAGE_MULTIPLIER = Registry.registerForHolder(
             BuiltInRegistries.ATTRIBUTE,
-            DynamicDifficulty.loc("explosion_damage_multiplier"),
+            DynamicDifficulty.id("explosion_damage_multiplier"),
             ModAttributes.EXPLOSION_DAMAGE_MULTIPLIER_SUPPLIER.get()
     );
     public static final Holder<Attribute> DAMAGE_BONUS = Registry.registerForHolder(
             BuiltInRegistries.ATTRIBUTE,
-            DynamicDifficulty.loc("damage_bonus"),
+            DynamicDifficulty.id("damage_bonus"),
             ModAttributes.DAMAGE_BONUS_SUPPLIER.get()
     );
     public static final Holder<Attribute> DAMAGE_MULTIPLIER = Registry.registerForHolder(
             BuiltInRegistries.ATTRIBUTE,
-            DynamicDifficulty.loc("damage_multiplier"),
+            DynamicDifficulty.id("damage_multiplier"),
             ModAttributes.DAMAGE_MULTIPLIER_SUPPLIER.get()
     );
     public static final Holder<Attribute> MAGIC_DAMAGE_BONUS = Registry.registerForHolder(
             BuiltInRegistries.ATTRIBUTE,
-            DynamicDifficulty.loc("magic_damage_bonus"),
+            DynamicDifficulty.id("magic_damage_bonus"),
             ModAttributes.MAGIC_DAMAGE_BONUS_SUPPLIER.get()
     );
     public static final Holder<Attribute> MAGIC_DAMAGE_MULTIPLIER = Registry.registerForHolder(
             BuiltInRegistries.ATTRIBUTE,
-            DynamicDifficulty.loc("magic_damage_multiplier"),
+            DynamicDifficulty.id("magic_damage_multiplier"),
             ModAttributes.MAGIC_DAMAGE_MULTIPLIER_SUPPLIER.get()
     );
     

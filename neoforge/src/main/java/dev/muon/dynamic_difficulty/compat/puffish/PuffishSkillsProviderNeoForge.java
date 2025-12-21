@@ -2,7 +2,7 @@ package dev.muon.dynamic_difficulty.compat.puffish;
 
 import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
 import dev.muon.dynamic_difficulty.config.Config;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.puffish.skillsmod.api.SkillsAPI;
 
@@ -43,8 +43,8 @@ public class PuffishSkillsProviderNeoForge implements PlayerLevelProvider {
             return 0;
         }
         
-        Set<ResourceLocation> blacklist = Config.COMMON.puffishSkillsTreeBlacklist.get().stream()
-                .map(ResourceLocation::tryParse)
+        Set<Identifier> blacklist = Config.COMMON.puffishSkillsTreeBlacklist.get().stream()
+                .map(Identifier::tryParse)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         

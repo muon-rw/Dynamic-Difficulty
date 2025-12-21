@@ -7,7 +7,7 @@ import dev.muon.dynamic_difficulty.config.Config;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -27,16 +27,16 @@ import org.jetbrains.annotations.Nullable;
 public class InjectLootTableModifier extends LootModifier {
     public static final MapCodec<InjectLootTableModifier> CODEC = RecordCodecBuilder.mapCodec(instance ->
         codecStart(instance).and(
-            ResourceLocation.CODEC.fieldOf("loot_table").forGetter(m -> m.lootTable)
+            Identifier.CODEC.fieldOf("loot_table").forGetter(m -> m.lootTable)
         ).apply(instance, InjectLootTableModifier::new)
     );
 
-    private final ResourceLocation lootTable;
+    private final Identifier lootTable;
     
     // ThreadLocal guard to prevent infinite recursion
     private static final ThreadLocal<Boolean> PROCESSING = ThreadLocal.withInitial(() -> false);
 
-    public InjectLootTableModifier(LootItemCondition[] conditions, ResourceLocation lootTable) {
+    public InjectLootTableModifier(LootItemCondition[] conditions, Identifier lootTable) {
         super(conditions);
         this.lootTable = lootTable;
     }

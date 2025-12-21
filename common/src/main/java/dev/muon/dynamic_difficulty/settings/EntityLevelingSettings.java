@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import org.jetbrains.annotations.Nullable;
@@ -67,7 +67,7 @@ public record EntityLevelingSettings(
 
   // === Codecs ===
 
-  private record AttributeModifierEntry(ResourceLocation attribute, double amount, String operation) {}
+  private record AttributeModifierEntry(Identifier attribute, double amount, String operation) {}
 
   private static AttributeModifier.Operation parseOperation(String operationStr) {
     for (AttributeModifier.Operation op : AttributeModifier.Operation.values()) {
@@ -94,7 +94,7 @@ public record EntityLevelingSettings(
 
   private static final Codec<AttributeModifierEntry> ATTRIBUTE_MODIFIER_ENTRY_CODEC =
       RecordCodecBuilder.create(instance -> instance.group(
-          ResourceLocation.CODEC.fieldOf("attribute").forGetter(AttributeModifierEntry::attribute),
+          Identifier.CODEC.fieldOf("attribute").forGetter(AttributeModifierEntry::attribute),
           Codec.DOUBLE.fieldOf("amount").forGetter(AttributeModifierEntry::amount),
           OPERATION_CODEC.fieldOf("operation").forGetter(AttributeModifierEntry::operation)
       ).apply(instance, AttributeModifierEntry::new));
@@ -108,7 +108,7 @@ public record EntityLevelingSettings(
                   Attribute attribute = BuiltInRegistries.ATTRIBUTE.getValue(entry.attribute());
                   if (attribute != null) {
                     AttributeModifier.Operation operation = parseOperation(entry.operation());
-                    ResourceLocation modifierId = DynamicDifficulty.loc(
+                    Identifier modifierId = DynamicDifficulty.id(
                         "entity_leveling_bonus_" + entry.attribute().getPath().replace("/", "_"));
                     map.put(attribute, new AttributeModifier(modifierId, entry.amount(), operation));
                   }
@@ -118,7 +118,7 @@ public record EntityLevelingSettings(
               map -> {
                 List<AttributeModifierEntry> list = new ArrayList<>();
                 map.forEach((attr, modifier) -> {
-                  ResourceLocation attrId = BuiltInRegistries.ATTRIBUTE.getKey(attr);
+                  Identifier attrId = BuiltInRegistries.ATTRIBUTE.getKey(attr);
                   list.add(new AttributeModifierEntry(attrId, modifier.amount(), modifier.operation().getSerializedName()));
                 });
                 return list;

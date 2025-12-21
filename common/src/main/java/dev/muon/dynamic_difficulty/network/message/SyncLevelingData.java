@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class SyncLevelingData implements CustomPacketPayload {
   public static final CustomPacketPayload.Type<SyncLevelingData> TYPE =
-      new CustomPacketPayload.Type<>(DynamicDifficulty.loc("sync_leveling_data"));
+      new CustomPacketPayload.Type<>(DynamicDifficulty.id("sync_leveling_data"));
   
   public static final StreamCodec<FriendlyByteBuf, SyncLevelingData> CODEC = CustomPacketPayload.codec(
       SyncLevelingData::write,

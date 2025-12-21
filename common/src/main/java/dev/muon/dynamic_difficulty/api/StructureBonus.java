@@ -1,6 +1,6 @@
 package dev.muon.dynamic_difficulty.api;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Result containing structure bonus information at a position.
@@ -10,7 +10,7 @@ import net.minecraft.resources.ResourceLocation;
  * @param bypassingBonus Highest bonus from structures that bypass cap
  */
 public record StructureBonus(
-    ResourceLocation structureId,
+    Identifier structureId,
     int nonBypassingBonus,
     int bypassingBonus
 ) {

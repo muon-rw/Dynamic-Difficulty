@@ -5,7 +5,7 @@ import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.player.PlayerLevelUpdateHandler;
 import dev.muon.dynamic_difficulty.player.PlaytimePlayerLevelProvider;
 import dev.muon.dynamic_difficulty.platform.PlatformHelper;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 
 public class DynamicDifficulty {
@@ -14,8 +14,8 @@ public class DynamicDifficulty {
 
     private static PlatformHelper helper;
 
-    public static ResourceLocation loc(String path) {
-        return ResourceLocation.fromNamespaceAndPath(DynamicDifficulty.MODID, path);
+    public static Identifier id(String path) {
+        return Identifier.fromNamespaceAndPath(DynamicDifficulty.MODID, path);
     }
 
     public static void init() {

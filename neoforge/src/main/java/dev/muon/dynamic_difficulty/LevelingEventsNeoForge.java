@@ -55,14 +55,14 @@ public class LevelingEventsNeoForge {
 
     @SubscribeEvent
     public static void reloadSettings(AddServerReloadListenersEvent event) {
-        event.addListener(DynamicDifficulty.loc("dimension_leveling_settings"), new DimensionsLevelingSettingsReloaderNeoForge());
-        event.addListener(DynamicDifficulty.loc("dimension_tag_leveling_settings"), new DimensionTagLevelingSettingsReloaderNeoForge());
-        event.addListener(DynamicDifficulty.loc("entity_leveling_settings"), new EntityLevelingSettingsReloaderNeoForge());
-        event.addListener(DynamicDifficulty.loc("entity_tag_leveling_settings"), new EntityTagLevelingSettingsReloaderNeoForge());
-        event.addListener(DynamicDifficulty.loc("structure_leveling_settings"), new StructureLevelingSettingsReloaderNeoForge());
-        event.addListener(DynamicDifficulty.loc("structure_tag_leveling_settings"), new StructureTagLevelingSettingsReloaderNeoForge());
-        event.addListener(DynamicDifficulty.loc("biome_leveling_settings"), new BiomeLevelingSettingsReloaderNeoForge());
-        event.addListener(DynamicDifficulty.loc("biome_tag_leveling_settings"), new BiomeTagLevelingSettingsReloaderNeoForge());
+        event.addListener(DynamicDifficulty.id("dimension_leveling_settings"), new DimensionsLevelingSettingsReloaderNeoForge());
+        event.addListener(DynamicDifficulty.id("dimension_tag_leveling_settings"), new DimensionTagLevelingSettingsReloaderNeoForge());
+        event.addListener(DynamicDifficulty.id("entity_leveling_settings"), new EntityLevelingSettingsReloaderNeoForge());
+        event.addListener(DynamicDifficulty.id("entity_tag_leveling_settings"), new EntityTagLevelingSettingsReloaderNeoForge());
+        event.addListener(DynamicDifficulty.id("structure_leveling_settings"), new StructureLevelingSettingsReloaderNeoForge());
+        event.addListener(DynamicDifficulty.id("structure_tag_leveling_settings"), new StructureTagLevelingSettingsReloaderNeoForge());
+        event.addListener(DynamicDifficulty.id("biome_leveling_settings"), new BiomeLevelingSettingsReloaderNeoForge());
+        event.addListener(DynamicDifficulty.id("biome_tag_leveling_settings"), new BiomeTagLevelingSettingsReloaderNeoForge());
     }
 
     @SubscribeEvent

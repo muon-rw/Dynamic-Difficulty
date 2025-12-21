@@ -4,7 +4,7 @@ import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.settings.BiomeBonusSettings;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.minecraft.resources.FileToIdConverter;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
@@ -13,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Map;
 
 public class BiomeTagLevelingSettingsReloaderFabric extends SimpleJsonResourceReloadListener<BiomeBonusSettings> implements IdentifiableResourceReloadListener {
-    private static final ResourceLocation RELOADER_ID = DynamicDifficulty.loc("biome_tag_leveling_settings");
+    private static final Identifier RELOADER_ID = DynamicDifficulty.id("biome_tag_leveling_settings");
     private static final FileToIdConverter FILE_TO_ID = FileToIdConverter.json("leveling_settings/biome_tags");
 
     public BiomeTagLevelingSettingsReloaderFabric() {
@@ -21,13 +21,13 @@ public class BiomeTagLevelingSettingsReloaderFabric extends SimpleJsonResourceRe
     }
 
     @Override
-    public ResourceLocation getFabricId() {
+    public Identifier getFabricId() {
         return RELOADER_ID;
     }
 
     @Override
     protected void apply(
-            Map<ResourceLocation, BiomeBonusSettings> prepared,
+            Map<Identifier, BiomeBonusSettings> prepared,
             @NotNull ResourceManager resourceManager,
             @NotNull ProfilerFiller profiler) {
         BiomeLevelingSettingsReloader.loadTagSettings(prepared);

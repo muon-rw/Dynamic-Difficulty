@@ -3,7 +3,7 @@ package dev.muon.dynamic_difficulty.player;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
 import dev.muon.dynamic_difficulty.config.Config;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stat;
 import net.minecraft.stats.Stats;
@@ -38,7 +38,7 @@ public class PlaytimePlayerLevelProvider implements PlayerLevelProvider {
             return 0;
         }
 
-        Stat<ResourceLocation> playTimeStat = Stats.CUSTOM.get(Stats.PLAY_TIME);
+        Stat<Identifier> playTimeStat = Stats.CUSTOM.get(Stats.PLAY_TIME);
         
         long totalPlaytimeTicks = 0;
         for (ServerPlayer player : players) {

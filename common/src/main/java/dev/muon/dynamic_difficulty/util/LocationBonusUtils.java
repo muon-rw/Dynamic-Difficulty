@@ -6,13 +6,13 @@ import dev.muon.dynamic_difficulty.data.BiomeLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.data.StructureLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.settings.BiomeBonusSettings;
 import dev.muon.dynamic_difficulty.settings.StructureBonusSettings;
-import net.minecraft.advancements.critereon.LocationPredicate;
+import net.minecraft.advancements.criterion.LocationPredicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Biome;
@@ -38,7 +38,7 @@ public final class LocationBonusUtils {
         Registry<Structure> structureRegistry = level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
         ChunkPos chunkPos = new ChunkPos(pos);
         
-        ResourceLocation bestStructureId = null;
+        Identifier bestStructureId = null;
         int highestNonBypassing = 0;
         int highestBypassing = 0;
         int highestTotalBonus = 0;
@@ -50,7 +50,7 @@ public final class LocationBonusUtils {
             if (!start.isValid()) continue;
             
             Structure structure = start.getStructure();
-            ResourceLocation structureId = structureRegistry.getKey(structure);
+            Identifier structureId = structureRegistry.getKey(structure);
             if (structureId == null) continue;
             
             // Get holder for LocationPredicate
@@ -105,7 +105,7 @@ public final class LocationBonusUtils {
             return BiomeBonus.EMPTY;
         }
         
-        ResourceLocation biomeId = optKey.get().location();
+        Identifier biomeId = optKey.get().identifier();
         BiomeBonusSettings settings = BiomeLevelingSettingsReloader.get(biomeId, biomeRegistry);
         
         if (settings == null) {

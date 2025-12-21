@@ -1,6 +1,6 @@
 package dev.muon.dynamic_difficulty.api;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Result containing biome bonus information at a position.
@@ -10,7 +10,7 @@ import net.minecraft.resources.ResourceLocation;
  * @param bypassingBonus Bonus that bypasses cap
  */
 public record BiomeBonus(
-    ResourceLocation biomeId,
+    Identifier biomeId,
     int nonBypassingBonus,
     int bypassingBonus
 ) {

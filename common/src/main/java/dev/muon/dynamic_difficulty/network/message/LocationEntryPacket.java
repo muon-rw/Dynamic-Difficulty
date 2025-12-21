@@ -5,7 +5,7 @@ import dev.muon.dynamic_difficulty.client.render.TitleRenderManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -14,7 +14,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class LocationEntryPacket implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<LocationEntryPacket> TYPE =
-            new CustomPacketPayload.Type<>(DynamicDifficulty.loc("location_entry"));
+            new CustomPacketPayload.Type<>(DynamicDifficulty.id("location_entry"));
     
     public static final StreamCodec<FriendlyByteBuf, LocationEntryPacket> CODEC = CustomPacketPayload.codec(
         LocationEntryPacket::write,
@@ -29,13 +29,13 @@ public class LocationEntryPacket implements CustomPacketPayload {
     
     private final EntryType entryType;
     @Nullable
-    private final ResourceLocation locationId;
+    private final Identifier locationId;
     private final int locationBonus;
     private final int baseLevel;
     private final int playerBonus;
     private final int displayedLevel; // Final calculated level without player bonus (accounts for max level cap and bypassing bonuses)
     
-    public LocationEntryPacket(EntryType entryType, @Nullable ResourceLocation locationId, int locationBonus, int baseLevel, int playerBonus, int displayedLevel) {
+    public LocationEntryPacket(EntryType entryType, @Nullable Identifier locationId, int locationBonus, int baseLevel, int playerBonus, int displayedLevel) {
         this.entryType = entryType;
         this.locationId = locationId;
         this.locationBonus = locationBonus;
@@ -48,7 +48,7 @@ public class LocationEntryPacket implements CustomPacketPayload {
         buf.writeEnum(entryType);
         buf.writeBoolean(locationId != null);
         if (locationId != null) {
-            buf.writeResourceLocation(locationId);
+            buf.writeIdentifier(locationId);
         }
         buf.writeInt(locationBonus);
         buf.writeInt(baseLevel);
@@ -59,7 +59,7 @@ public class LocationEntryPacket implements CustomPacketPayload {
     public LocationEntryPacket(FriendlyByteBuf buf) {
         this.entryType = buf.readEnum(EntryType.class);
         if (buf.readBoolean()) {
-            this.locationId = buf.readResourceLocation();
+            this.locationId = buf.readIdentifier();
         } else {
             this.locationId = null;
         }
