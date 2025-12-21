@@ -1,3 +1,6 @@
+## 1.1.0
+- Allow Entities or Dimensions to set a player scaling multiplier, or disable biome/structure/player bonuses entirely. See README for usage
+
 ## 1.0.9b (1.21.10)
 - Port to 1.21.11
 - Fix item textures/recipes

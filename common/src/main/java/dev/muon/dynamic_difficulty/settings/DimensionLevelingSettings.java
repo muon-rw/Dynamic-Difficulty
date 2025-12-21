@@ -34,7 +34,9 @@ public record DimensionLevelingSettings(
         int randomLevelBonus,
         @Nullable BlockPos spawnPosOverride,
         int seaLevel,
-        @Nullable Map<Attribute, AttributeModifier> attributeModifiers)
+        @Nullable Map<Attribute, AttributeModifier> attributeModifiers,
+        @Nullable Double playerLevelMultiplier,
+        @Nullable ApplyLevelBonuses applyLevelBonuses)
         implements LevelingSettings {
 
     /**
@@ -51,7 +53,9 @@ public record DimensionLevelingSettings(
             Optional<Integer> randomLevelBonus,
             Optional<BlockPos> spawnPosOverride,
             Optional<Integer> seaLevel,
-            Optional<Map<Attribute, AttributeModifier>> attributeModifiers
+            Optional<Map<Attribute, AttributeModifier>> attributeModifiers,
+            Optional<Double> playerLevelMultiplier,
+            Optional<ApplyLevelBonuses> applyLevelBonuses
     ) {
         /**
          * Resolve raw settings into final settings, using config defaults for any omitted fields.
@@ -68,12 +72,32 @@ public record DimensionLevelingSettings(
                     randomLevelBonus.orElseGet(() -> Config.COMMON.randomLevelBonus.get()),
                     spawnPosOverride.orElse(null),
                     seaLevel.orElse(64),
-                    attributeModifiers.orElse(null)
+                    attributeModifiers.orElse(null),
+                    playerLevelMultiplier.orElse(null),
+                    applyLevelBonuses.orElse(null)
             );
         }
     }
 
     // === Codecs ===
+
+    /**
+     * Controls which level bonuses are applied (biome, structure, player).
+     * If null, all bonuses are applied based on config settings.
+     */
+    public record ApplyLevelBonuses(
+            boolean biome,
+            boolean structure,
+            boolean player
+    ) {
+        public static final Codec<ApplyLevelBonuses> CODEC = RecordCodecBuilder.create(instance ->
+                instance.group(
+                        Codec.BOOL.fieldOf("biome").forGetter(ApplyLevelBonuses::biome),
+                        Codec.BOOL.fieldOf("structure").forGetter(ApplyLevelBonuses::structure),
+                        Codec.BOOL.fieldOf("player").forGetter(ApplyLevelBonuses::player)
+                ).apply(instance, ApplyLevelBonuses::new)
+        );
+    }
 
     private record AttributeModifierEntry(Identifier attribute, double amount, String operation) {
     }
@@ -153,7 +177,9 @@ public record DimensionLevelingSettings(
             Codec.INT.optionalFieldOf("random_level_bonus").forGetter(RawSettings::randomLevelBonus),
             SPAWN_POS_OVERRIDE_CODEC.optionalFieldOf("spawn_pos_override").forGetter(RawSettings::spawnPosOverride),
             Codec.INT.optionalFieldOf("sea_level").forGetter(RawSettings::seaLevel),
-            ATTRIBUTE_MODIFIERS_CODEC.optionalFieldOf("attribute_modifiers").forGetter(RawSettings::attributeModifiers)
+            ATTRIBUTE_MODIFIERS_CODEC.optionalFieldOf("attribute_modifiers").forGetter(RawSettings::attributeModifiers),
+            Codec.DOUBLE.optionalFieldOf("player_level_multiplier").forGetter(RawSettings::playerLevelMultiplier),
+            ApplyLevelBonuses.CODEC.optionalFieldOf("apply_level_bonuses").forGetter(RawSettings::applyLevelBonuses)
     ).apply(instance, RawSettings::new));
 
     /**
@@ -174,7 +200,9 @@ public record DimensionLevelingSettings(
                     Optional.of(settings.randomLevelBonus()),
                     Optional.ofNullable(settings.spawnPosOverride()),
                     Optional.of(settings.seaLevel()),
-                    Optional.ofNullable(settings.attributeModifiers())
+                    Optional.ofNullable(settings.attributeModifiers()),
+                    Optional.ofNullable(settings.playerLevelMultiplier()),
+                    Optional.ofNullable(settings.applyLevelBonuses())
             )
     );
 
@@ -193,6 +221,8 @@ public record DimensionLevelingSettings(
                 Config.COMMON.randomLevelBonus.get(),
                 null,
                 64,
+                null,
+                null,
                 null
         );
     }
