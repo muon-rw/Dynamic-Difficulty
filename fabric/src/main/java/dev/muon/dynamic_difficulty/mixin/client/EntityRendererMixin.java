@@ -3,9 +3,7 @@ package dev.muon.dynamic_difficulty.mixin.client;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.client.LevelPlateHandler;
-import dev.muon.dynamic_difficulty.config.Config;
 import net.minecraft.client.renderer.entity.EntityRenderer;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -26,10 +24,8 @@ public class EntityRendererMixin {
         if (!(entity instanceof LivingEntity living) || !LevelingAPI.shouldShowLevel(living)) {
             return original;
         }
-
-        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(living.getType()).toString();
-        if (Config.CLIENT.hiddenLevelEntities.get().contains(entityId)) {
-            return false;
+        if (!LevelPlateHandler.shouldOverrideNameplateVisibility(living)) {
+            return original;
         }
 
         return LevelPlateHandler.shouldShowName(living);
@@ -43,7 +39,7 @@ public class EntityRendererMixin {
         index = 2
     )
     private Component modifyDisplayName(Component displayName, Entity entity) {
-        if (entity instanceof LivingEntity livingEntity) {
+        if (entity instanceof LivingEntity livingEntity && LevelPlateHandler.shouldInjectLevel(livingEntity)) {
             return LevelPlateHandler.modifyNameTag(displayName, livingEntity);
         }
         return displayName;

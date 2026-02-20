@@ -1,5 +1,8 @@
 ## 1.1.1
 - Update Reskillable Reimagined compat to 2.3.3
+- Fix levelup items not being usable on Tamed Wolves (or other mobs that override right click behavior)
+- Added config values for nameplate handling
+- Some internal javadoc cleanup
 
 ## 1.1.0
 - Allow Entities or Dimensions to set a player scaling multiplier, or disable biome/structure/player bonuses entirely. See README for usage

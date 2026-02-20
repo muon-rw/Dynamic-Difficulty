@@ -27,9 +27,11 @@ public class ClientEventsNeoForge {
             return;
         }
         
-        if (LevelPlateHandler.shouldShowName(entity)) {
+        if (LevelPlateHandler.shouldInjectLevel(entity)) {
             event.setContent(LevelPlateHandler.modifyNameTag(event.getContent(), entity));
-            event.setCanRender(TriState.TRUE);
+        }
+        if (LevelPlateHandler.shouldOverrideNameplateVisibility(entity)) {
+            event.setCanRender(LevelPlateHandler.shouldShowName(entity) ? TriState.TRUE : TriState.FALSE);
         }
     }
     
