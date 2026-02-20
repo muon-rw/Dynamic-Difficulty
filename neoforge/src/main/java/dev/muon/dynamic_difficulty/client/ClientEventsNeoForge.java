@@ -2,6 +2,7 @@ package dev.muon.dynamic_difficulty.client;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.client.render.TitleRenderManager;
+import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.network.message.SyncDungeonDifficultyData;
 import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
 import net.minecraft.client.Minecraft;
@@ -37,6 +38,9 @@ public class ClientEventsNeoForge {
     
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
+        if (!Config.CLIENT_SPEC.isLoaded()) {
+            return;
+        }
         Minecraft minecraft = Minecraft.getInstance();
         
         // Title rendering tick

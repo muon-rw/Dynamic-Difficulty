@@ -1,6 +1,7 @@
 package dev.muon.dynamic_difficulty.client;
 
 import dev.muon.dynamic_difficulty.client.render.TitleRenderManager;
+import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.network.NetworkRegistration;
 import dev.muon.dynamic_difficulty.network.message.SyncDungeonDifficultyData;
 import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
@@ -28,6 +29,9 @@ public class DynamicDifficultyClient implements ClientModInitializer {
     private void registerEventCallbacks() {
         // Client tick - title rendering and cache cleanup
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (!Config.CLIENT_SPEC.isLoaded()) {
+                return;
+            }
             TitleRenderManager.getInstance().clientTick();
             if (client.player != null) {
                 TitleRenderManager.getInstance().playerTick(client.player);
@@ -45,6 +49,9 @@ public class DynamicDifficultyClient implements ClientModInitializer {
         
         // HUD rendering for titles
         HudRenderCallback.EVENT.register((guiGraphics, tickCounter) -> {
+            if (!Config.CLIENT_SPEC.isLoaded()) {
+                return;
+            }
             if (Minecraft.getInstance().player != null) {
                 TitleRenderManager.getInstance().renderTitles(
                     guiGraphics,

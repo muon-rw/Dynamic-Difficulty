@@ -151,6 +151,9 @@ public class LevelingEvents {
      * Called every player tick.
      */
     public static void onPlayerTick(ServerPlayer player) {
+        if (!Config.COMMON_SPEC.isLoaded()) {
+            return;
+        }
         // Check every second to reduce performance impact
         if (player.tickCount % 20 == 0) {
             PlayerLocationTracker.updatePlayerLocation(player);

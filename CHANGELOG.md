@@ -2,6 +2,7 @@
 - Update Reskillable Reimagined compat to 2.3.3
 - Fix levelup items not being usable on Tamed Wolves (or other mobs that override right click behavior)
 - Added config values for nameplate handling
+- Fixed a rare case of "Cannot get config value before config is loaded" with certain mods installed
 - Some internal javadoc cleanup
 
 ## 1.1.0
