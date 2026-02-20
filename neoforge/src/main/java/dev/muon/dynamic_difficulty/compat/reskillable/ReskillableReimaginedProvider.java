@@ -4,7 +4,7 @@ import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
 import dev.muon.dynamic_difficulty.config.Config;
 import net.bandit.reskillable.common.capabilities.SkillModel;
-import net.bandit.reskillable.common.commands.skills.Skill;
+import net.bandit.reskillable.common.skills.Skill;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.List;
@@ -14,12 +14,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ReskillableReimaginedProvider implements PlayerLevelProvider {
-    /**
-     * Determines if this provider is active and should contribute to level calculations.
-     * For example, return false if a config option disables this provider.
-     *
-     * @return true if this provider is enabled, false otherwise.
-     */
     @Override
     public boolean isEnabled() {
         return true;
@@ -30,19 +24,7 @@ public class ReskillableReimaginedProvider implements PlayerLevelProvider {
         return 20;
     }
 
-    /**
-     * Gets the total skill level for a player across ALL skills.
-     * This represents the player's progression level in the Reskillable system.
-     * 
-     * This is used for DISPLAY purposes (shown above player's head, color-coding mob difficulty).
-     * All skills are included regardless of blacklist configuration.
-     * 
-     * Note: Reskillable skills start at level 1 (not 0), so we subtract 1 from each skill level
-     * to get the actual progression above the base level.
-     *
-     * @param player The player to get the level for
-     * @return The sum of all skill levels minus the base level offset
-     */
+    /** Sum of all skill levels minus 1 (Reskillable skills start at 1, not 0). All skills included for display. */
     @Override
     public int getPlayerLevel(ServerPlayer player) {
         SkillModel skillModel = SkillModel.get(player);
@@ -55,19 +37,7 @@ public class ReskillableReimaginedProvider implements PlayerLevelProvider {
                 .sum();
     }
     
-    /**
-     * Calculates bonus levels for mob scaling based on nearby players.
-     * This excludes blacklisted skills from the calculation, so that certain
-     * skills (e.g., non-combat skills) don't contribute to mob difficulty scaling.
-     * 
-     * The default implementation averages levels, but we override to apply blacklist filtering.
-     * 
-     * Note: Reskillable skills start at level 1 (not 0), so we subtract 1 from each skill level
-     * to get the actual progression above the base level.
-     *
-     * @param players A list of players near the entity being leveled
-     * @return The calculated level bonus based on the players (excluding blacklisted skills)
-     */
+    /** Average of nearby players' levels, excluding blacklisted skills. Skills start at 1, so -1 per skill. */
     @Override
     public int calculateBonusLevels(List<ServerPlayer> players) {
         if (players.isEmpty()) {

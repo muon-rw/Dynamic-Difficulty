@@ -3,18 +3,18 @@ package dev.muon.dynamic_difficulty.api;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Result containing structure bonus information at a position.
- * 
- * @param structureId The structure at the position (null if none)
- * @param nonBypassingBonus Highest bonus from structures that don't bypass cap
- * @param bypassingBonus Highest bonus from structures that bypass cap
+ * Structure bonus at a position.
+ *
+ * @param structureId Structure at position (null if none)
+ * @param nonBypassingBonus Highest bonus that doesn't bypass cap
+ * @param bypassingBonus Highest bonus that bypasses cap
  */
 public record StructureBonus(
     ResourceLocation structureId,
     int nonBypassingBonus,
     int bypassingBonus
 ) {
-    /** Empty result for when there's no structure or no bonus */
+    /** Empty when no structure or bonus. */
     public static final StructureBonus EMPTY = new StructureBonus(null, 0, 0);
     
     public int totalBonus() {

@@ -22,10 +22,7 @@ public class PuffishSkillsProviderNeoForge implements PlayerLevelProvider {
         return 10;
     }
 
-    /**
-     * Gets the total spent skill points for a player across ALL unlocked categories.
-     * Used for DISPLAY purposes (shown above player's head, color-coding mob difficulty).
-     */
+    /** Sum of spent skill points across all unlocked categories. */
     @Override
     public int getPlayerLevel(ServerPlayer player) {
         return SkillsAPI.streamUnlockedCategories(player)
@@ -33,10 +30,7 @@ public class PuffishSkillsProviderNeoForge implements PlayerLevelProvider {
                 .sum();
     }
     
-    /**
-     * Calculates bonus levels for mob scaling based on nearby players.
-     * Excludes blacklisted skill trees from the calculation.
-     */
+    /** Average of nearby players' levels, excluding blacklisted skill trees. */
     @Override
     public int calculateBonusLevels(List<ServerPlayer> players) {
         if (players.isEmpty()) {

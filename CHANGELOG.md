@@ -1,3 +1,6 @@
+## 1.1.1
+- Update Reskillable Reimagined compat to 2.3.3
+
 ## 1.1.0
 - Allow Entities or Dimensions to set a player scaling multiplier, or disable biome/structure/player bonuses entirely. See README for usage
 

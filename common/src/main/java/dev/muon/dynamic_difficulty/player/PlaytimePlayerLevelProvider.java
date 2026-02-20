@@ -11,12 +11,8 @@ import net.minecraft.stats.Stats;
 import java.util.List;
 
 /**
- * Built-in player level provider that uses Minecraft's built-in playtime statistic.
- * Playtime is tracked automatically by Minecraft and contributes to mob level bonuses.
- * 
- * IMPORTANT: This provider does NOT affect the player's displayed level (shown above head).
- * It only affects mob scaling via calculateBonusLevels() - averaging playtime from all
- * nearby players and converting it to levels based on the configured levelsPerPlaytimeHour value.
+ * Uses Minecraft playtime stat for mob scaling only. {@link #getPlayerLevel} returns 0
+ * (no display level); playtime contributes via {@link #calculateBonusLevels} using levelsPerPlaytimeHour.
  */
 public class PlaytimePlayerLevelProvider implements PlayerLevelProvider {
     
@@ -62,8 +58,7 @@ public class PlaytimePlayerLevelProvider implements PlayerLevelProvider {
     
     @Override
     public int getDisplayPriority() {
-        // Doesn't really matter, since getPlayerLevel here always returns 0
-        return -10;
+        return -10; // Low; getPlayerLevel always returns 0
     }
 }
 
