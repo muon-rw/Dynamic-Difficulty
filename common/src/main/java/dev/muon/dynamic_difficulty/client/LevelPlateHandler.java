@@ -3,8 +3,8 @@ package dev.muon.dynamic_difficulty.client;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.config.Config;
-import dev.muon.dynamic_difficulty.platform.Platform;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -20,15 +20,37 @@ import net.minecraft.world.phys.HitResult;
 public class LevelPlateHandler {
 
     /**
+     * Whether level info should be injected into this entity's nameplate.
+     * Controlled by injectLevelIntoMobs and injectLevelIntoPlayers config options.
+     */
+    public static boolean shouldInjectLevel(LivingEntity entity) {
+        return entity instanceof Player
+                ? Config.CLIENT.injectLevelIntoPlayers.get()
+                : Config.CLIENT.injectLevelIntoMobs.get();
+    }
+
+    /**
+     * Whether this mod should override the default nameplate visibility for this entity.
+     * When false, vanilla decides when the nameplate is shown (sneaking, spectator, etc.).
+     * Controlled by overrideMobNameplateVisibility and overridePlayerNameplateVisibility config options.
+     */
+    public static boolean shouldOverrideNameplateVisibility(LivingEntity entity) {
+        return entity instanceof Player
+                ? Config.CLIENT.overridePlayerNameplateVisibility.get()
+                : Config.CLIENT.overrideMobNameplateVisibility.get();
+    }
+
+    /**
      * Modifies the name tag component to include level information.
      * Called from platform-specific event handlers/mixins.
+     * Visibility is controlled by the caller; this only handles content injection.
      *
      * @param originalName The original name component
      * @param entity The entity being rendered
-     * @return The modified name component with level info appended
+     * @return The modified name component with level info appended, or original if injection is disabled
      */
     public static Component modifyNameTag(Component originalName, LivingEntity entity) {
-        if (!shouldShowName(entity)) {
+        if (!shouldInjectLevel(entity)) {
             return originalName;
         }
         
@@ -117,6 +139,9 @@ public class LevelPlateHandler {
 
         // Check if level should be shown before expensive operations
         if (!LevelingAPI.shouldShowLevel(entity)) return false;
+
+        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
+        if (Config.CLIENT.hiddenLevelEntities.get().contains(entityId)) return false;
 
         // Line of sight check - expensive raycast, but only done after all cheap checks pass
         // Can be disabled via config for better performance

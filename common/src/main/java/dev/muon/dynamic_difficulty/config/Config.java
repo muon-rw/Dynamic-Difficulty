@@ -303,6 +303,10 @@ public class Config {
     // Visibility
     public final ModConfigSpec.EnumValue<RenderBehavior> renderBehavior;
     public final ConfigValue<Double> renderDistance;
+    public final ConfigValue<Boolean> injectLevelIntoMobs;
+    public final ConfigValue<Boolean> injectLevelIntoPlayers;
+    public final ConfigValue<Boolean> overrideMobNameplateVisibility;
+    public final ConfigValue<Boolean> overridePlayerNameplateVisibility;
     public final ConfigValue<List<String>> hiddenLevelEntities;
     public final ConfigValue<Boolean> showApotheosisWorldTier;
     public final ConfigValue<Boolean> showDungeonDifficultyInfo;
@@ -384,6 +388,24 @@ public class Config {
                       "When enabled, levels are only shown for entities the player can see (requires raycast)",
                       "When disabled, levels are shown based on distance and render behavior only (better performance)")
               .define("enable_line_of_sight_check", true);
+      injectLevelIntoMobs = builder
+              .comment("Whether to inject level information into mob (non-player) nameplates",
+                      "When false, mob nameplates show only the vanilla name without level info")
+              .define("inject_level_into_mobs", true);
+      injectLevelIntoPlayers = builder
+              .comment("Whether to inject level information into player nameplates",
+                      "When false, player nameplates show only the vanilla name without level info")
+              .define("inject_level_into_players", true);
+      overrideMobNameplateVisibility = builder
+              .comment("Whether to override the default nameplate visibility for mobs (non-players)",
+                      "When false, vanilla decides when mob nameplates are shown (sneaking, spectator, etc.)",
+                      "Level injection (if enabled) still applies when vanilla shows the nameplate")
+              .define("override_mob_nameplate_visibility", true);
+      overridePlayerNameplateVisibility = builder
+              .comment("Whether to override the default nameplate visibility for players",
+                      "When false, vanilla decides when player nameplates are shown (sneaking, spectator, etc.)",
+                      "Level injection (if enabled) still applies when vanilla shows the nameplate")
+              .define("override_player_nameplate_visibility", true);
       builder.pop();
 
       builder.push("integration_options");

@@ -1,3 +1,8 @@
+## 1.1.1
+- Fix levelup items not being usable on Tamed Wolves (or other mobs that override right click behavior)
+- Added config values for nameplate handling
+- Some internal javadoc cleanup
+
 ## 1.1.0
 - Allow Entities or Dimensions to set a player scaling multiplier, or disable biome/structure/player bonuses entirely. See README for usage
 
@@ -7,7 +12,7 @@
 
 ## 1.0.9
 - Port to 1.21.10
-- Fix "Trying to access Unbound Value" on Neoforge 
+- Fix "Trying to access Unbound Value" on Neoforge
 
 ## 1.0.8
 - Whether player level bonuses bypass the max level cap is now configurable

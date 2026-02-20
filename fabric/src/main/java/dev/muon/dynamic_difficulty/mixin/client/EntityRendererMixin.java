@@ -4,9 +4,7 @@ import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.client.LevelPlateHandler;
-import dev.muon.dynamic_difficulty.config.Config;
 import net.minecraft.client.renderer.entity.EntityRenderer;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -27,10 +25,8 @@ public class EntityRendererMixin {
         if (!(entity instanceof LivingEntity living) || !LevelingAPI.shouldShowLevel(living)) {
             return original;
         }
-
-        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(living.getType()).toString();
-        if (Config.CLIENT.hiddenLevelEntities.get().contains(entityId)) {
-            return false;
+        if (!LevelPlateHandler.shouldOverrideNameplateVisibility(living)) {
+            return original;
         }
 
         return LevelPlateHandler.shouldShowName(living);
@@ -41,11 +37,14 @@ public class EntityRendererMixin {
             at = @At("RETURN")
     )
     @Nullable
-    private Component modifyDisplayName(@Nullable Component original, Entity entity) {
-        if (original == null || !(entity instanceof LivingEntity livingEntity)) {
-            return original;
+    private Component modifyDisplayName(@Nullable Component displayName, Entity entity) {
+        if (displayName == null || !(entity instanceof LivingEntity livingEntity)) {
+            return displayName;
         }
-        return LevelPlateHandler.modifyNameTag(original, livingEntity);
+        if (LevelPlateHandler.shouldInjectLevel(livingEntity)) {
+            return LevelPlateHandler.modifyNameTag(displayName, livingEntity);
+        }
+        return displayName;
     }
 
 }

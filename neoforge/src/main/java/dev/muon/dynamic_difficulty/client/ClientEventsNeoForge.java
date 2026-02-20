@@ -35,28 +35,11 @@ public class ClientEventsNeoForge {
             return;
         }
         
-        // Early exit if entity shouldn't show level (matches Fabric mixin logic)
-        if (!LevelingAPI.shouldShowLevel(entity)) {
-            return;
-        }
-        
-        // Check hiddenLevelEntities config (matches Fabric mixin logic)
-        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
-        if (Config.CLIENT.hiddenLevelEntities.get().contains(entityId)) {
-            event.setCanRender(TriState.FALSE);
-            return;
-        }
-        
-        // Use LevelPlateHandler.shouldShowName to determine visibility
-        // This includes all the config checks (distance, behavior, line of sight, etc.)
-        if (LevelPlateHandler.shouldShowName(entity)) {
-            // Show name tag with level info
+        if (LevelPlateHandler.shouldInjectLevel(entity)) {
             event.setContent(LevelPlateHandler.modifyNameTag(event.getContent(), entity));
-            event.setCanRender(TriState.TRUE);
-        } else {
-            // Hide name tag when shouldShowName returns false
-            // This prevents vanilla name tags from showing when our config says not to
-            event.setCanRender(TriState.FALSE);
+        }
+        if (LevelPlateHandler.shouldOverrideNameplateVisibility(entity)) {
+            event.setCanRender(LevelPlateHandler.shouldShowName(entity) ? TriState.TRUE : TriState.FALSE);
         }
     }
     */
