@@ -2,6 +2,7 @@ plugins {
     id("fabric-loom") version "1.14-SNAPSHOT" apply false
     id("net.neoforged.moddev") version "2.0.133" apply false
     id("me.modmuss50.mod-publish-plugin") version "0.6.2" apply false
+    id("dev.mixinmcp.decompile") version "0.6.4" apply false
 }
 
 tasks.register("publishAll") {

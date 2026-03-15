@@ -7,6 +7,7 @@ plugins {
     id("conventions.loader")
     id("net.neoforged.moddev")
     id("me.modmuss50.mod-publish-plugin")
+    id("dev.mixinmcp.decompile")
 }
 
 tasks {

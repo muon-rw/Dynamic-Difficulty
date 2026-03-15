@@ -1,12 +1,9 @@
 package dev.muon.dynamic_difficulty.client;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
-import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.client.render.TitleRenderManager;
-import dev.muon.dynamic_difficulty.config.Config;
 import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.util.TriState;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.api.distmarker.Dist;
@@ -23,12 +20,6 @@ import net.neoforged.neoforge.event.level.LevelEvent;
 @EventBusSubscriber(modid = DynamicDifficulty.MODID, value = Dist.CLIENT)
 public class ClientEventsNeoForge {
 
-    // Disabled
-     /**
-     * RenderNameTagEvent.CanRender is broken in NeoForge - the event is created but not posted
-     * @see dev.muon.dynamic_difficulty.mixin.client.EntityRendererMixin
-     * */
-    /*
     @SubscribeEvent
     public static void onRenderNameTag(RenderNameTagEvent.CanRender event) {
         if (!(event.getEntity() instanceof LivingEntity entity)) {
@@ -42,7 +33,6 @@ public class ClientEventsNeoForge {
             event.setCanRender(LevelPlateHandler.shouldShowName(entity) ? TriState.TRUE : TriState.FALSE);
         }
     }
-    */
     
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {

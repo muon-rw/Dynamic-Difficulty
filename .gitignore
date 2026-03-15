@@ -25,3 +25,7 @@ runs
 .vscode
 /buildSrc/.kotlin/
 /.cursor/rules/
+
+# MixinMCP auto-injected rules
+.cursor/rules/mixinmcp.mdc
+.cursor/rules/mixin-reference.mdc

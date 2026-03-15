@@ -8,9 +8,7 @@
     "LivingEntityMixin",
     "compat.puffish_skills.SkillsModMixin"
   ],
-  "client": [
-    "client.EntityRendererMixin"
-  ],
+  "client": [],
   "server": [],
   "injectors": {
     "defaultRequire": 1
