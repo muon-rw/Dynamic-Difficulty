@@ -9,12 +9,12 @@ object Versions {
     const val PARCHMENT = "2024.11.17"
 
     const val FABRIC_API = "0.116.7+1.21.1"
-    const val FABRIC_LOADER = "0.17.3"
+    const val FABRIC_LOADER = "0.18.4"
     const val MOD_MENU = "11.0.0-beta.1"
     const val FABRIC_LOADER_RANGE = ">=0.15"
     const val FABRIC_MINECRAFT_RANGE = ">=1.21-"
 
-    const val NEOFORGE = "21.1.208"
+    const val NEOFORGE = "21.1.219"
     const val NEOFORGE_LOADER_RANGE = "[4,)"
     const val NEOFORGE_MINECRAFT_RANGE = "[1.21,)"
 

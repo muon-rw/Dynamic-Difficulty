@@ -7,6 +7,7 @@ plugins {
     id("conventions.loader")
     id("fabric-loom")
     id("me.modmuss50.mod-publish-plugin")
+    id("dev.mixinmcp.decompile")
 }
 
 repositories {

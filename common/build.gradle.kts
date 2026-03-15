@@ -6,6 +6,7 @@ plugins {
     id("conventions.common")
     id("net.neoforged.moddev")
     id("me.modmuss50.mod-publish-plugin")
+    id("dev.mixinmcp.decompile")
 }
 
 sourceSets {
