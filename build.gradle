@@ -13,13 +13,19 @@ plugins {
 evaluationDependsOn(':fabric')
 evaluationDependsOn(':neoforge')
 
+// Compute all GString values OUTSIDE the publishMods closure. Inside the closure, Groovy's
+// delegate-first resolution shadows `version` (and via `project.version` in some nested
+// option closures) with the extension's own Property<String>, whose toString is the
+// descriptor "property 'version'" — that string otherwise leaks into tagName / displayName.
+def projectVersion = project.version.toString()
+def mcVersion = project.minecraft_version.toString()
+def publishVersion = "${projectVersion}+${mcVersion}".toString()
+def fabricDisplayName = "Fabric ${projectVersion}+${mcVersion}".toString()
+def neoforgeDisplayName = "NeoForge ${projectVersion}+${mcVersion}".toString()
+
 publishMods {
     changelog = rootProject.file("CHANGELOG.md").getText()
-    // Use project.* explicitly — bare `version` inside this closure resolves to the
-    // publishMods extension's own Property<String>, whose toString is the descriptor
-    // "extension 'publishMods' property 'version'" and leaks into the output.
-    version = "${project.version}+${project.minecraft_version}"
-    displayName = "v${project.version} (Minecraft ${project.minecraft_version})"
+    version = publishVersion
     type = STABLE
 
     if (project.findProperty('curseforge_id')) {
@@ -27,7 +33,7 @@ publishMods {
             accessToken = providers.environmentVariable('CURSEFORGE_TOKEN')
             projectId = project.curseforge_id
             projectSlug = project.mod_id
-            minecraftVersions.add(minecraft_version)
+            minecraftVersions.add(mcVersion)
             requires {
                 slug = 'fzzy-config'
             }
@@ -37,11 +43,13 @@ publishMods {
             from cfOptions
             file = project(':fabric').tasks.named('jar', Jar).flatMap { it.archiveFile }
             modLoaders.add('fabric')
+            displayName = fabricDisplayName
         }
         curseforge('curseforgeNeoforge') {
             from cfOptions
             file = project(':neoforge').tasks.named('jar', Jar).flatMap { it.archiveFile }
             modLoaders.add('neoforge')
+            displayName = neoforgeDisplayName
         }
     }
 
@@ -49,7 +57,7 @@ publishMods {
         def mrOptions = modrinthOptions {
             accessToken = providers.environmentVariable('MODRINTH_TOKEN')
             projectId = project.modrinth_id
-            minecraftVersions.add(minecraft_version)
+            minecraftVersions.add(mcVersion)
             requires {
                 slug = 'fzzy-config'
             }
@@ -59,37 +67,20 @@ publishMods {
             from mrOptions
             file = project(':fabric').tasks.named('jar', Jar).flatMap { it.archiveFile }
             modLoaders.add('fabric')
+            displayName = fabricDisplayName
         }
         modrinth('modrinthNeoforge') {
             from mrOptions
             file = project(':neoforge').tasks.named('jar', Jar).flatMap { it.archiveFile }
             modLoaders.add('neoforge')
+            displayName = neoforgeDisplayName
         }
     }
 
-    if (project.findProperty('github_owner') && project.findProperty('github_repo')) {
-        // Pin the release to the current branch name so GitHub knows which ref the tag points at.
-        // `git rev-parse --abbrev-ref HEAD` is the safe query during configuration.
-        def gitBranch = 'git rev-parse --abbrev-ref HEAD'.execute(null, rootProject.projectDir).text.trim()
-        def ghOptions = githubOptions {
-            accessToken = providers.environmentVariable('GITHUB_TOKEN')
-            repository = "${project.github_owner}/${project.github_repo}"
-            commitish = gitBranch
-            tagName = "v${version}"
-        }
-
-        github('githubFabric') {
-            from ghOptions
-            file = project(':fabric').tasks.named('jar', Jar).flatMap { it.archiveFile }
-            modLoaders.add('fabric')
-        }
-        github('githubNeoforge') {
-            from ghOptions
-            file = project(':neoforge').tasks.named('jar', Jar).flatMap { it.archiveFile }
-            modLoaders.add('neoforge')
-        }
-    }
 }
+// GitHub release publishing intentionally omitted — we only use github_owner / github_repo for
+// source/issues links in fabric.mod.json and neoforge.mods.toml. Anyone who wants GitHub releases
+// can wire it up from the mod-publish-plugin docs: https://modmuss50.github.io/mod-publish-plugin/
 
 tasks.register('renameProject') {
     group = 'setup'
