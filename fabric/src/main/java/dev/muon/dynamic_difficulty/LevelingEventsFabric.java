@@ -1,9 +1,8 @@
 package dev.muon.dynamic_difficulty;
 
 import dev.muon.dynamic_difficulty.command.ModCommands;
-import fuzs.forgeconfigapiport.fabric.api.v5.ModConfigEvents;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityLevelChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
@@ -12,7 +11,6 @@ import net.fabricmc.fabric.api.networking.v1.EntityTrackingEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
-import net.neoforged.fml.config.ModConfig;
 
 /**
  * Fabric-specific event handlers that delegate to common LevelingEvents.
@@ -78,8 +76,10 @@ public class LevelingEventsFabric {
             }
         });
 
-        // Player dimension change
-        ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) -> {
+        // Player dimension change — renamed from ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD
+        // (MC "World" → "Level" rename). Re-computes player level so clients see the new value immediately
+        // after the transition rather than waiting for the periodic tick fallback.
+        ServerEntityLevelChangeEvents.AFTER_PLAYER_CHANGE_LEVEL.register((player, origin, destination) -> {
             LevelingEvents.onPlayerChangeDimension(player);
         });
 
@@ -91,11 +91,7 @@ public class LevelingEventsFabric {
             LevelingEvents.onServerTick(server);
         });
 
-        // Config reload
-        ModConfigEvents.reloading(DynamicDifficulty.MODID).register(config -> {
-            if (config.getType() == ModConfig.Type.COMMON) {
-                LevelingEvents.onConfigReload();
-            }
-        });
+        // Config reload is handled by ConfigSync overrides (onSyncServer / onUpdateServer)
+        // which invoke the common LevelingEvents.onConfigReload() logic via static helpers.
     }
 }

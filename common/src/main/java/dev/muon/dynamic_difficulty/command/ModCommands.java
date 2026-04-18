@@ -10,7 +10,7 @@ import dev.muon.dynamic_difficulty.api.BiomeBonus;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
 import dev.muon.dynamic_difficulty.api.StructureBonus;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.Configs;
 import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
 import net.minecraft.commands.CommandSourceStack;
@@ -347,7 +347,7 @@ public class ModCommands {
     }
     
     // Calculate day bonus
-    long days = level.getDayTime() / 24000L;
+    long days = level.getOverworldClockTime() / 24000L;
     int dayBonus = (int)(days * dimSettings.levelsPerDay());
     
     // Calculate local difficulty bonus
@@ -367,7 +367,7 @@ public class ModCommands {
     
     // Get player multiplier override (dimension -> config)
     Double playerMultiplierOverride = dimSettings.playerLevelMultiplier();
-    double playerMultiplier = playerMultiplierOverride != null ? playerMultiplierOverride : Config.COMMON.playerLevelMultiplier.get();
+    double playerMultiplier = playerMultiplierOverride != null ? playerMultiplierOverride : Configs.SYNC.playerLevelMultiplier.get();
     String multiplierSource = playerMultiplierOverride != null ? "dimension override" : "config";
     
     // Get apply level bonuses override (dimension -> config)
@@ -379,8 +379,8 @@ public class ModCommands {
     
     // Player bonus
     int playerBonus = 0;
-    boolean playerBypassesCap = Config.COMMON.playerLevelBypassesCap.get();
-    if (Config.COMMON.applyPlayerBasedLeveling.get() && applyPlayer) {
+    boolean playerBypassesCap = Configs.SYNC.playerLevelBypassesCap.get();
+    if (Configs.SYNC.applyPlayerBasedLeveling.get() && applyPlayer) {
       int rawBonus = PlayerLevelProvider.getProviders().stream()
           .filter(PlayerLevelProvider::isEnabled)
           .mapToInt(provider -> provider.calculateBonusLevels(List.of(player)))

@@ -9,7 +9,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -65,13 +64,8 @@ public class LevelingEventsNeoForge {
         event.addListener(DynamicDifficulty.id("biome_tag_leveling_settings"), new BiomeTagLevelingSettingsReloaderNeoForge());
     }
 
-    @SubscribeEvent
-    public static void onConfigReload(ModConfigEvent.Reloading event) {
-        if (event.getConfig().getType() == net.neoforged.fml.config.ModConfig.Type.COMMON
-                && event.getConfig().getModId().equals(DynamicDifficulty.MODID)) {
-            LevelingEvents.onConfigReload();
-        }
-    }
+    // Config reload is handled by ConfigSync overrides (onSyncServer / onUpdateServer)
+    // which invoke the common LevelingEvents.onConfigReload() logic via static helpers.
 
     @SubscribeEvent
     public static void syncEntityLevel(PlayerEvent.StartTracking event) {

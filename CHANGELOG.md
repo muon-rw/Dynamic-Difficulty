@@ -1,3 +1,10 @@
+## 1.2.0
+- Port to 26.1.2
+- Migrate to FzzyConfig, now required instead of Forge Config API Port
+- Config files are now in a `/config/dynamic_difficulty` directory
+- *Configs* can NOT be reused from old versions, you'll need to reapply changes 
+- Existing *datapacks* should still be compatible
+
 ## 1.1.1
 - Fix levelup items not being usable on Tamed Wolves (or other mobs that override right click behavior)
 - Added config values for nameplate handling

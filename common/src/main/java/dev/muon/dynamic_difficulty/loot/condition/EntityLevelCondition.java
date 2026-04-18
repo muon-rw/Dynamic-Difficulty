@@ -9,14 +9,13 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
-import net.minecraft.world.level.storage.loot.predicates.LootItemConditionType;
 
 import java.util.Optional;
 
 /**
  * Loot condition that checks if an entity's level is within a specified range.
  * This allows datapack creators and modpack makers to create level-gated loot drops.
- * 
+ *
  * Example JSON:
  * {
  *   "condition": "dynamic_difficulty:entity_level",
@@ -25,7 +24,7 @@ import java.util.Optional;
  * }
  */
 public record EntityLevelCondition(Optional<Integer> min, Optional<Integer> max, Optional<Integer> exact) implements LootItemCondition {
-    
+
     public static final MapCodec<EntityLevelCondition> CODEC = RecordCodecBuilder.mapCodec(instance ->
         instance.group(
             Codec.INT.optionalFieldOf("min").forGetter(EntityLevelCondition::min),
@@ -35,14 +34,14 @@ public record EntityLevelCondition(Optional<Integer> min, Optional<Integer> max,
     );
 
     @Override
-    public LootItemConditionType getType() {
-        return ModLootConditions.ENTITY_LEVEL.value();
+    public MapCodec<? extends LootItemCondition> codec() {
+        return CODEC;
     }
 
     @Override
     public boolean test(LootContext context) {
         Entity entity = context.getOptionalParameter(LootContextParams.THIS_ENTITY);
-        
+
         if (!(entity instanceof LivingEntity living)) {
             return false;
         }
@@ -112,4 +111,3 @@ public record EntityLevelCondition(Optional<Integer> min, Optional<Integer> max,
         return new Builder();
     }
 }
-

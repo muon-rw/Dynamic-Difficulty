@@ -1,10 +1,10 @@
 package dev.muon.dynamic_difficulty.client.render;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.ConfigClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
@@ -27,7 +27,7 @@ public class TitleRenderer<T> {
     protected final Supplier<String> textColor;
     protected final Supplier<Boolean> renderShadow;
     protected final Supplier<Double> textSize;
-    protected final Supplier<Config.AnchorPoint> anchor;
+    protected final Supplier<ConfigClient.AnchorPoint> anchor;
     protected final Supplier<Integer> xOffset;
     protected final Supplier<Integer> yOffset;
 
@@ -40,7 +40,7 @@ public class TitleRenderer<T> {
             Supplier<String> textColor,
             Supplier<Boolean> renderShadow,
             Supplier<Double> textSize,
-            Supplier<Config.AnchorPoint> anchor,
+            Supplier<ConfigClient.AnchorPoint> anchor,
             Supplier<Integer> xOffset,
             Supplier<Integer> yOffset
     ) {
@@ -67,7 +67,7 @@ public class TitleRenderer<T> {
         }
     }
 
-    public void renderText(float partialTicks, GuiGraphics guiGraphics) {
+    public void renderText(float partialTicks, GuiGraphicsExtractor guiGraphics) {
         if (!enabled.get() || displayedTitle == null || titleTimer <= 0) {
             return;
         }
@@ -89,7 +89,7 @@ public class TitleRenderer<T> {
         }
     }
 
-    protected float[] getAnchorPosition(GuiGraphics guiGraphics, Config.AnchorPoint anchorPoint) {
+    protected float[] getAnchorPosition(GuiGraphicsExtractor guiGraphics, ConfigClient.AnchorPoint anchorPoint) {
         float screenWidth = guiGraphics.guiWidth();
         float screenHeight = guiGraphics.guiHeight();
         float x = 0, y = 0;
@@ -140,7 +140,7 @@ public class TitleRenderer<T> {
      * Get text alignment offset based on anchor point
      * LEFT anchors = 0 (left align), CENTER anchors = -width/2 (center), RIGHT anchors = -width (right align)
      */
-    protected float getAlignmentOffset(Config.AnchorPoint anchorPoint, int textWidth) {
+    protected float getAlignmentOffset(ConfigClient.AnchorPoint anchorPoint, int textWidth) {
         return switch (anchorPoint) {
             case TOP_LEFT, CENTER_LEFT, BOTTOM_LEFT -> 0;  // Left-align
             case TOP_CENTER, CENTER, BOTTOM_CENTER -> -textWidth / 2.0F;  // Center
@@ -168,13 +168,13 @@ public class TitleRenderer<T> {
         return opacity;
     }
 
-    private void renderTitle(GuiGraphics guiGraphics, Font fontRenderer, int color) {
+    private void renderTitle(GuiGraphicsExtractor guiGraphics, Font fontRenderer, int color) {
         guiGraphics.pose().pushMatrix();
         float textSizeValue = textSize.get().floatValue();
         guiGraphics.pose().scale(textSizeValue, textSizeValue);
         int titleWidth = fontRenderer.width(displayedTitle);
 
-        Config.AnchorPoint anchorPoint = anchor.get();
+        ConfigClient.AnchorPoint anchorPoint = anchor.get();
         // Alignment offset must account for scaled width since we're rendering in scaled space
         float alignmentOffset = getAlignmentOffset(anchorPoint, titleWidth) * textSizeValue;
 
@@ -185,15 +185,15 @@ public class TitleRenderer<T> {
         int adjustedYOffset = isTopAnchor(anchorPoint) ? -rawYOffset : rawYOffset;
         int yOffsetValue = (int) (adjustedYOffset / textSizeValue);
 
-        guiGraphics.drawString(fontRenderer, displayedTitle, xOffsetValue, yOffsetValue,
+        guiGraphics.text(fontRenderer, displayedTitle, xOffsetValue, yOffsetValue,
                 color, renderShadow.get());
         guiGraphics.pose().popMatrix();
     }
 
-    protected boolean isTopAnchor(Config.AnchorPoint anchorPoint) {
-        return anchorPoint == Config.AnchorPoint.TOP_LEFT ||
-                anchorPoint == Config.AnchorPoint.TOP_CENTER ||
-                anchorPoint == Config.AnchorPoint.TOP_RIGHT;
+    protected boolean isTopAnchor(ConfigClient.AnchorPoint anchorPoint) {
+        return anchorPoint == ConfigClient.AnchorPoint.TOP_LEFT ||
+                anchorPoint == ConfigClient.AnchorPoint.TOP_CENTER ||
+                anchorPoint == ConfigClient.AnchorPoint.TOP_RIGHT;
     }
 
     public void tick() {

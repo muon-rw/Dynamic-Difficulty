@@ -2,6 +2,7 @@ package dev.muon.dynamic_difficulty;
 
 import com.mojang.logging.LogUtils;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
+import dev.muon.dynamic_difficulty.config.Configs;
 import dev.muon.dynamic_difficulty.player.PlayerLevelUpdateHandler;
 import dev.muon.dynamic_difficulty.player.PlaytimePlayerLevelProvider;
 import dev.muon.dynamic_difficulty.platform.PlatformHelper;
@@ -19,6 +20,9 @@ public class DynamicDifficulty {
     }
 
     public static void init() {
+        // Register FzzyConfig configs (client, server, sync) before anything else uses them.
+        Configs.register();
+
         // Register player level update callback
         PlayerLevelUpdateHandler.registerCallback(PlayerLevelUpdateHandler::updatePlayerLevel);
 

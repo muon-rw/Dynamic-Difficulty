@@ -1,0 +1,81 @@
+plugins {
+    id 'multiloader-common'
+}
+
+configurations {
+    commonJava{
+        canBeResolved = true
+    }
+    commonResources{
+        canBeResolved = true
+    }
+}
+
+dependencies {
+    compileOnly(project(':common')) {
+        def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+        attributes {
+            attribute(loaderAttribute, 'common')
+        }
+    }
+    commonJava project(path: ':common', configuration: 'commonJava')
+    commonResources project(path: ':common', configuration: 'commonResources')
+}
+
+tasks.named('compileJava', JavaCompile) {
+    dependsOn(configurations.commonJava)
+    source(configurations.commonJava)
+}
+
+processResources {
+    dependsOn(configurations.commonResources)
+    from(configurations.commonResources)
+}
+
+tasks.named('javadoc', Javadoc).configure {
+    dependsOn(configurations.commonJava)
+    source(configurations.commonJava)
+}
+
+tasks.named('sourcesJar', Jar) {
+    dependsOn(configurations.commonJava)
+    from(configurations.commonJava)
+    dependsOn(configurations.commonResources)
+    from(configurations.commonResources)
+}
+
+publishMods {
+    file = tasks.named('jar', Jar).flatMap { it.archiveFile }
+    modLoaders.add(project.name)
+
+    if (project.findProperty('curseforge_id')) {
+        curseforge {
+            accessToken = providers.environmentVariable('CURSEFORGE_TOKEN')
+            projectId = project.curseforge_id
+            projectSlug = project.mod_id
+            minecraftVersions.add(minecraft_version)
+            requires {
+                slug = 'fzzy-config'
+            }
+        }
+    }
+
+    if (project.findProperty('modrinth_id')) {
+        modrinth {
+            accessToken = providers.environmentVariable('MODRINTH_TOKEN')
+            projectId = project.modrinth_id
+            minecraftVersions.add(minecraft_version)
+            requires {
+                slug = 'fzzy-config'
+            }
+        }
+    }
+
+    if (project.findProperty('github_owner') && project.findProperty('github_repo')) {
+        github {
+            accessToken = providers.environmentVariable('GITHUB_TOKEN')
+            repository = "${project.github_owner}/${project.github_repo}"
+            tagName = "v${version}-${project.name}"
+        }
+    }
+}

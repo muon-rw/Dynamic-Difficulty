@@ -1,10 +1,10 @@
 package dev.muon.dynamic_difficulty.client.render;
 
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.Configs;
 import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
 import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -56,7 +56,7 @@ public class TitleRenderManager {
         }
     }
 
-    public void renderTitles(GuiGraphics guiGraphics, float partialTicks) {
+    public void renderTitles(GuiGraphicsExtractor guiGraphics, float partialTicks) {
         if (!Minecraft.getInstance().getDebugOverlay().showDebugScreen()) {
             dimensionTitleRenderer.renderText(partialTicks, guiGraphics);
             biomeTitleRenderer.renderText(partialTicks, guiGraphics);
@@ -90,7 +90,7 @@ public class TitleRenderManager {
      * Resets biome cache since biome titles are dimension-specific.
      */
     private void playerChangedDimension(Player player) {
-        if (Config.CLIENT.showBiomeTitles.get()) {
+        if (Configs.CLIENT.showBiomeTitles.get()) {
             biomeTitleRenderer.clearTimer();
             biomeTitleRenderer.recentEntries.clear();
             biomeTitleRenderer.displayedTitle = null;
@@ -108,8 +108,8 @@ public class TitleRenderManager {
             lastPlayerBonus = playerBonus;
         }
         
-        if (Config.CLIENT.showStructureTitles.get()) {
-            boolean shouldDisplay = !Config.CLIENT.structureTitleOnlyAnnounceIfModified.get() || structureBonus > 0;
+        if (Configs.CLIENT.showStructureTitles.get()) {
+            boolean shouldDisplay = !Configs.CLIENT.structureTitleOnlyAnnounceIfModified.get() || structureBonus > 0;
             if (shouldDisplay && !structureTitleRenderer.matchesAnyRecentEntry(id -> id.equals(structureId))) {
                 Component structureName = getStructureName(structureId);
                 structureTitleRenderer.displayTitle(structureName);
@@ -129,8 +129,8 @@ public class TitleRenderManager {
             lastPlayerBonus = playerBonus;
         }
         
-        if (Config.CLIENT.showBiomeTitles.get()) {
-            boolean shouldDisplay = !Config.CLIENT.biomeTitleOnlyAnnounceIfModified.get() || biomeBonus > 0;
+        if (Configs.CLIENT.showBiomeTitles.get()) {
+            boolean shouldDisplay = !Configs.CLIENT.biomeTitleOnlyAnnounceIfModified.get() || biomeBonus > 0;
             if (shouldDisplay) {
                 Component biomeName = getBiomeName(biomeId);
                 if (biomeName != null) {
@@ -164,9 +164,9 @@ public class TitleRenderManager {
             lastPlayerBonus = playerBonus;
         }
         
-        if (Config.CLIENT.showDimensionTitles.get()) {
+        if (Configs.CLIENT.showDimensionTitles.get()) {
             boolean shouldDisplay = true;
-            if (Config.CLIENT.dimensionTitleOnlyAnnounceIfModified.get()) {
+            if (Configs.CLIENT.dimensionTitleOnlyAnnounceIfModified.get()) {
                 Level world = Minecraft.getInstance().level;
                 if (world != null) {
                     shouldDisplay = DimensionsLevelingSettingsReloader.hasCustomSettings(
@@ -194,12 +194,12 @@ public class TitleRenderManager {
      * Updates the dimension title if conditions are met
      */
     private void updateDimensionTitle(Level world, Player player) {
-        if (!Config.CLIENT.showDimensionTitles.get()) {
+        if (!Configs.CLIENT.showDimensionTitles.get()) {
             return;
         }
 
         boolean shouldDisplay = true;
-        if (Config.CLIENT.dimensionTitleOnlyAnnounceIfModified.get()) {
+        if (Configs.CLIENT.dimensionTitleOnlyAnnounceIfModified.get()) {
             shouldDisplay = DimensionsLevelingSettingsReloader.hasCustomSettings(
                     world.dimension(), world.registryAccess().lookupOrThrow(Registries.DIMENSION));
         }
@@ -222,7 +222,7 @@ public class TitleRenderManager {
      * Updates the biome title if conditions are met
      */
     private void updateBiomeTitle(Level world, BlockPos playerPos, Player player) {
-        if (!Config.CLIENT.showBiomeTitles.get() || biomeTitleRenderer.cooldownTimer > 0) {
+        if (!Configs.CLIENT.showBiomeTitles.get() || biomeTitleRenderer.cooldownTimer > 0) {
             return;
         }
 

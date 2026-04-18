@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(Mob.class)
 public abstract class MobMixin {
 
-    @Inject(method = "checkAndHandleImportantInteractions", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "checkAndHandleImportantInteractions", at = @At("HEAD"), cancellable = true, remap = false)
     private void dynamic_difficulty$handleLevelUpItem(Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
         ItemStack stack = player.getItemInHand(hand);
         if (stack.getItem() instanceof LevelUpItem) {

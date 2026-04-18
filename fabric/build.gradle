@@ -1,0 +1,102 @@
+plugins {
+    id 'multiloader-loader'
+    id 'net.fabricmc.fabric-loom'
+    id 'dev.mixinmcp.decompile'
+}
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+
+    implementation(include("com.github.bawnorton.mixinsquared:mixinsquared-fabric:${mixin_squared_version}"))
+
+    // No more obfuscation on this gamever, so no more `mod` prefix for mod dependencies - no remapping to do!
+    implementation("com.terraformersmc:modmenu:${project.modmenu_version}")
+
+    implementation("me.fzzyhmstrs:fzzy_config:${fzzy_config}") {
+        exclude(group: "me.lucko")
+        exclude(group: "com.terraformersmc")
+    }
+
+    // Compat mods
+    compileOnly("curse.maven:jade-324717:${jade_fabric_file}")
+    runtimeOnly("curse.maven:jade-324717:${jade_fabric_file}")
+    compileOnly("net.puffish:skillsmod:${puffish_skills_version}:fabric")
+    runtimeOnly("net.puffish:skillsmod:${puffish_skills_version}:fabric")
+    runtimeOnly("net.puffish:attributesmod:${puffish_attributes_version}:fabric")
+    runtimeOnly("curse.maven:default-skill-trees-1074229:${default_skill_trees_file}")
+}
+
+repositories {
+    maven { url = 'https://maven.puffish.net' }
+}
+
+loom {
+    def aw = project(':common').file("src/main/resources/${mod_id}.accesswidener")
+    if (aw.exists()) {
+        accessWidenerPath.set(aw)
+    }
+    runs {
+        configureEach {
+            ideConfigGenerated(true)
+            property('fabric.log.level', 'debug')
+            property('mixin.debug', 'true')
+            vmArg('-Xmx6G')
+            vmArg('-Xms2G')
+        }
+        client {
+            client()
+            setConfigName('Fabric Client')
+            runDir('runs/client')
+            programArgs('--username', 'Dev')
+            // Fabric randomizes devuser name (Player###), we manually specify a fixed one matching Neoforge
+        }
+        clientExtra {
+            client()
+            setConfigName('Fabric ClientExtra')
+            runDir('runs/client2')
+            programArgs('--username', 'Dev2')
+            // Fabric randomizes devuser name (Player###), we manually specify a fixed one matching Neoforge
+        }
+        server {
+            server()
+            setConfigName('Fabric Server')
+            runDir('runs/server')
+        }
+    }
+}
+
+// Implement mcgradleconventions loader attribute
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements', 'includeInternal', 'modCompileClasspath'].each { variant ->
+    configurations.named("$variant") {
+        attributes {
+            attribute(loaderAttribute, 'fabric')
+        }
+    }
+}
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant->
+        configurations.named("$variant") {
+            attributes {
+                attribute(loaderAttribute, 'fabric')
+            }
+        }
+    }
+}
+
+if (project.findProperty('fabric_modpack_path')) {
+    tasks.register('sendToModpackFab', Copy) {
+        group = 'publishing'
+        description = "Copies the Fabric dev jar into ${project.fabric_modpack_path}"
+        dependsOn tasks.named('jar')
+        from tasks.named('jar').flatMap { it.archiveFile }
+        into project.fabric_modpack_path
+        rename { String fileName ->
+            fileName.replace(project.version.toString(), 'dev')
+        }
+        doLast {
+            println "Fabric dev jar sent to: ${project.fabric_modpack_path}"
+        }
+    }
+}

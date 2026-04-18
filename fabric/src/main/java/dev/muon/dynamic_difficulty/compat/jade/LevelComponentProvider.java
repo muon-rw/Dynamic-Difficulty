@@ -3,7 +3,7 @@ package dev.muon.dynamic_difficulty.compat.jade;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.client.LevelPlateHandler;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.Configs;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -25,7 +25,7 @@ public enum LevelComponentProvider implements IEntityComponentProvider {
     @Override
     public void appendTooltip(
             ITooltip tooltip, EntityAccessor entityAccessor, IPluginConfig pluginConfig) {
-        if (!Config.CLIENT.enableJadeIntegration.get()) {
+        if (!Configs.CLIENT.enableJadeIntegration.get()) {
             return;
         }
         

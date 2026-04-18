@@ -4,7 +4,7 @@ import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.LevelingEvents;
 import dev.muon.dynamic_difficulty.api.BiomeBonus;
 import dev.muon.dynamic_difficulty.api.StructureBonus;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.Configs;
 import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
 import dev.muon.dynamic_difficulty.settings.LevelingSettings;
@@ -52,7 +52,7 @@ public class LevelingUtils {
             WHITELISTED_NAMESPACES.clear();
             WHITELISTED_IDS.clear();
 
-            for (String entry : Config.COMMON.blacklistedMobs.get()) {
+            for (String entry : Configs.SYNC.blacklistedMobs.get()) {
                 if (entry.endsWith(":*")) {
                     BLACKLISTED_NAMESPACES.add(entry.substring(0, entry.length() - 2));
                 } else {
@@ -64,7 +64,7 @@ public class LevelingUtils {
                 }
             }
 
-            for (String entry : Config.COMMON.whitelistedMobs.get()) {
+            for (String entry : Configs.SYNC.whitelistedMobs.get()) {
                 if (entry.endsWith(":*")) {
                     WHITELISTED_NAMESPACES.add(entry.substring(0, entry.length() - 2));
                 } else {
@@ -87,8 +87,8 @@ public class LevelingUtils {
         if (!(entity instanceof LivingEntity)) return false;
         if (entity.getType() == EntityType.PLAYER) return false;
 
-        if (entity instanceof Animal animal && Config.COMMON.cancelLevelsForPassives.get()) {
-            if (entity.getType().is(PASSIVE_WHITELIST)) {
+        if (entity instanceof Animal animal && Configs.SYNC.cancelLevelsForPassives.get()) {
+            if (entity.getType().builtInRegistryHolder().is(PASSIVE_WHITELIST)) {
                 return true;
             }
             var attackDamage = animal.getAttribute(Attributes.ATTACK_DAMAGE);
@@ -105,7 +105,7 @@ public class LevelingUtils {
      */
     public static boolean shouldShowLevel(Entity entity) {
         Identifier entityId = EntityType.getKey(entity.getType());
-        List<String> blacklist = Config.CLIENT.hiddenLevelEntities.get();
+        List<? extends String> blacklist = Configs.CLIENT.hiddenLevelEntities.get();
         return !blacklist.contains(entityId.toString()) &&
                 !blacklist.contains(entityId.getNamespace() + ":*");
     }
@@ -177,7 +177,7 @@ public class LevelingUtils {
             }
 
             // Check whitelist - if empty in config, allow all
-            if (Config.COMMON.whitelistedMobs.get().isEmpty()) {
+            if (Configs.SYNC.whitelistedMobs.get().isEmpty()) {
                 return true;
             }
 
@@ -272,7 +272,7 @@ public class LevelingUtils {
         baseLevel += distanceBonus;
 
         // Day scaling (from dimension settings, which fall back to config)
-        long days = level.getDayTime() / 24000L;
+        long days = level.getOverworldClockTime() / 24000L;
         baseLevel += (int) (days * dimSettings.levelsPerDay());
 
         // Local difficulty scaling (from dimension settings, which fall back to config)

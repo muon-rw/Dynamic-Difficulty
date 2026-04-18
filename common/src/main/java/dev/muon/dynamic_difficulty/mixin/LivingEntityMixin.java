@@ -30,7 +30,8 @@ public class LivingEntityMixin {
             method = "hurtServer",
             at = @At("HEAD"),
             argsOnly = true,
-            index = 3
+            index = 3,
+            remap = false
     )
     private float modifyDamageAmount(float damageAmount, @Local(argsOnly = true) DamageSource damageSource) {
         if (damageAmount <= 0) {

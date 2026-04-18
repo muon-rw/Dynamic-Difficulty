@@ -36,7 +36,7 @@ public final class LocationBonusUtils {
      */
     public static StructureBonus getStructureAt(ServerLevel level, BlockPos pos, boolean onlyWithBonuses) {
         Registry<Structure> structureRegistry = level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
-        ChunkPos chunkPos = new ChunkPos(pos);
+        ChunkPos chunkPos = ChunkPos.containing(pos);
         
         Identifier bestStructureId = null;
         int highestNonBypassing = 0;

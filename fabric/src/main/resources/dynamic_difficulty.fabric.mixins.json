@@ -2,9 +2,9 @@
   "required": true,
   "minVersion": "0.8",
   "package": "dev.muon.dynamic_difficulty.mixin",
+  "plugin": "dev.muon.dynamic_difficulty.MixinConfigPluginFabric",
   "refmap": "${mod_id}.refmap.json",
   "compatibilityLevel": "JAVA_21",
-  "plugin": "dev.muon.dynamic_difficulty.MixinConfigPluginFabric",
   "mixins": [
     "LivingEntityMixinFabric",
     "LootTableMixin",
@@ -18,4 +18,3 @@
     "defaultRequire": 1
   }
 }
-  

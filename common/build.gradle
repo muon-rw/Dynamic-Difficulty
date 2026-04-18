@@ -1,0 +1,74 @@
+plugins {
+    id 'multiloader-common'
+    id 'net.neoforged.moddev'
+    id 'dev.mixinmcp.decompile'
+}
+
+neoForge {
+    neoFormVersion = neo_form_version
+    // Automatically enable AccessTransformers if the file exists
+    def at = file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformers.from(at.absolutePath)
+    }
+}
+
+dependencies {
+
+    // MixinSquared - MixinSquared's annotationProcessor MUST be registered BEFORE Mixin's one.
+    compileOnly(annotationProcessor("com.github.bawnorton.mixinsquared:mixinsquared-common:${mixin_squared_version}"))
+
+    // compileOnly group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
+    // Neoforge bundles Fabric's Mixin fork, so it's safe to use in common.
+    // This lets us mixin to interfaces and extend enums
+    compileOnly(annotationProcessor("net.fabricmc:sponge-mixin:${fabric_mixin_version}"))
+    // Fabric and Neoforge both also bundle MixinExtras
+    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:${mixin_extras_version}"))
+
+
+
+    // Fzzy Config
+    implementation("me.fzzyhmstrs:fzzy_config:${fzzy_config}")
+
+    // Compat APIs (compile-only — real runtime comes from loader-specific builds)
+    compileOnly("net.puffish:skillsmod:${puffish_skills_version}")
+}
+
+repositories {
+    maven { url = 'https://maven.puffish.net' }
+}
+
+configurations {
+    commonJava {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+    commonResources {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+}
+
+artifacts {
+    commonJava sourceSets.main.java.sourceDirectories.singleFile
+    commonResources sourceSets.main.resources.sourceDirectories.singleFile
+}
+
+// Implement mcgradleconventions loader attribute
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+['apiElements', 'runtimeElements', 'sourcesElements', 'javadocElements'].each { variant ->
+    configurations.named("$variant") {
+        attributes {
+            attribute(loaderAttribute, 'common')
+        }
+    }
+}
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant->
+        configurations.named("$variant") {
+            attributes {
+                attribute(loaderAttribute, 'common')
+            }
+        }
+    }
+}

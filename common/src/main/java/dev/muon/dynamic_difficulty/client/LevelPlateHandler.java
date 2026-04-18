@@ -2,7 +2,8 @@ package dev.muon.dynamic_difficulty.client;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.ConfigClient;
+import dev.muon.dynamic_difficulty.config.Configs;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.client.player.LocalPlayer;
@@ -25,8 +26,8 @@ public class LevelPlateHandler {
      */
     public static boolean shouldInjectLevel(LivingEntity entity) {
         return entity instanceof Player
-                ? Config.CLIENT.injectLevelIntoPlayers.get()
-                : Config.CLIENT.injectLevelIntoMobs.get();
+                ? Configs.CLIENT.injectLevelIntoPlayers.get()
+                : Configs.CLIENT.injectLevelIntoMobs.get();
     }
 
     /**
@@ -36,8 +37,8 @@ public class LevelPlateHandler {
      */
     public static boolean shouldOverrideNameplateVisibility(LivingEntity entity) {
         return entity instanceof Player
-                ? Config.CLIENT.overridePlayerNameplateVisibility.get()
-                : Config.CLIENT.overrideMobNameplateVisibility.get();
+                ? Configs.CLIENT.overridePlayerNameplateVisibility.get()
+                : Configs.CLIENT.overrideMobNameplateVisibility.get();
     }
 
     /**
@@ -127,13 +128,13 @@ public class LevelPlateHandler {
         if (entity.isInvisibleTo(clientPlayer)) return false;
 
         // Check distance before expensive line of sight check
-        double maxDistSq = Config.CLIENT.renderDistance.get() * Config.CLIENT.renderDistance.get();
+        double maxDistSq = Configs.CLIENT.renderDistance.get() * Configs.CLIENT.renderDistance.get();
         if (entity.distanceToSqr(clientPlayer) > maxDistSq) {
             return false;
         }
 
-        Config.RenderBehavior behavior = Config.CLIENT.renderBehavior.get();
-        if (behavior == Config.RenderBehavior.NEVER) {
+        ConfigClient.RenderBehavior behavior = Configs.CLIENT.renderBehavior.get();
+        if (behavior == ConfigClient.RenderBehavior.NEVER) {
             return false;
         }
 
@@ -141,11 +142,11 @@ public class LevelPlateHandler {
         if (!LevelingAPI.shouldShowLevel(entity)) return false;
 
         String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
-        if (Config.CLIENT.hiddenLevelEntities.get().contains(entityId)) return false;
+        if (Configs.CLIENT.hiddenLevelEntities.get().contains(entityId)) return false;
 
         // Line of sight check - expensive raycast, but only done after all cheap checks pass
         // Can be disabled via config for better performance
-        if (Config.CLIENT.enableLineOfSightCheck.get()) {
+        if (Configs.CLIENT.enableLineOfSightCheck.get()) {
             if (!clientPlayer.hasLineOfSight(entity)) {
                 return false;
             }

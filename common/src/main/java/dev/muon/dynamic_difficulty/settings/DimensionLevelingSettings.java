@@ -4,7 +4,7 @@ import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.Configs;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,14 +62,14 @@ public record DimensionLevelingSettings(
          */
         public DimensionLevelingSettings resolve() {
             return new DimensionLevelingSettings(
-                    startingLevel.orElseGet(() -> Config.COMMON.startingLevel.get()),
-                    maxLevel.orElseGet(() -> Config.COMMON.maxLevel.get()),
-                    levelsPerDistance.orElseGet(() -> Config.COMMON.levelsPerDistance.get().floatValue()),
-                    levelsPerDeepness.orElseGet(() -> Config.COMMON.levelsPerDeepness.get().floatValue()),
-                    levelsPerHeight.orElseGet(() -> Config.COMMON.levelsPerHeight.get().floatValue()),
-                    levelsPerDay.orElseGet(() -> Config.COMMON.levelsPerDay.get().floatValue()),
-                    levelsPerLocalDifficulty.orElseGet(() -> Config.COMMON.levelsPerLocalDifficulty.get().floatValue()),
-                    randomLevelBonus.orElseGet(() -> Config.COMMON.randomLevelBonus.get()),
+                    startingLevel.orElseGet(() -> Configs.SYNC.startingLevel.get()),
+                    maxLevel.orElseGet(() -> Configs.SYNC.maxLevel.get()),
+                    levelsPerDistance.orElseGet(() -> Configs.SYNC.levelsPerDistance.get().floatValue()),
+                    levelsPerDeepness.orElseGet(() -> Configs.SYNC.levelsPerDeepness.get().floatValue()),
+                    levelsPerHeight.orElseGet(() -> Configs.SYNC.levelsPerHeight.get().floatValue()),
+                    levelsPerDay.orElseGet(() -> Configs.SYNC.levelsPerDay.get().floatValue()),
+                    levelsPerLocalDifficulty.orElseGet(() -> Configs.SYNC.levelsPerLocalDifficulty.get().floatValue()),
+                    randomLevelBonus.orElseGet(() -> Configs.SYNC.randomLevelBonus.get()),
                     spawnPosOverride.orElse(null),
                     seaLevel.orElse(64),
                     attributeModifiers.orElse(null),
@@ -211,14 +211,14 @@ public record DimensionLevelingSettings(
      */
     public static DimensionLevelingSettings createDefault() {
         return new DimensionLevelingSettings(
-                Config.COMMON.startingLevel.get(),
-                Config.COMMON.maxLevel.get(),
-                Config.COMMON.levelsPerDistance.get().floatValue(),
-                Config.COMMON.levelsPerDeepness.get().floatValue(),
-                Config.COMMON.levelsPerHeight.get().floatValue(),
-                Config.COMMON.levelsPerDay.get().floatValue(),
-                Config.COMMON.levelsPerLocalDifficulty.get().floatValue(),
-                Config.COMMON.randomLevelBonus.get(),
+                Configs.SYNC.startingLevel.get(),
+                Configs.SYNC.maxLevel.get(),
+                Configs.SYNC.levelsPerDistance.get().floatValue(),
+                Configs.SYNC.levelsPerDeepness.get().floatValue(),
+                Configs.SYNC.levelsPerHeight.get().floatValue(),
+                Configs.SYNC.levelsPerDay.get().floatValue(),
+                Configs.SYNC.levelsPerLocalDifficulty.get().floatValue(),
+                Configs.SYNC.randomLevelBonus.get(),
                 null,
                 64,
                 null,

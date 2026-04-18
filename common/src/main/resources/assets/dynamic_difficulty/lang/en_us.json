@@ -140,8 +140,6 @@
   "dynamic_difficulty.configuration.level_up_items": "Level-Up Items",
   "dynamic_difficulty.configuration.level_based_drops": "Level-Based Drops",
   "dynamic_difficulty.configuration.puffish_skills_integration": "Puffish Skills Integration",
-  "dynamic_difficulty.configuration.reskillable_integration": "Reskillable Integration",
-  "dynamic_difficulty.configuration.reskillable_skill_blacklist": "Reskillable Skill Blacklist",
   "dynamic_difficulty.configuration.level_plate_settings": "Level Plate Settings",
   "dynamic_difficulty.configuration.level_plate_settings.tooltip": "Settings for entity level nameplates displayed above mobs.",
   "dynamic_difficulty.configuration.integration_options": "Integration Options",

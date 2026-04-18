@@ -4,7 +4,8 @@ import dev.muon.dynamic_difficulty.api.BiomeBonus;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
 import dev.muon.dynamic_difficulty.api.StructureBonus;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.ConfigSync;
+import dev.muon.dynamic_difficulty.config.Configs;
 import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.data.EntityLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.network.NetworkDispatcher;
@@ -150,7 +151,7 @@ public class LevelingSystem {
             return 1;
         }
 
-        if (entity.getType().is(FIXED_LEVEL_ENTITIES)) {
+        if (entity.getType().builtInRegistryHolder().is(FIXED_LEVEL_ENTITIES)) {
             int fixedLevel = getFixedLevel(entity);
             DynamicDifficulty.LOGGER.debug("{} has fixed level: {}", 
                 entity.getType().getDescription().getString(), fixedLevel);
@@ -205,7 +206,7 @@ public class LevelingSystem {
         // Day scaling (from entity/dimension settings, which fall back to config)
         int dayBonus = 0;
         if (entity.level() instanceof ServerLevel serverLevel) {
-            long days = serverLevel.getDayTime() / 24000L;
+            long days = serverLevel.getOverworldClockTime() / 24000L;
             dayBonus = (int) (days * settings.levelsPerDay());
             baseLevel += dayBonus;
         }
@@ -262,7 +263,7 @@ public class LevelingSystem {
         
         // Player bonus is non-bypassing when playerLevelBypassesCap is false
         int playerBonus = 0;
-        if (applyPlayer && Config.COMMON.applyPlayerBasedLeveling.get() && !Config.COMMON.playerLevelBypassesCap.get()) {
+        if (applyPlayer && Configs.SYNC.applyPlayerBasedLeveling.get() && !Configs.SYNC.playerLevelBypassesCap.get()) {
             playerBonus = LevelingAPI.getLevelsFromNearbyPlayers(serverLevel, entity);
             bonusLevels += playerBonus;
         }
@@ -296,7 +297,7 @@ public class LevelingSystem {
         int playerBonus = 0;
         
         // Player bonus is bypassing when playerLevelBypassesCap is true (default)
-        if (applyPlayer && Config.COMMON.applyPlayerBasedLeveling.get() && Config.COMMON.playerLevelBypassesCap.get()) {
+        if (applyPlayer && Configs.SYNC.applyPlayerBasedLeveling.get() && Configs.SYNC.playerLevelBypassesCap.get()) {
             playerBonus = LevelingAPI.getLevelsFromNearbyPlayers(serverLevel, entity);
             bonusLevels += playerBonus;
         }
@@ -372,7 +373,7 @@ public class LevelingSystem {
         // empty map = explicitly set to [] (disable modifiers)
         // non-empty map = use these modifiers
         if (modifiers == null) {
-            return Config.getAttributeBonuses();
+            return ConfigSync.getAttributeBonuses();
         }
         
         return convertAttributeMapToKeyMap(modifiers);
@@ -488,12 +489,12 @@ public class LevelingSystem {
      * Gets the level contribution from nearby players within configured radius.
      */
     public static int getLevelsFromNearbyPlayers(ServerLevel level, LivingEntity entity) {
-        if (!Config.COMMON.applyPlayerBasedLeveling.get()) {
+        if (!Configs.SYNC.applyPlayerBasedLeveling.get()) {
             DynamicDifficulty.LOGGER.debug("Player-based leveling disabled in config");
             return 0;
         }
 
-        double radius = Config.COMMON.playerLevelRadius.get();
+        double radius = Configs.SYNC.playerLevelRadius.get();
         List<ServerPlayer> nearbyPlayers = level.getEntitiesOfClass(ServerPlayer.class,
                 entity.getBoundingBox().inflate(radius));
 
@@ -523,7 +524,7 @@ public class LevelingSystem {
 
         // Apply multiplier override (entity -> dimension -> config)
         Double multiplierOverride = getPlayerLevelMultiplierOverride(entity);
-        double multiplier = multiplierOverride != null ? multiplierOverride : Config.COMMON.playerLevelMultiplier.get();
+        double multiplier = multiplierOverride != null ? multiplierOverride : Configs.SYNC.playerLevelMultiplier.get();
         int scaledBonus = (int) (total * multiplier);
         
         if (multiplier != 1.0 || multiplierOverride != null) {

@@ -61,10 +61,9 @@ public class LevelUpItem extends Item {
         // Can't be used on players
         if (target instanceof Player) {
             if (!player.level().isClientSide()) {
-                player.displayClientMessage(
+                player.sendOverlayMessage(
                         Component.translatable("item.dynamic_difficulty.level_up.cannot_use_on_player")
-                                .withStyle(ChatFormatting.RED),
-                        true
+                                .withStyle(ChatFormatting.RED)
                 );
             }
             return InteractionResult.FAIL;
@@ -73,10 +72,9 @@ public class LevelUpItem extends Item {
         // Check if entity can have levels
         if (!LevelingAPI.canHaveLevel(target)) {
             if (!player.level().isClientSide()) {
-                player.displayClientMessage(
+                player.sendOverlayMessage(
                         Component.translatable("item.dynamic_difficulty.level_up.cannot_level_entity")
-                                .withStyle(ChatFormatting.RED),
-                        true
+                                .withStyle(ChatFormatting.RED)
                 );
             }
             return InteractionResult.FAIL;
@@ -88,10 +86,9 @@ public class LevelUpItem extends Item {
 
             // Check if already at or above max level for this item
             if (currentLevel >= maxLevel) {
-                player.displayClientMessage(
+                player.sendOverlayMessage(
                         Component.translatable("item.dynamic_difficulty.level_up.max_level_reached", maxLevel)
-                                .withStyle(ChatFormatting.YELLOW),
-                        true
+                                .withStyle(ChatFormatting.YELLOW)
                 );
                 return InteractionResult.FAIL;
             }
@@ -103,11 +100,10 @@ public class LevelUpItem extends Item {
                 LevelingAPI.setAndUpdateLevel(target, newLevel);
 
                 // Success message
-                player.displayClientMessage(
+                player.sendOverlayMessage(
                         Component.translatable("item.dynamic_difficulty.level_up.success",
                                         target.getDisplayName(), currentLevel, newLevel)
-                                .withStyle(ChatFormatting.GREEN),
-                        true
+                                .withStyle(ChatFormatting.GREEN)
                 );
 
                 // Consume item in survival mode
@@ -118,9 +114,8 @@ public class LevelUpItem extends Item {
                 return InteractionResult.SUCCESS;
             } catch (IllegalArgumentException e) {
                 // Shouldn't happen, but handle gracefully
-                player.displayClientMessage(
-                        Component.literal(e.getMessage()).withStyle(ChatFormatting.RED),
-                        true
+                player.sendOverlayMessage(
+                        Component.literal(e.getMessage()).withStyle(ChatFormatting.RED)
                 );
                 return InteractionResult.FAIL;
             }

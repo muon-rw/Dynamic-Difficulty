@@ -5,7 +5,7 @@ import dev.muon.dynamic_difficulty.api.BiomeBonus;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
 import dev.muon.dynamic_difficulty.api.StructureBonus;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.Configs;
 import dev.muon.dynamic_difficulty.network.NetworkDispatcher;
 import dev.muon.dynamic_difficulty.network.message.LocationEntryPacket;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
@@ -92,7 +92,7 @@ public class PlayerLocationTracker {
      * Calculates the player-based bonus level for mob scaling.
      */
     private static int calculatePlayerBonus(ServerPlayer player) {
-        if (!Config.COMMON.applyPlayerBasedLeveling.get()) {
+        if (!Configs.SYNC.applyPlayerBasedLeveling.get()) {
             return 0;
         }
         
@@ -101,7 +101,7 @@ public class PlayerLocationTracker {
                 .mapToInt(provider -> provider.calculateBonusLevels(List.of(player)))
                 .sum();
         
-        double multiplier = Config.COMMON.playerLevelMultiplier.get();
+        double multiplier = Configs.SYNC.playerLevelMultiplier.get();
         return (int) (rawBonus * multiplier);
     }
 

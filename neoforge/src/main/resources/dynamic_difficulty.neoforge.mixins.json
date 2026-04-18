@@ -2,8 +2,8 @@
   "required": true,
   "minVersion": "0.8",
   "package": "dev.muon.dynamic_difficulty.mixin",
-  "compatibilityLevel": "JAVA_21",
   "plugin": "dev.muon.dynamic_difficulty.MixinConfigPluginNeoForge",
+  "compatibilityLevel": "JAVA_21",
   "mixins": [
     "LivingEntityMixin",
     "compat.puffish_skills.SkillsModMixin"

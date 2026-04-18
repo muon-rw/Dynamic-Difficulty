@@ -1,4 +1,4 @@
-# Dynamic Difficulty
+cv # Dynamic Difficulty
 
 Highly configurable and compatible mob leveling system
 
@@ -15,9 +15,9 @@ repositories {
     // ... other repositories
     // Dynamic Difficulty
     maven { url = "https://maven.muon.rip/releases/" }
-    // Forge Config API Port (Only required for Common/Fabric) 
-    maven { url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/" }
-    // Mixin Squared (Only required for Common/Fabric) 
+    // FzzyConfig (config backend — required on all loaders)
+    maven { url = "https://maven.fzzyhmstrs.me/" }
+    // Mixin Squared (Only required for Common/Fabric)
     maven { url = "https://maven.bawnorton.com/releases" }
 }
 ```
@@ -25,31 +25,34 @@ repositories {
 Set a mod version in `gradle.properties`
 
 ```properties
-dynamic_difficulty_version=1.0.9b+1.21.11
-# Only required for Fabric Client/Server runs:
-fcap_version=21.11.1
+dynamic_difficulty_version=1.1.1
+minecraft_version=26.1.2
+fzzy_config=0.7.6+26.1
 ```
 Find all available mod versions at: [maven.muon.rip/#/releases/](https://maven.muon.rip/#/releases/)
 
-Then add the appropriate artifact in `dependencies` in your `build.gradle`
+Then add the appropriate artifact in `dependencies` in your `build.gradle`. Note that on 26.1.x Fabric Loom
+no longer remaps, so dependencies use plain `implementation`/`runtimeOnly` (no `mod`-prefix).
 
 #### NeoForge (assuming ModDevGradle)
 
 ```groovy
-implementation("dev.muon.dynamic_difficulty:dynamic_difficulty-neoforge:${dynamic_difficulty_version}")
+implementation("dev.muon.dynamic_difficulty:dynamic_difficulty-neoforge-${minecraft_version}:${dynamic_difficulty_version}")
+implementation("me.fzzyhmstrs:fzzy_config:${fzzy_config}+neoforge")
 ```
 
 #### Fabric (assuming Fabric Loom)
 
 ```groovy
-modImplementation("dev.muon.dynamic_difficulty:dynamic_difficulty-fabric:${dynamic_difficulty_version}")
-modLocalRuntime("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${fcap_version}")
+implementation("dev.muon.dynamic_difficulty:dynamic_difficulty-fabric-${minecraft_version}:${dynamic_difficulty_version}")
+implementation("me.fzzyhmstrs:fzzy_config:${fzzy_config}")
 ```
 
 #### Common (assuming ModDevGradle)
 
 ```groovy
-compileOnly("dev.muon.dynamic_difficulty:dynamic_difficulty-common:${dynamic_difficulty_version}")
+compileOnly("dev.muon.dynamic_difficulty:dynamic_difficulty-common-${minecraft_version}:${dynamic_difficulty_version}")
+compileOnly("me.fzzyhmstrs:fzzy_config:${fzzy_config}")
 ```
 
 </details>
@@ -57,8 +60,19 @@ compileOnly("dev.muon.dynamic_difficulty:dynamic_difficulty-common:${dynamic_dif
 ---
 
 # Datapack Guide
-### NOTE: This guide is for 1.21.10 Only!
-*For information on 1.21.1, make sure to select the 1.21.1 branch!*
+### NOTE: This guide is for 26.1.2 Only!
+*For older Minecraft versions, select the matching branch (e.g. `1.21.1-multiloader`, `1.21.11-multiloader`) — config file format and some config keys differ there.*
+
+## Config Files
+
+Dynamic Difficulty uses [FzzyConfig](https://modrinth.com/mod/fzzy-config), which splits the config into two TOML files under `config/dynamic_difficulty/`:
+
+| File | Purpose | Synced? |
+|------|---------|---------|
+| `dynamic_difficulty-sync.toml` | Gameplay values (leveling formulas, caps, mod integration, loot toggles, attribute bonuses). | **Yes** — server is authoritative; clients' local values are overwritten on join. |
+| `dynamic_difficulty-client.toml` | Rendering/HUD preferences (level plates, title overlays, colors, anchors, Jade toggle). | No — local only. |
+
+All keys use camelCase (e.g. `useDefaultLevelingSettings`, `levelsPerDistance`) — the previous `dynamic_difficulty-common.toml` with snake_case keys and `[section]` headers is gone. FzzyConfig also ships an in-game editor: open it from the Mods screen, or via the `/fzzy_config` command.
 
 ### Built-in Default Settings
 
@@ -72,12 +86,11 @@ This includes dimension settings, entity settings, biome/structure bonuses, and 
 
 **Disabling Built-in Settings:**
 
-If you want to start with a completely clean slate and define all settings yourself, you can disable the built-in datapack in `dynamic_difficulty-common.toml`:
+If you want to start with a completely clean slate and define all settings yourself, you can disable the built-in datapack in `config/dynamic_difficulty/dynamic_difficulty-sync.toml`:
 
 ```toml
-[built_in_datapack]
 # Requires a game restart to take effect
-use_default_leveling_settings = false
+useDefaultLevelingSettings = false
 ```
 
 When disabled, only your custom datapacks will be loaded, giving you full control over all leveling settings.
@@ -85,14 +98,14 @@ When disabled, only your custom datapacks will be loaded, giving you full contro
 ### How are levels calculated?
 
 1. **Base Level**
-    - The config file `dynamic_difficulty-common.toml` defines default base levels, based on:
-        - `starting_level` - Base level for all entities (default: 1)
-        - `levels_per_distance` - Bonus per block from the world's spawn point (default: 0.01)
-        - `levels_per_deepness` - Bonus per block below sea level (default: 0.0)
-        - `levels_per_height` - Bonus per block above sea level (default: 0.0)
-        - `levels_per_day` - Bonus per in-game day passed (default: 0.0)
-        - `levels_per_local_difficulty` - Bonus based on Minecraft's local difficulty (default: 0.0)
-        - `random_level_bonus` - Random bonus levels (0 to this value) (default: 0)
+    - The config file `dynamic_difficulty-sync.toml` defines default base levels, based on:
+        - `startingLevel` - Base level for all entities (default: 1)
+        - `levelsPerDistance` - Bonus per block from the world's spawn point (default: 0.01)
+        - `levelsPerDeepness` - Bonus per block below sea level (default: 0.0)
+        - `levelsPerHeight` - Bonus per block above sea level (default: 0.0)
+        - `levelsPerDay` - Bonus per in-game day passed (default: 0.0)
+        - `levelsPerLocalDifficulty` - Bonus based on Minecraft's local difficulty (default: 0.0)
+        - `randomLevelBonus` - Random bonus levels (0 to this value) (default: 0)
     - **All fields are optional in datapacks** - omit a field to use config defaults
     - Dimensions can override any of these defaults with a datapack (see [Dimensions](#dimensions))
     - Entity-specific settings provide final authority over base level (see [Entities](#entities))
@@ -108,13 +121,13 @@ When disabled, only your custom datapacks will be loaded, giving you full contro
     - Player-based bonuses (scaled by nearby player levels, see [Player-based Scaling](#player-based-scaling))
 
 **Example:**
-- Entity with `max_level: 20`
+- Entity with `max_level: 20` (datapack JSON key)
 - Base calculation:
-    - `starting_level`: 1
-    - Distance from spawn: 1600 blocks × `levels_per_distance` (0.01) = +16
-    - Depth: 20 blocks below sea level × `levels_per_deepness` (0.05) = +1
-    - Days: 10 days × `levels_per_day` (0.5) = +5
-    - Local difficulty: 2.5 × `levels_per_local_difficulty` (1.0) = +2
+    - `startingLevel`: 1
+    - Distance from spawn: 1600 blocks × `levelsPerDistance` (0.01) = +16
+    - Depth: 20 blocks below sea level × `levelsPerDeepness` (0.05) = +1
+    - Days: 10 days × `levelsPerDay` (0.5) = +5
+    - Local difficulty: 2.5 × `levelsPerLocalDifficulty` (1.0) = +2
     - Total base: **25**
 - Biome bonus (`bypasses_cap: false`): +5 → Total: 30 → **Capped to 20**
 - Structure bonus (`bypasses_cap: true`): +10 → **Final: 30**
@@ -125,7 +138,9 @@ When disabled, only your custom datapacks will be loaded, giving you full contro
 1. **Entity Types** (e.g., `entities/zombie.json`)
 2. **Entity Type Tags** (e.g., `entity_tags/monsters.json`)
 3. **Fallback to dimension defaults** (`dimensions/overworld.json`)
-4. **Fallback to config defaults** (`config/dynamic_difficulty-common.toml`)
+4. **Fallback to config defaults** (`config/dynamic_difficulty/dynamic_difficulty-sync.toml`)
+
+> **Note on keys:** Datapack JSON files use snake_case keys (`starting_level`, `max_level`, `levels_per_distance`, …). The TOML config file uses camelCase keys (`startingLevel`, `maxLevel`, `levelsPerDistance`, …). Don't mix them up — this is a common source of silent fallbacks.
 
 ---
 
@@ -232,7 +247,7 @@ This example:
 | `player_level_multiplier` | Double | config | Override the config `player_level_multiplier` for entities in this dimension |
 | `apply_level_bonuses` | Object | `null` | Control which bonuses are applied (see below)                    |
 
-**Note:** All fields are optional. Omitting a field uses the value from `dynamic_difficulty-common.toml` config. For `attribute_modifiers`, use an empty array `[]` to explicitly disable modifiers for this dimension.
+**Note:** All fields are optional. Omitting a field uses the value from `dynamic_difficulty-sync.toml` config. For `attribute_modifiers`, use an empty array `[]` to explicitly disable modifiers for this dimension.
 
 **Note:** Dimension settings are used as fallback when no entity-specific settings exist. Dimensions can also override attribute modifiers, using the same format as entity settings (see [Attribute Modifiers](#attribute-modifiers) below).
 
@@ -569,12 +584,12 @@ Dynamic Difficulty supports player-based level scaling, where nearby players con
 
 ### Configuration
 
-Configure player-based scaling in `dynamic_difficulty-common.toml`:
+Configure player-based scaling in `dynamic_difficulty-sync.toml`:
 
-- `enable_player_based_leveling` - Enable/disable player-based bonuses (default: `true`)
-- `player_level_radius` - Search radius for nearby players (default: `128.0`)
-- `player_level_multiplier` - Multiplier for player level bonuses (default: `1.0`)
-- `player_level_display_strategy` - How to aggregate multiple player levels (default: `HIGHEST_PRIORITY`)
+- `applyPlayerBasedLeveling` - Enable/disable player-based bonuses (default: `true`)
+- `playerLevelRadius` - Search radius for nearby players (default: `128.0`)
+- `playerLevelMultiplier` - Multiplier for player level bonuses (default: `1.0`)
+- `playerLevelDisplayStrategy` - How to aggregate multiple player levels (default: `HIGHEST_PRIORITY`)
 
 ### Player Level Providers
 
@@ -597,12 +612,11 @@ Dynamic Difficulty provides a flexible system for level-based loot drops.
 
 ### Configuration
 
-Level-based drops can be enabled/disabled in `dynamic_difficulty-common.toml`:
+Level-based drops can be enabled/disabled in `dynamic_difficulty-sync.toml`:
 
 ```toml
-[level_based_drops]
 # Whether mobs should drop level-up items based on their level
-enable_level_based_drops = true
+enableLevelBasedDrops = true
 ```
 
 **Note:** This config option toggles the entire built-in loot injection system. When disabled, no loot injection occurs regardless of what's in the loot table. If you want to keep loot injection active but customize the drops, override the loot table instead (see [Overriding the Built-in Loot](#overriding-the-built-in-loot)).
@@ -686,15 +700,15 @@ This table uses multiple pools with `dynamic_difficulty:entity_level` conditions
 
 ### Level-Up Item Caps
 
-The built-in level-up items have configurable maximum level caps in `dynamic_difficulty-common.toml`:
+The built-in level-up items have configurable maximum level caps in `dynamic_difficulty-sync.toml`:
 
 | Item | Default Max Level | Config Key |
 |------|-------------------|------------|
-| Potion of Growth | 20 | `potion_of_growth_max_level` |
-| Elixir of Nurturing | 40 | `elixir_of_nurturing_max_level` |
-| Draught of Ascension | 60 | `draught_of_ascension_max_level` |
-| Essence of Vitality | 80 | `essence_of_vitality_max_level` |
-| Crystal of Awakening | 100 | `crystal_of_awakening_max_level` |
+| Potion of Growth | 20 | `potionOfGrowthMaxLevel` |
+| Elixir of Nurturing | 40 | `elixirOfNurturingMaxLevel` |
+| Draught of Ascension | 60 | `draughtOfAscensionMaxLevel` |
+| Essence of Vitality | 80 | `essenceOfVitalityMaxLevel` |
+| Crystal of Awakening | 100 | `crystalOfAwakeningMaxLevel` |
 
 **Note:** The drop level ranges in the built-in loot table are designed to match these caps. For example, entities level 2-19 can drop Potion of Growth (which levels mobs up to 20), while entities level 20+ start dropping Elixir of Nurturing (which can raise mobs to 40), and so on. This creates a natural progression where defeating higher-level mobs yields items capable of creating even stronger mobs.
 

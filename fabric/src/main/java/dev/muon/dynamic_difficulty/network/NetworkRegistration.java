@@ -16,8 +16,8 @@ public class NetworkRegistration {
      * Register payload types (server-side). Call from mod initializer.
      */
     public static void register() {
-        PayloadTypeRegistry.playS2C().register(SyncLevelingData.TYPE, SyncLevelingData.CODEC);
-        PayloadTypeRegistry.playS2C().register(LocationEntryPacket.TYPE, LocationEntryPacket.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(SyncLevelingData.TYPE, SyncLevelingData.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(LocationEntryPacket.TYPE, LocationEntryPacket.CODEC);
     }
 
     /**

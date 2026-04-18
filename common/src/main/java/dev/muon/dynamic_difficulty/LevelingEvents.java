@@ -1,7 +1,8 @@
 package dev.muon.dynamic_difficulty;
 
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.ConfigSync;
+import dev.muon.dynamic_difficulty.config.Configs;
 import dev.muon.dynamic_difficulty.network.NetworkDispatcher;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
 import dev.muon.dynamic_difficulty.util.LootUtils;
@@ -60,7 +61,7 @@ public class LevelingEvents {
     public static int adjustExperienceDrop(LivingEntity entity, int originalExp) {
         if (!LevelingAPI.hasLevel(entity)) return originalExp;
         int level = LevelingAPI.getLevel(entity) + 1;
-        double expBonus = Config.COMMON.expBonus.get() * level;
+        double expBonus = Configs.SYNC.expBonus.get() * level;
         return (int) (originalExp + originalExp * expBonus);
     }
 
@@ -82,7 +83,7 @@ public class LevelingEvents {
      * Called when config is reloaded.
      */
     public static void onConfigReload() {
-        Config.reloadAttributeBonuses();
+        ConfigSync.reloadAttributeBonuses();
         LevelingUtils.reloadConfigCache();
     }
 
@@ -153,7 +154,7 @@ public class LevelingEvents {
         }
 
         // Fallback: Update player level periodically in case provider events are missed
-        int updateInterval = Config.COMMON.playerLevelUpdateInterval.get();
+        int updateInterval = Configs.SYNC.playerLevelUpdateInterval.get();
         if (updateInterval > 0 && player.tickCount % updateInterval == 0) {
             PlayerLevelUpdateHandler.updatePlayerLevel(player);
         }

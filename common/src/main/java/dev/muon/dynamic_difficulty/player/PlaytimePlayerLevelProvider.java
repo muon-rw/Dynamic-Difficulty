@@ -2,7 +2,7 @@ package dev.muon.dynamic_difficulty.player;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.Configs;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stat;
@@ -22,7 +22,7 @@ public class PlaytimePlayerLevelProvider implements PlayerLevelProvider {
     
     @Override
     public boolean isEnabled() {
-        return Config.COMMON.enablePlaytimeScaling.get();
+        return Configs.SYNC.enablePlaytimeScaling.get();
     }
     
     @Override
@@ -52,7 +52,7 @@ public class PlaytimePlayerLevelProvider implements PlayerLevelProvider {
         double averagePlaytimeHours = averagePlaytimeTicks / 72000.0;
         
         // Convert to levels based on config
-        int bonusLevels = (int) (averagePlaytimeHours * Config.COMMON.levelsPerPlaytimeHour.get());
+        int bonusLevels = (int) (averagePlaytimeHours * Configs.SYNC.levelsPerPlaytimeHour.get());
         
         DynamicDifficulty.LOGGER.debug("Playtime provider: {} players, {} ticks average ({} hours), {} bonus levels",
                 players.size(), String.format("%.0f", averagePlaytimeTicks), String.format("%.2f", averagePlaytimeHours), bonusLevels);

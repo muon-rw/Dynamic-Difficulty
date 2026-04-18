@@ -1,5 +1,6 @@
 package dev.muon.dynamic_difficulty.client;
 
+import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.client.render.TitleRenderManager;
 import dev.muon.dynamic_difficulty.network.NetworkRegistration;
 import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
@@ -9,7 +10,8 @@ import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
 
@@ -36,16 +38,16 @@ public class DynamicDifficultyClient implements ClientModInitializer {
             SyncLevelingData.processPendingData();
         });
         
-        // HUD rendering for titles
-        // TODO: Update to HudElementRegistry
-        HudRenderCallback.EVENT.register((guiGraphics, tickCounter) -> {
+        // HUD rendering for titles — 26.1 uses HudElementRegistry + HudElement
+        HudElement titleHud = (guiGraphics, deltaTracker) -> {
             if (Minecraft.getInstance().player != null) {
                 TitleRenderManager.getInstance().renderTitles(
                     guiGraphics,
-                    tickCounter.getGameTimeDeltaPartialTick(false)
+                    deltaTracker.getGameTimeDeltaPartialTick(false)
                 );
             }
-        });
+        };
+        HudElementRegistry.addLast(DynamicDifficulty.id("titles"), titleHud);
         
         // Entity unload - clean up caches
         ClientEntityEvents.ENTITY_UNLOAD.register((entity, world) -> {

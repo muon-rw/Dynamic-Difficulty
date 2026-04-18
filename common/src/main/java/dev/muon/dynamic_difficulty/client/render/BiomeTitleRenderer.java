@@ -1,6 +1,6 @@
 package dev.muon.dynamic_difficulty.client.render;
 
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.Configs;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.biome.Biome;
 
@@ -14,19 +14,19 @@ public class BiomeTitleRenderer extends TitleRenderer<Biome> {
 
     public BiomeTitleRenderer() {
         super(
-                Config.CLIENT.biomeRecentCacheSize.get(), // Initial value, but we'll use supplier for dynamic updates
-                Config.CLIENT.showBiomeTitles,
-                Config.CLIENT.biomeTitleFadeInTime,
-                Config.CLIENT.biomeTitleDisplayTime,
-                Config.CLIENT.biomeTitleFadeOutTime,
-                Config.CLIENT.biomeTitleTextColor,
-                Config.CLIENT.biomeTitleRenderShadow,
-                Config.CLIENT.biomeTitleTextSize,
-                Config.CLIENT.biomeTitleAnchor,
-                Config.CLIENT.biomeTitleXOffset,
-                Config.CLIENT.biomeTitleYOffset
+                Configs.CLIENT.biomeRecentCacheSize.get(), // Initial value, but we'll use supplier for dynamic updates
+                Configs.CLIENT.showBiomeTitles,
+                Configs.CLIENT.biomeTitleFadeInTime,
+                Configs.CLIENT.biomeTitleDisplayTime,
+                Configs.CLIENT.biomeTitleFadeOutTime,
+                Configs.CLIENT.biomeTitleTextColor,
+                Configs.CLIENT.biomeTitleRenderShadow,
+                Configs.CLIENT.biomeTitleTextSize,
+                Configs.CLIENT.biomeTitleAnchor,
+                Configs.CLIENT.biomeTitleXOffset,
+                Configs.CLIENT.biomeTitleYOffset
         );
-        this.maxRecentListSizeSupplier = Config.CLIENT.biomeRecentCacheSize;
+        this.maxRecentListSizeSupplier = Configs.CLIENT.biomeRecentCacheSize;
     }
 
     @Override
@@ -46,7 +46,7 @@ public class BiomeTitleRenderer extends TitleRenderer<Biome> {
     @Override
     public void displayTitle(Component titleText) {
         super.displayTitle(titleText);
-        cooldownTimer = Config.CLIENT.biomeTitleCooldownTime.get();
+        cooldownTimer = Configs.CLIENT.biomeTitleCooldownTime.get();
     }
 
     @Override

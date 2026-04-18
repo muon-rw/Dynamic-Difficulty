@@ -1,0 +1,232 @@
+plugins {
+    // see https://fabricmc.net/develop/ for new versions
+    id 'net.fabricmc.fabric-loom' version '1.16-SNAPSHOT' apply false
+    // see https://projects.neoforged.net/neoforged/moddevgradle for new versions
+    id 'net.neoforged.moddev' version '2.0.141' apply false
+    id 'dev.mixinmcp.decompile' version '0.8.0' apply false
+    id "me.modmuss50.mod-publish-plugin" version "0.8.3"
+}
+
+tasks.register('renameProject') {
+    group = 'setup'
+    description = 'Renames the project: updates mod ID, package, class names, services, resources, and deletes Fabric run configs for regeneration. Usage: ./gradlew renameProject -PmodId=mymod [-PmodName=MyMod] [-PdisplayName="My Mod"] [-PfolderName=My-Mod] [-Ppackage=com.example.mymod]'
+
+    doLast {
+        def folderName = rootProject.projectDir.name
+        def currentModId = 'template'
+        def currentModName = 'Template'        // PascalCase Java class prefix
+        def currentDisplayName = 'Template'    // shown in modmenu / mods list
+        def currentFolderName = 'Template'     // rootProject.name, folder on disk
+        def currentPkg = 'dev.muon.template'
+
+        println ""
+        println "=== Project Rename Tool ==="
+        println ""
+        println "Current mod ID: ${currentModId}"
+        println "Current mod name: ${currentModName}"
+        println "Current package: ${currentPkg}"
+        println ""
+
+        if (!project.hasProperty('modId')) {
+            throw new GradleException(
+                "Missing required property 'modId'.\n\n" +
+                "Usage:\n" +
+                "  ./gradlew renameProject -PmodId=<lowercase_id> [-PmodName=<PascalCase>] [-PdisplayName=\"<Display Name>\"] [-PfolderName=<Folder-Name>] [-Ppackage=<full.package>]\n\n" +
+                "Example (folder name '${folderName}'):\n" +
+                "  ./gradlew renameProject -PmodId=${folderName.toLowerCase().replace('-', '_')}\n" +
+                "  ./gradlew renameProject -PmodId=my_mod -PdisplayName=\"My Mod\" -PfolderName=My-Mod\n\n" +
+                "Each optional property, if omitted, is inferred from modId:\n" +
+                "  modName      -> PascalCase join       (my_mod -> MyMod)\n" +
+                "  displayName  -> Title Case with spaces (my_mod -> 'My Mod')\n" +
+                "  folderName   -> Title Case with dashes (my_mod -> My-Mod)\n" +
+                "  package      -> dev.muon.<modId>"
+            )
+        }
+
+        def newModId = project.property('modId').toString().trim()
+        if (!newModId.matches('[a-z][a-z0-9_]*')) {
+            throw new GradleException("Invalid modId '${newModId}'. Must be lowercase alphanumeric with underscores, starting with a letter.")
+        }
+
+        def modIdParts = newModId.split('_').collect { it.capitalize() }
+        def defaultModName = modIdParts.join('')
+        def defaultDisplayName = modIdParts.join(' ')
+        def defaultFolderName = modIdParts.join('-')
+
+        def newModName = project.hasProperty('modName') ? project.property('modName').toString().trim() : defaultModName
+        if (!newModName.matches('[A-Z][a-zA-Z0-9]*')) {
+            throw new GradleException("Invalid modName '${newModName}'. Must be PascalCase starting with an uppercase letter (no spaces or dashes).")
+        }
+
+        def newDisplayName = project.hasProperty('modDisplayName') ? project.property('modDisplayName').toString().trim() : defaultDisplayName
+        if (!newDisplayName.matches('[A-Za-z0-9][A-Za-z0-9 ]*')) {
+            throw new GradleException("Invalid displayName '${newDisplayName}'. Must contain only letters, digits, and spaces.")
+        }
+
+        def newFolderName = project.hasProperty('folderName') ? project.property('folderName').toString().trim() : defaultFolderName
+        if (!newFolderName.matches('[A-Za-z0-9][A-Za-z0-9-]*')) {
+            throw new GradleException("Invalid folderName '${newFolderName}'. Must contain only letters, digits, and dashes.")
+        }
+
+        def newPkg = project.hasProperty('package')
+            ? project.property('package').toString().trim()
+            : "dev.muon.${newModId}"
+        if (!newPkg.matches('[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*')) {
+            throw new GradleException("Invalid package '${newPkg}'. Must be dot-separated lowercase segments (each starting with a letter).")
+        }
+
+        def oldPkg = currentPkg
+        def oldPkgPath = oldPkg.replace('.', '/')
+        def newPkgPath = newPkg.replace('.', '/')
+
+        println "Will rename:"
+        println "  mod ID:       ${currentModId} -> ${newModId}"
+        println "  mod name:     ${currentModName} -> ${newModName}"
+        println "  display name: ${currentDisplayName} -> ${newDisplayName}"
+        println "  folder name:  ${currentFolderName} -> ${newFolderName}"
+        println "  package:      ${oldPkg} -> ${newPkg}"
+        println ""
+
+        // --- 1. Update gradle.properties ---
+        println "Updating gradle.properties..."
+        def propsFile = rootProject.file('gradle.properties')
+        def propsText = propsFile.text
+        propsText = propsText.replace("group=${oldPkg}", "group=${newPkg}")
+        propsText = propsText.replace("mod_name=${currentDisplayName}", "mod_name=${newDisplayName}")
+        propsText = propsText.replace("mod_id=${currentModId}", "mod_id=${newModId}")
+        propsText = propsText.replace("description=${currentDisplayName}", "description=${newDisplayName}")
+        propsFile.text = propsText
+
+        // --- 2. Update settings.gradle ---
+        println "Updating settings.gradle..."
+        def settingsFile = rootProject.file('settings.gradle')
+        settingsFile.text = settingsFile.text.replace("rootProject.name = '${currentFolderName}'", "rootProject.name = '${newFolderName}'")
+
+        // --- 3. Rename mixin JSON files and update their content ---
+        println "Updating mixin JSON files..."
+        def mixinFiles = [
+            "common/src/main/resources/${currentModId}.mixins.json",
+            "fabric/src/main/resources/${currentModId}.fabric.mixins.json",
+            "neoforge/src/main/resources/${currentModId}.neoforge.mixins.json"
+        ]
+        mixinFiles.each { relPath ->
+            def f = rootProject.file(relPath)
+            if (f.exists()) {
+                def content = f.text.replace(oldPkg, newPkg)
+                def newRelPath = relPath.replace("${currentModId}.", "${newModId}.")
+                def newFile = rootProject.file(newRelPath)
+                newFile.text = content
+                if (f.absolutePath != newFile.absolutePath) {
+                    f.delete()
+                }
+            }
+        }
+
+        // --- 4. Update fabric.mod.json entrypoint ---
+        // Entrypoint is `<pkg>.<ModName>Fabric` (e.g. dev.muon.template.TemplateFabric).
+        // Package and ModName replacement below handles it in one shot.
+        println "Updating fabric.mod.json..."
+        def fabricModJson = rootProject.file('fabric/src/main/resources/fabric.mod.json')
+        if (fabricModJson.exists()) {
+            fabricModJson.text = fabricModJson.text
+                .replace(oldPkg, newPkg)
+                .replace(currentModName, newModName)
+        }
+
+        // --- 5. Rename Java source directories and update package declarations/imports ---
+        // Content replacements applied to every Java file:
+        //   oldPkg -> newPkg              (package, imports)
+        //   currentModName -> newModName  (all class names with the mod-name prefix:
+        //                                  Template, TemplateFabric, TemplateNeoforge,
+        //                                  TemplateConfigClient, etc., and field/method
+        //                                  refs like Template.LOG, Template.MOD_ID)
+        //   "template" -> "<newModId>"    (string literals: MOD_ID init, isModLoaded(...),
+        //                                  log messages, etc.)
+        // File rename: any file whose name starts with currentModName has the prefix
+        // rewritten to newModName.
+        println "Moving and updating Java source files..."
+        ['common', 'fabric', 'neoforge'].each { module ->
+            def oldDir = rootProject.file("${module}/src/main/java/${oldPkgPath}")
+            def newDir = rootProject.file("${module}/src/main/java/${newPkgPath}")
+            if (oldDir.exists()) {
+                newDir.mkdirs()
+                oldDir.eachFileRecurse { file ->
+                    if (file.isFile()) {
+                        def relativePath = oldDir.toPath().relativize(file.toPath()).toString()
+                        def content = file.text
+                            .replace(oldPkg, newPkg)
+                            .replace(currentModName, newModName)
+                            .replace("\"${currentModId}\"", "\"${newModId}\"")
+
+                        // Rename any file whose basename starts with the current mod name
+                        // (Template.java, TemplateFabric.java, TemplateConfigClient.java, ...)
+                        def targetRelPath = relativePath
+                        def fileName = file.name
+                        if (fileName.startsWith(currentModName)) {
+                            def newFileName = newModName + fileName.substring(currentModName.length())
+                            def parentPath = relativePath.contains(File.separator)
+                                ? relativePath.substring(0, relativePath.lastIndexOf(File.separator) + 1)
+                                : ""
+                            targetRelPath = parentPath + newFileName
+                        }
+
+                        def targetFile = new File(newDir, targetRelPath)
+                        targetFile.parentFile.mkdirs()
+                        targetFile.text = content
+                    }
+                }
+                // Clean up old directory
+                oldDir.deleteDir()
+            }
+        }
+
+        // --- 6. Update and rename service provider files ---
+        println "Updating service provider files..."
+        ['fabric', 'neoforge'].each { module ->
+            def servicesDir = rootProject.file("${module}/src/main/resources/META-INF/services")
+            if (servicesDir.exists()) {
+                def oldServiceFile = new File(servicesDir, "${oldPkg}.platform.services.IPlatformHelper")
+                if (oldServiceFile.exists()) {
+                    def content = oldServiceFile.text.replace(oldPkg, newPkg)
+                    def newServiceFile = new File(servicesDir, "${newPkg}.platform.services.IPlatformHelper")
+                    newServiceFile.text = content
+                    if (oldServiceFile.absolutePath != newServiceFile.absolutePath) {
+                        oldServiceFile.delete()
+                    }
+                }
+            }
+        }
+
+        // --- 7. Delete Fabric run configs so they regenerate with correct module names ---
+        // Fabric Loom generates run configs with module names based on rootProject.name.
+        // After renaming, old configs reference stale module names and must be deleted for proper regeneration.
+        println "Deleting Fabric run configurations for regeneration..."
+        def runConfigDir = rootProject.file('.idea/runConfigurations')
+        if (runConfigDir.exists()) {
+            runConfigDir.eachFile { file ->
+                if (file.name.startsWith('Fabric_') && file.name.endsWith('.xml')) {
+                    println "  Deleted: ${file.name}"
+                    file.delete()
+                }
+            }
+        }
+        def dotRunDir = rootProject.file('.run')
+        if (dotRunDir.exists()) {
+            dotRunDir.eachFile { file ->
+                if (file.name.toLowerCase().contains('fabric') && file.name.endsWith('.xml')) {
+                    println "  Deleted: ${file.name}"
+                    file.delete()
+                }
+            }
+        }
+
+        println ""
+        println "=== Rename complete! ==="
+        println ""
+        println "Next steps:"
+        println "  1. Rename the project folder from '${rootProject.projectDir.name}' to '${newFolderName}' (to match rootProject.name)"
+        println "  2. Run './gradlew build' to verify everything compiles"
+        println "  3. Refresh Gradle in your IDE to regenerate Fabric run configurations"
+        println ""
+    }
+}
