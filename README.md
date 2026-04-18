@@ -1,4 +1,4 @@
-cv # Dynamic Difficulty
+# Dynamic Difficulty
 
 Highly configurable and compatible mob leveling system
 

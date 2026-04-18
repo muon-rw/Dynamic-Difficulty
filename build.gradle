@@ -4,7 +4,91 @@ plugins {
     // see https://projects.neoforged.net/neoforged/moddevgradle for new versions
     id 'net.neoforged.moddev' version '2.0.141' apply false
     id 'dev.mixinmcp.decompile' version '0.8.0' apply false
-    id "me.modmuss50.mod-publish-plugin" version "0.8.3"
+    id "me.modmuss50.mod-publish-plugin" version "1.1.0"
+}
+
+// Multi-loader publishing — see https://modmuss50.github.io/mod-publish-plugin/multi_platform/
+// for the recommended root-level pattern. One named entry per loader points at that
+// subproject's jar, sharing common options via the `*Options { ... }` blocks.
+evaluationDependsOn(':fabric')
+evaluationDependsOn(':neoforge')
+
+publishMods {
+    changelog = rootProject.file("CHANGELOG.md").getText()
+    // Use project.* explicitly — bare `version` inside this closure resolves to the
+    // publishMods extension's own Property<String>, whose toString is the descriptor
+    // "extension 'publishMods' property 'version'" and leaks into the output.
+    version = "${project.version}+${project.minecraft_version}"
+    displayName = "v${project.version} (Minecraft ${project.minecraft_version})"
+    type = STABLE
+
+    if (project.findProperty('curseforge_id')) {
+        def cfOptions = curseforgeOptions {
+            accessToken = providers.environmentVariable('CURSEFORGE_TOKEN')
+            projectId = project.curseforge_id
+            projectSlug = project.mod_id
+            minecraftVersions.add(minecraft_version)
+            requires {
+                slug = 'fzzy-config'
+            }
+        }
+
+        curseforge('curseforgeFabric') {
+            from cfOptions
+            file = project(':fabric').tasks.named('jar', Jar).flatMap { it.archiveFile }
+            modLoaders.add('fabric')
+        }
+        curseforge('curseforgeNeoforge') {
+            from cfOptions
+            file = project(':neoforge').tasks.named('jar', Jar).flatMap { it.archiveFile }
+            modLoaders.add('neoforge')
+        }
+    }
+
+    if (project.findProperty('modrinth_id')) {
+        def mrOptions = modrinthOptions {
+            accessToken = providers.environmentVariable('MODRINTH_TOKEN')
+            projectId = project.modrinth_id
+            minecraftVersions.add(minecraft_version)
+            requires {
+                slug = 'fzzy-config'
+            }
+        }
+
+        modrinth('modrinthFabric') {
+            from mrOptions
+            file = project(':fabric').tasks.named('jar', Jar).flatMap { it.archiveFile }
+            modLoaders.add('fabric')
+        }
+        modrinth('modrinthNeoforge') {
+            from mrOptions
+            file = project(':neoforge').tasks.named('jar', Jar).flatMap { it.archiveFile }
+            modLoaders.add('neoforge')
+        }
+    }
+
+    if (project.findProperty('github_owner') && project.findProperty('github_repo')) {
+        // Pin the release to the current branch name so GitHub knows which ref the tag points at.
+        // `git rev-parse --abbrev-ref HEAD` is the safe query during configuration.
+        def gitBranch = 'git rev-parse --abbrev-ref HEAD'.execute(null, rootProject.projectDir).text.trim()
+        def ghOptions = githubOptions {
+            accessToken = providers.environmentVariable('GITHUB_TOKEN')
+            repository = "${project.github_owner}/${project.github_repo}"
+            commitish = gitBranch
+            tagName = "v${version}"
+        }
+
+        github('githubFabric') {
+            from ghOptions
+            file = project(':fabric').tasks.named('jar', Jar).flatMap { it.archiveFile }
+            modLoaders.add('fabric')
+        }
+        github('githubNeoforge') {
+            from ghOptions
+            file = project(':neoforge').tasks.named('jar', Jar).flatMap { it.archiveFile }
+            modLoaders.add('neoforge')
+        }
+    }
 }
 
 tasks.register('renameProject') {

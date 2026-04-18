@@ -44,38 +44,6 @@ tasks.named('sourcesJar', Jar) {
     from(configurations.commonResources)
 }
 
-publishMods {
-    file = tasks.named('jar', Jar).flatMap { it.archiveFile }
-    modLoaders.add(project.name)
-
-    if (project.findProperty('curseforge_id')) {
-        curseforge {
-            accessToken = providers.environmentVariable('CURSEFORGE_TOKEN')
-            projectId = project.curseforge_id
-            projectSlug = project.mod_id
-            minecraftVersions.add(minecraft_version)
-            requires {
-                slug = 'fzzy-config'
-            }
-        }
-    }
-
-    if (project.findProperty('modrinth_id')) {
-        modrinth {
-            accessToken = providers.environmentVariable('MODRINTH_TOKEN')
-            projectId = project.modrinth_id
-            minecraftVersions.add(minecraft_version)
-            requires {
-                slug = 'fzzy-config'
-            }
-        }
-    }
-
-    if (project.findProperty('github_owner') && project.findProperty('github_repo')) {
-        github {
-            accessToken = providers.environmentVariable('GITHUB_TOKEN')
-            repository = "${project.github_owner}/${project.github_repo}"
-            tagName = "v${version}-${project.name}"
-        }
-    }
-}
+// Publishing is configured once at the root project (see build.gradle) — the
+// mod-publish-plugin docs recommend centralising multi-loader setup there with
+// named curseforge/modrinth entries and shared option blocks.

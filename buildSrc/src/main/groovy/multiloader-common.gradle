@@ -135,9 +135,4 @@ publishing {
 }
 
 
-publishMods {
-    changelog = rootProject.file("CHANGELOG.md").getText()
-    displayName = "v${version} (Minecraft ${minecraft_version})"
-    version = "${version}+${minecraft_version}"
-    type = STABLE
-}
+// Publishing is configured once at the root project (see build.gradle).
