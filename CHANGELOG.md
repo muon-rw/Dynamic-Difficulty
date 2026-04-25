@@ -1,3 +1,6 @@
+## 1.2.1
+- Don't inject nameplate onto players regardless of config if Chronicles: Leveling is loaded
+
 ## 1.2.0
 - Port to 26.1.2
 - Migrate to FzzyConfig, now required instead of Forge Config API Port

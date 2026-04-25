@@ -37,3 +37,5 @@ runs
 .claude/skills/mixin-writing/references/at-reference.md
 .claude/skills/mixin-writing/references/expressions-language.md
 .claude/skills/mixinmcp-tools/SKILL.md
+.cursor/skills/mixinmcp-tools/references/toolchains.md
+.claude/skills/mixinmcp-tools/references/toolchains.md

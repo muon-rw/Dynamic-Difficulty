@@ -21,13 +21,28 @@ import net.minecraft.world.phys.HitResult;
 public class LevelPlateHandler {
 
     /**
+     * Cached at class init: presence of Chronicles: Leveling. When loaded, it
+     * owns the player nameplate end-to-end (its own renderer reads the same
+     * level via our PlayerLevelProvider), so we suppress player injection on
+     * this side regardless of the user's {@code injectLevelIntoPlayers}
+     * setting. Mob injection is unaffected.
+     *
+     * <p>Cached because {@link #shouldInjectLevel(LivingEntity)} is on the
+     * per-frame nameplate path and the answer doesn't change post-launch.
+     */
+    private static final boolean CHRONICLES_LEVELING_LOADED =
+            DynamicDifficulty.isModLoaded("chronicles_leveling");
+
+    /**
      * Whether level info should be injected into this entity's nameplate.
      * Controlled by injectLevelIntoMobs and injectLevelIntoPlayers config options.
      */
     public static boolean shouldInjectLevel(LivingEntity entity) {
-        return entity instanceof Player
-                ? Configs.CLIENT.injectLevelIntoPlayers.get()
-                : Configs.CLIENT.injectLevelIntoMobs.get();
+        if (entity instanceof Player) {
+            if (CHRONICLES_LEVELING_LOADED) return false;
+            return Configs.CLIENT.injectLevelIntoPlayers.get();
+        }
+        return Configs.CLIENT.injectLevelIntoMobs.get();
     }
 
     /**
