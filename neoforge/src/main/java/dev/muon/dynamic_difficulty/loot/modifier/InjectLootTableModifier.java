@@ -32,12 +32,12 @@ public class InjectLootTableModifier extends LootModifier {
     );
 
     private final Identifier lootTable;
-    
+
     // ThreadLocal guard to prevent infinite recursion
     private static final ThreadLocal<Boolean> PROCESSING = ThreadLocal.withInitial(() -> false);
 
-    public InjectLootTableModifier(LootItemCondition[] conditions, Identifier lootTable) {
-        super(conditions);
+    public InjectLootTableModifier(LootItemCondition[] conditions, int priority, Identifier lootTable) {
+        super(conditions, priority);
         this.lootTable = lootTable;
     }
 

@@ -1,3 +1,6 @@
+## 1.2.2
+- Fix startup crash on latest Neoforge
+
 ## 1.2.1
 - Don't inject nameplate onto players regardless of config if Chronicles: Leveling is loaded
 
