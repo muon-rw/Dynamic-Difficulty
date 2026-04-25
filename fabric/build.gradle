@@ -20,15 +20,11 @@ dependencies {
 
     // Compat mods
     compileOnly("curse.maven:jade-324717:${jade_fabric_file}")
-    runtimeOnly("curse.maven:jade-324717:${jade_fabric_file}")
+    localRuntime("curse.maven:jade-324717:${jade_fabric_file}")
     compileOnly("net.puffish:skillsmod:${puffish_skills_version}:fabric")
-    runtimeOnly("net.puffish:skillsmod:${puffish_skills_version}:fabric")
-    runtimeOnly("net.puffish:attributesmod:${puffish_attributes_version}:fabric")
-    runtimeOnly("curse.maven:default-skill-trees-1074229:${default_skill_trees_file}")
-}
-
-repositories {
-    maven { url = 'https://maven.puffish.net' }
+    localRuntime("net.puffish:skillsmod:${puffish_skills_version}:fabric")
+    localRuntime("net.puffish:attributesmod:${puffish_attributes_version}:fabric")
+    localRuntime("curse.maven:default-skill-trees-1074229:${default_skill_trees_file}")
 }
 
 loom {

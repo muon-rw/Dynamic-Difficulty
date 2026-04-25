@@ -34,10 +34,6 @@ dependencies {
     compileOnly("net.puffish:skillsmod:${puffish_skills_version}")
 }
 
-repositories {
-    maven { url = 'https://maven.puffish.net' }
-}
-
 configurations {
     commonJava {
         canBeResolved = false

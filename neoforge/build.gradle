@@ -4,6 +4,15 @@ plugins {
     id 'dev.mixinmcp.decompile'
 }
 
+// Loom provides `localRuntime` out of the box; MDG does not, so wire it up here.
+// Deps in `localRuntime` are on the dev runtime classpath but aren't exposed in
+// `runtimeElements`, so they don't propagate transitively to maven consumers.
+configurations {
+    localRuntime
+    runtimeClasspath.extendsFrom(localRuntime)
+    testRuntimeClasspath.extendsFrom(localRuntime)
+}
+
 dependencies {
     implementation("me.fzzyhmstrs:fzzy_config:${fzzy_config}+neoforge")
 
@@ -14,15 +23,11 @@ dependencies {
 
     // Compat mods
     compileOnly("curse.maven:jade-324717:${jade_neoforge_file}")
-    runtimeOnly("curse.maven:jade-324717:${jade_neoforge_file}")
+    localRuntime("curse.maven:jade-324717:${jade_neoforge_file}")
     compileOnly("net.puffish:skillsmod:${puffish_skills_version}:neoforge")
-    runtimeOnly("net.puffish:skillsmod:${puffish_skills_version}:neoforge")
-    runtimeOnly("net.puffish:attributesmod:${puffish_attributes_version}:neoforge")
-    runtimeOnly("curse.maven:default-skill-trees-1074229:${default_skill_trees_file}")
-}
-
-repositories {
-    maven { url = 'https://maven.puffish.net' }
+    localRuntime("net.puffish:skillsmod:${puffish_skills_version}:neoforge")
+    localRuntime("net.puffish:attributesmod:${puffish_attributes_version}:neoforge")
+    localRuntime("curse.maven:default-skill-trees-1074229:${default_skill_trees_file}")
 }
 
 neoForge {
