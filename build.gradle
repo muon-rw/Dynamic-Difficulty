@@ -10,8 +10,25 @@ plugins {
 // Multi-loader publishing — see https://modmuss50.github.io/mod-publish-plugin/multi_platform/
 // for the recommended root-level pattern. One named entry per loader points at that
 // subproject's jar, sharing common options via the `*Options { ... }` blocks.
+evaluationDependsOn(':common')
 evaluationDependsOn(':fabric')
 evaluationDependsOn(':neoforge')
+
+// Maven publish aggregators. Run `./gradlew publishToSnapshots` to push a `-SNAPSHOT`
+// artifact (republishable, refreshes consumers per cacheChangingModulesFor); run
+// `publishToReleases` for an immutable release. Mode is detected by task name in
+// multiloader-common.gradle, which also picks the matching repo URL.
+tasks.register('publishToSnapshots') {
+    group = 'publishing'
+    description = 'Publish all subprojects to maven.muon.rip/snapshots with -SNAPSHOT suffix.'
+    dependsOn subprojects.collect { "${it.path}:publishMavenJavaPublicationToMuonSnapshotsRepository" }
+}
+
+tasks.register('publishToReleases') {
+    group = 'publishing'
+    description = 'Publish all subprojects to maven.muon.rip/releases.'
+    dependsOn subprojects.collect { "${it.path}:publishMavenJavaPublicationToMuonReleasesRepository" }
+}
 
 // Compute all GString values OUTSIDE the publishMods closure. Inside the closure, Groovy's
 // delegate-first resolution shadows `version` (and via `project.version` in some nested

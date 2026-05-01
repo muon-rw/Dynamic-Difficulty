@@ -7,7 +7,14 @@ base {
     archivesName = "${mod_id}-${project.name}"
 }
 
-version = "${project.version}+${minecraft_version}"
+// Snapshot publishing is selected by running any task whose name contains "snapshot"
+// (e.g. `publishToSnapshots`) or by passing `-Psnapshot=true`. Reposilite treats
+// `-SNAPSHOT` versions as mutable, so republishing the same version updates the artifact —
+// mirroring the `mavenLocal()` workflow across machines via `maven.muon.rip/snapshots/`.
+def isSnapshotPublish = gradle.startParameter.taskNames.any { it.toLowerCase().contains('snapshot') } || project.hasProperty('snapshot')
+version = isSnapshotPublish
+        ? "${project.version}+${minecraft_version}-SNAPSHOT"
+        : "${project.version}+${minecraft_version}"
 
 java {
     toolchain {
@@ -126,14 +133,28 @@ publishing {
         }
     }
     repositories {
-        maven {
-            url System.getenv('MAVEN_URL')
-            credentials {
-                username = System.getenv("MAVEN_USERNAME")
-                password = System.getenv("MAVEN_PASSWORD")
+        // Only the matching repo is registered so a stray `./gradlew publish` can't push
+        // a non-SNAPSHOT artifact at the snapshots URL (or vice versa). Use the root-level
+        // `publishToSnapshots` / `publishToReleases` aggregators rather than `publish`.
+        if (isSnapshotPublish) {
+            maven {
+                name = 'muonSnapshots'
+                url = System.getenv('SNAPSHOT_MAVEN_URL') ?: 'https://maven.muon.rip/snapshots/'
+                credentials {
+                    username = System.getenv('MAVEN_USERNAME')
+                    password = System.getenv('MAVEN_PASSWORD')
+                }
+            }
+        } else {
+            maven {
+                name = 'muonReleases'
+                url = System.getenv('MAVEN_URL') ?: 'https://maven.muon.rip/releases/'
+                credentials {
+                    username = System.getenv('MAVEN_USERNAME')
+                    password = System.getenv('MAVEN_PASSWORD')
+                }
             }
         }
-
     }
 }
 
