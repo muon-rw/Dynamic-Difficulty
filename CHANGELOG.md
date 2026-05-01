@@ -1,3 +1,6 @@
+## 1.2.4
+- Internal cleanup and optimizations
+
 ## 1.2.3
 - Add Health Bars (Fuzs) compat
 - Change default component from "Level n" to "Lv. n"

@@ -13,6 +13,7 @@ import dev.muon.dynamic_difficulty.api.StructureBonus;
 import dev.muon.dynamic_difficulty.config.Configs;
 import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
+import dev.muon.dynamic_difficulty.util.LevelingUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -315,16 +316,8 @@ public class ModCommands {
     Registry<Level> dimensionRegistry = level.registryAccess().lookupOrThrow(Registries.DIMENSION);
     DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension, dimensionRegistry);
     
-    // Get spawn position (considering override)
-    BlockPos spawnPos = dimSettings.spawnPosOverride() != null ?
-        dimSettings.spawnPosOverride() : level.getRespawnData().pos();
-    int spawnX = spawnPos.getX();
-    int spawnZ = spawnPos.getZ();
-    
-    // Calculate distance
-    double dx = spawnX - pos.getX();
-    double dz = spawnZ - pos.getZ();
-    double distance = Math.sqrt(dx * dx + dz * dz);
+    BlockPos spawnPos = LevelingUtils.getEffectiveSpawnPos(level, dimSettings);
+    double distance = LevelingUtils.horizontalDistance(spawnPos, pos);
     int distanceBonus = (int)(distance * dimSettings.levelsPerDistance());
     
     // Calculate depth/height
@@ -415,7 +408,7 @@ public class ModCommands {
     // === Output ===
     source.sendSystemMessage(Component.literal("§6=== Dynamic Difficulty Debug ==="));
     source.sendSystemMessage(Component.literal("§7Position: §f" + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()));
-    source.sendSystemMessage(Component.literal("§7Dimension: §f" + dimensionId +" §7(sea lvl: §f" + seaLevel + "§7, spawn: §f" + spawnX + ", " + spawnZ + "§7)"));
+    source.sendSystemMessage(Component.literal("§7Dimension: §f" + dimensionId +" §7(sea lvl: §f" + seaLevel + "§7, spawn: §f" + spawnPos.getX() + ", " + spawnPos.getZ() + "§7)"));
     source.sendSystemMessage(Component.literal("§7Scaling: §f" + dimSettings.levelsPerDistance() + "§7/dist, §f" + dimSettings.levelsPerDeepness() + "§7/depth, §f" + dimSettings.levelsPerHeight() + "§7/height, §f" + dimSettings.levelsPerDay() + "§7/day, §f" + dimSettings.levelsPerLocalDifficulty() + "§7/local, random: §f0-" + dimSettings.randomLevelBonus()));
     
     // Show overrides if present

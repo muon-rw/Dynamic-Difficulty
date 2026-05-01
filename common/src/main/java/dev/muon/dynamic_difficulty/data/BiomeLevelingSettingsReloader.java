@@ -22,48 +22,37 @@ import java.util.Optional;
 public class BiomeLevelingSettingsReloader {
   private static final Logger LOGGER = LogUtils.getLogger();
   private static final Map<Identifier, BiomeBonusSettings> INDIVIDUAL_SETTINGS = new HashMap<>();
-  private static final Map<Identifier, BiomeBonusSettings> TAG_SETTINGS = new HashMap<>();
+  private static final Map<TagKey<Biome>, BiomeBonusSettings> TAG_SETTINGS = new HashMap<>();
 
   @Nullable
   public static BiomeBonusSettings get(Identifier biomeId, Registry<Biome> biomeRegistry) {
-    // Check individual biome settings first (they take precedence)
-    if (INDIVIDUAL_SETTINGS.containsKey(biomeId)) {
-      return INDIVIDUAL_SETTINGS.get(biomeId);
+    BiomeBonusSettings individual = INDIVIDUAL_SETTINGS.get(biomeId);
+    if (individual != null) {
+      return individual;
     }
-    
-    // Check biome tags
+
+    if (TAG_SETTINGS.isEmpty()) {
+      return null;
+    }
+
     Optional<Holder.Reference<Biome>> optHolder = biomeRegistry.get(biomeId);
-    if (optHolder.isPresent()) {
-      Holder<Biome> biomeHolder = optHolder.get();
-      // Find the highest bonus from matching tags
-      int highestBonus = 0;
-      BiomeBonusSettings bestMatch = null;
-      
-      for (Map.Entry<Identifier, BiomeBonusSettings> tagEntry : TAG_SETTINGS.entrySet()) {
-        TagKey<Biome> biomeTag = TagKey.create(Registries.BIOME, tagEntry.getKey());
-        if (biomeHolder.is(biomeTag)) {
-          BiomeBonusSettings tagSettings = tagEntry.getValue();
-          if (tagSettings.levelBonus() > highestBonus) {
-            highestBonus = tagSettings.levelBonus();
-            bestMatch = tagSettings;
-          }
+    if (optHolder.isEmpty()) {
+      return null;
+    }
+
+    Holder<Biome> biomeHolder = optHolder.get();
+    BiomeBonusSettings best = null;
+    int highestBonus = 0;
+    for (Map.Entry<TagKey<Biome>, BiomeBonusSettings> tagEntry : TAG_SETTINGS.entrySet()) {
+      if (biomeHolder.is(tagEntry.getKey())) {
+        BiomeBonusSettings tagSettings = tagEntry.getValue();
+        if (tagSettings.levelBonus() > highestBonus) {
+          highestBonus = tagSettings.levelBonus();
+          best = tagSettings;
         }
       }
-      
-      return bestMatch;
     }
-    
-    return null;
-  }
-
-  public static int getLevelBonus(Identifier biomeId, Registry<Biome> biomeRegistry) {
-    BiomeBonusSettings settings = get(biomeId, biomeRegistry);
-    return settings != null ? settings.levelBonus() : 0;
-  }
-
-  public static boolean bypassesCap(Identifier biomeId, Registry<Biome> biomeRegistry) {
-    BiomeBonusSettings settings = get(biomeId, biomeRegistry);
-    return settings != null && settings.bypassesCap();
+    return best;
   }
 
   /**
@@ -74,13 +63,13 @@ public class BiomeLevelingSettingsReloader {
     INDIVIDUAL_SETTINGS.putAll(settings);
     LOGGER.info("Loaded {} individual biome leveling settings from 'leveling_settings/biomes'", INDIVIDUAL_SETTINGS.size());
   }
-  
+
   /**
    * Load tag-based biome settings. Called by platform-specific reloaders.
    */
   public static void loadTagSettings(Map<Identifier, BiomeBonusSettings> tagSettings) {
     TAG_SETTINGS.clear();
-    TAG_SETTINGS.putAll(tagSettings);
+    tagSettings.forEach((id, settings) -> TAG_SETTINGS.put(TagKey.create(Registries.BIOME, id), settings));
     LOGGER.info("Loaded {} biome tag leveling settings from 'leveling_settings/biome_tags'", TAG_SETTINGS.size());
   }
 }

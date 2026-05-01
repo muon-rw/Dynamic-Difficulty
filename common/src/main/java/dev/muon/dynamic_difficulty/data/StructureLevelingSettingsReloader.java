@@ -22,56 +22,37 @@ import java.util.Optional;
 public class StructureLevelingSettingsReloader {
   private static final Logger LOGGER = LogUtils.getLogger();
   private static final Map<Identifier, StructureBonusSettings> INDIVIDUAL_SETTINGS = new HashMap<>();
-  private static final Map<Identifier, StructureBonusSettings> TAG_SETTINGS = new HashMap<>();
+  private static final Map<TagKey<Structure>, StructureBonusSettings> TAG_SETTINGS = new HashMap<>();
 
   @Nullable
   public static StructureBonusSettings get(Identifier structureId, Registry<Structure> structureRegistry) {
-    // Check individual structure settings first (they take precedence)
-    if (INDIVIDUAL_SETTINGS.containsKey(structureId)) {
-      return INDIVIDUAL_SETTINGS.get(structureId);
+    StructureBonusSettings individual = INDIVIDUAL_SETTINGS.get(structureId);
+    if (individual != null) {
+      return individual;
     }
-    
-    // Check structure tags
+
+    if (TAG_SETTINGS.isEmpty()) {
+      return null;
+    }
+
     Optional<Holder.Reference<Structure>> optHolder = structureRegistry.get(structureId);
-    if (optHolder.isPresent()) {
-      Holder<Structure> structureHolder = optHolder.get();
-      // Find the highest bonus from matching tags
-      int highestBonus = 0;
-      StructureBonusSettings bestMatch = null;
-      
-      for (Map.Entry<Identifier, StructureBonusSettings> tagEntry : TAG_SETTINGS.entrySet()) {
-        TagKey<Structure> structureTag = TagKey.create(Registries.STRUCTURE, tagEntry.getKey());
-        if (structureHolder.is(structureTag)) {
-          StructureBonusSettings tagSettings = tagEntry.getValue();
-          if (tagSettings.levelBonus() > highestBonus) {
-            highestBonus = tagSettings.levelBonus();
-            bestMatch = tagSettings;
-          }
+    if (optHolder.isEmpty()) {
+      return null;
+    }
+
+    Holder<Structure> structureHolder = optHolder.get();
+    StructureBonusSettings best = null;
+    int highestBonus = 0;
+    for (Map.Entry<TagKey<Structure>, StructureBonusSettings> tagEntry : TAG_SETTINGS.entrySet()) {
+      if (structureHolder.is(tagEntry.getKey())) {
+        StructureBonusSettings tagSettings = tagEntry.getValue();
+        if (tagSettings.levelBonus() > highestBonus) {
+          highestBonus = tagSettings.levelBonus();
+          best = tagSettings;
         }
       }
-      
-      return bestMatch;
     }
-    
-    return null;
-  }
-
-  public static int getLevelBonus(Identifier structureId, Registry<Structure> structureRegistry) {
-    StructureBonusSettings settings = get(structureId, structureRegistry);
-    return settings != null ? settings.levelBonus() : 0;
-  }
-
-  public static boolean bypassesCap(Identifier structureId, Registry<Structure> structureRegistry) {
-    StructureBonusSettings settings = get(structureId, structureRegistry);
-    return settings == null || settings.bypassesCap(); // Default to true for structures
-  }
-  
-  public static Map<Identifier, StructureBonusSettings> getIndividualSettings() {
-    return new HashMap<>(INDIVIDUAL_SETTINGS);
-  }
-  
-  public static Map<Identifier, StructureBonusSettings> getTagSettings() {
-    return new HashMap<>(TAG_SETTINGS);
+    return best;
   }
 
   /**
@@ -82,13 +63,13 @@ public class StructureLevelingSettingsReloader {
     INDIVIDUAL_SETTINGS.putAll(settings);
     LOGGER.info("Loaded {} individual structure leveling settings from 'leveling_settings/structures'", INDIVIDUAL_SETTINGS.size());
   }
-  
+
   /**
    * Load tag-based structure settings. Called by platform-specific reloaders.
    */
   public static void loadTagSettings(Map<Identifier, StructureBonusSettings> tagSettings) {
     TAG_SETTINGS.clear();
-    TAG_SETTINGS.putAll(tagSettings);
+    tagSettings.forEach((id, settings) -> TAG_SETTINGS.put(TagKey.create(Registries.STRUCTURE, id), settings));
     LOGGER.info("Loaded {} structure tag leveling settings from 'leveling_settings/structure_tags'", TAG_SETTINGS.size());
   }
 }

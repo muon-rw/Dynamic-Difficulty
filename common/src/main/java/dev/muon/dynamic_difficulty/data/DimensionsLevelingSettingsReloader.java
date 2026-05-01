@@ -23,44 +23,33 @@ import java.util.Optional;
 public class DimensionsLevelingSettingsReloader {
   private static final Logger LOGGER = LogUtils.getLogger();
   private static final Map<Identifier, DimensionLevelingSettings> INDIVIDUAL_SETTINGS = new HashMap<>();
-  private static final Map<Identifier, DimensionLevelingSettings> TAG_SETTINGS = new HashMap<>();
+  private static final Map<TagKey<Level>, DimensionLevelingSettings> TAG_SETTINGS = new HashMap<>();
 
   @NotNull
   public static DimensionLevelingSettings get(ResourceKey<Level> dimension) {
-    Identifier dimensionId = dimension.identifier();
-    
-    // Check individual dimension settings first (they take precedence)
-    if (INDIVIDUAL_SETTINGS.containsKey(dimensionId)) {
-      return INDIVIDUAL_SETTINGS.get(dimensionId);
-    }
-    
-    // Fall back to default if no match found
-    return DimensionLevelingSettings.createDefault();
+    DimensionLevelingSettings individual = INDIVIDUAL_SETTINGS.get(dimension.identifier());
+    return individual != null ? individual : DimensionLevelingSettings.createDefault();
   }
-  
+
   @NotNull
   public static DimensionLevelingSettings get(ResourceKey<Level> dimension, Registry<Level> dimensionRegistry) {
-    Identifier dimensionId = dimension.identifier();
-    
-    // Check individual dimension settings first (they take precedence)
-    if (INDIVIDUAL_SETTINGS.containsKey(dimensionId)) {
-      return INDIVIDUAL_SETTINGS.get(dimensionId);
+    DimensionLevelingSettings individual = INDIVIDUAL_SETTINGS.get(dimension.identifier());
+    if (individual != null) {
+      return individual;
     }
-    
-    // Check dimension tags
-    Optional<Holder.Reference<Level>> optHolder = dimensionRegistry.get(dimension);
-    if (optHolder.isPresent()) {
-      Holder<Level> dimensionHolder = optHolder.get();
-      // Find the first matching tag (tags are checked in order, first match wins)
-      for (Map.Entry<Identifier, DimensionLevelingSettings> tagEntry : TAG_SETTINGS.entrySet()) {
-        TagKey<Level> dimensionTag = TagKey.create(Registries.DIMENSION, tagEntry.getKey());
-        if (dimensionHolder.is(dimensionTag)) {
-          return tagEntry.getValue();
+
+    if (!TAG_SETTINGS.isEmpty()) {
+      Optional<Holder.Reference<Level>> optHolder = dimensionRegistry.get(dimension);
+      if (optHolder.isPresent()) {
+        Holder<Level> dimensionHolder = optHolder.get();
+        for (Map.Entry<TagKey<Level>, DimensionLevelingSettings> tagEntry : TAG_SETTINGS.entrySet()) {
+          if (dimensionHolder.is(tagEntry.getKey())) {
+            return tagEntry.getValue();
+          }
         }
       }
     }
-    
-    // Fall back to default if no match found
+
     return DimensionLevelingSettings.createDefault();
   }
 
@@ -68,23 +57,25 @@ public class DimensionsLevelingSettingsReloader {
    * Checks if a dimension has custom leveling settings (either individual or tag-based).
    */
   public static boolean hasCustomSettings(ResourceKey<Level> dimension, Registry<Level> dimensionRegistry) {
-    Identifier dimensionId = dimension.identifier();
-    
-    if (INDIVIDUAL_SETTINGS.containsKey(dimensionId)) {
+    if (INDIVIDUAL_SETTINGS.containsKey(dimension.identifier())) {
       return true;
     }
-    
+
+    if (TAG_SETTINGS.isEmpty()) {
+      return false;
+    }
+
     Optional<Holder.Reference<Level>> optHolder = dimensionRegistry.get(dimension);
-    if (optHolder.isPresent()) {
-      Holder<Level> dimensionHolder = optHolder.get();
-      for (Map.Entry<Identifier, DimensionLevelingSettings> tagEntry : TAG_SETTINGS.entrySet()) {
-        TagKey<Level> dimensionTag = TagKey.create(Registries.DIMENSION, tagEntry.getKey());
-        if (dimensionHolder.is(dimensionTag)) {
-          return true;
-        }
+    if (optHolder.isEmpty()) {
+      return false;
+    }
+
+    Holder<Level> dimensionHolder = optHolder.get();
+    for (TagKey<Level> tag : TAG_SETTINGS.keySet()) {
+      if (dimensionHolder.is(tag)) {
+        return true;
       }
     }
-    
     return false;
   }
 
@@ -96,13 +87,13 @@ public class DimensionsLevelingSettingsReloader {
     INDIVIDUAL_SETTINGS.putAll(settings);
     LOGGER.info("Loaded {} individual dimension leveling settings from 'leveling_settings/dimensions'", INDIVIDUAL_SETTINGS.size());
   }
-  
+
   /**
    * Load tag-based dimension settings. Called by platform-specific reloaders.
    */
   public static void loadTagSettings(Map<Identifier, DimensionLevelingSettings> tagSettings) {
     TAG_SETTINGS.clear();
-    TAG_SETTINGS.putAll(tagSettings);
+    tagSettings.forEach((id, settings) -> TAG_SETTINGS.put(TagKey.create(Registries.DIMENSION, id), settings));
     LOGGER.info("Loaded {} dimension tag leveling settings from 'leveling_settings/dimension_tags'", TAG_SETTINGS.size());
   }
 }

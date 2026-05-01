@@ -24,7 +24,7 @@ public class EntityLevelingSettingsReloader {
   private static final Logger LOGGER = LogUtils.getLogger();
   // Store raw settings - they get resolved at lookup time with dimension fallback
   private static final Map<Identifier, EntityLevelingSettings.RawSettings> INDIVIDUAL_SETTINGS = new HashMap<>();
-  private static final Map<Identifier, EntityLevelingSettings.RawSettings> TAG_SETTINGS = new HashMap<>();
+  private static final Map<TagKey<EntityType<?>>, EntityLevelingSettings.RawSettings> TAG_SETTINGS = new HashMap<>();
 
   /**
    * Gets resolved entity settings, falling back to dimension settings for any omitted fields.
@@ -33,25 +33,27 @@ public class EntityLevelingSettingsReloader {
   @Nullable
   public static EntityLevelingSettings get(EntityType<?> entityType, DimensionLevelingSettings dimSettings) {
     Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
-    
-    // Check individual entity settings first (they take precedence)
-    if (INDIVIDUAL_SETTINGS.containsKey(entityId)) {
-      return INDIVIDUAL_SETTINGS.get(entityId).resolve(dimSettings);
+
+    EntityLevelingSettings.RawSettings individual = INDIVIDUAL_SETTINGS.get(entityId);
+    if (individual != null) {
+      return individual.resolve(dimSettings);
     }
-    
-    // Check entity tags
+
+    if (TAG_SETTINGS.isEmpty()) {
+      return null;
+    }
+
     Optional<Holder.Reference<EntityType<?>>> optHolder = BuiltInRegistries.ENTITY_TYPE.get(entityId);
-    if (optHolder.isPresent()) {
-      Holder<EntityType<?>> entityHolder = optHolder.get();
-      // Find the first matching tag (tags are checked in order, first match wins)
-      for (Map.Entry<Identifier, EntityLevelingSettings.RawSettings> tagEntry : TAG_SETTINGS.entrySet()) {
-        TagKey<EntityType<?>> entityTag = TagKey.create(Registries.ENTITY_TYPE, tagEntry.getKey());
-        if (entityHolder.is(entityTag)) {
-          return tagEntry.getValue().resolve(dimSettings);
-        }
+    if (optHolder.isEmpty()) {
+      return null;
+    }
+
+    Holder<EntityType<?>> entityHolder = optHolder.get();
+    for (Map.Entry<TagKey<EntityType<?>>, EntityLevelingSettings.RawSettings> tagEntry : TAG_SETTINGS.entrySet()) {
+      if (entityHolder.is(tagEntry.getKey())) {
+        return tagEntry.getValue().resolve(dimSettings);
       }
     }
-    
     return null;
   }
 
@@ -60,22 +62,26 @@ public class EntityLevelingSettingsReloader {
    */
   public static boolean hasCustomSettings(EntityType<?> entityType) {
     Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
-    
+
     if (INDIVIDUAL_SETTINGS.containsKey(entityId)) {
       return true;
     }
-    
+
+    if (TAG_SETTINGS.isEmpty()) {
+      return false;
+    }
+
     Optional<Holder.Reference<EntityType<?>>> optHolder = BuiltInRegistries.ENTITY_TYPE.get(entityId);
-    if (optHolder.isPresent()) {
-      Holder<EntityType<?>> entityHolder = optHolder.get();
-      for (Map.Entry<Identifier, EntityLevelingSettings.RawSettings> tagEntry : TAG_SETTINGS.entrySet()) {
-        TagKey<EntityType<?>> entityTag = TagKey.create(Registries.ENTITY_TYPE, tagEntry.getKey());
-        if (entityHolder.is(entityTag)) {
-          return true;
-        }
+    if (optHolder.isEmpty()) {
+      return false;
+    }
+
+    Holder<EntityType<?>> entityHolder = optHolder.get();
+    for (TagKey<EntityType<?>> tag : TAG_SETTINGS.keySet()) {
+      if (entityHolder.is(tag)) {
+        return true;
       }
     }
-    
     return false;
   }
 
@@ -87,13 +93,13 @@ public class EntityLevelingSettingsReloader {
     INDIVIDUAL_SETTINGS.putAll(settings);
     LOGGER.info("Loaded {} individual entity leveling settings from 'leveling_settings/entities'", INDIVIDUAL_SETTINGS.size());
   }
-  
+
   /**
    * Load tag-based entity settings. Called by platform-specific reloaders.
    */
   public static void loadTagSettings(Map<Identifier, EntityLevelingSettings.RawSettings> tagSettings) {
     TAG_SETTINGS.clear();
-    TAG_SETTINGS.putAll(tagSettings);
+    tagSettings.forEach((id, settings) -> TAG_SETTINGS.put(TagKey.create(Registries.ENTITY_TYPE, id), settings));
     LOGGER.info("Loaded {} entity tag leveling settings from 'leveling_settings/entity_tags'", TAG_SETTINGS.size());
   }
 }

@@ -10,10 +10,8 @@ import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
 import dev.muon.dynamic_difficulty.settings.LevelingSettings;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -111,49 +109,47 @@ public class LevelingUtils {
     }
 
     /**
-     * Calculates base level from distance, depth, and height.
-     * Deepness scaling only applies when Y &lt; seaLevel (default 64).
-     * Height scaling applies when Y > seaLevel and levelsPerHeight > 0.
+     * 2D horizontal distance between two block positions, ignoring Y.
      */
-    public static int calculateDistanceFactors(
-            LivingEntity entity,
-            double distanceToSpawn,
-            LevelingSettings settings) {
-        return calculateDistanceFactors(entity.level().dimension(), entity.getY(), distanceToSpawn, settings);
+    public static double horizontalDistance(BlockPos a, BlockPos b) {
+        double dx = a.getX() - b.getX();
+        double dz = a.getZ() - b.getZ();
+        return Math.sqrt(dx * dx + dz * dz);
     }
-    
+
+    /**
+     * Resolves the effective spawn position for distance-based scaling, honouring
+     * the dimension's {@code spawnPosOverride} and falling back to world spawn.
+     */
+    public static BlockPos getEffectiveSpawnPos(Level level, DimensionLevelingSettings dimSettings) {
+        BlockPos override = dimSettings.spawnPosOverride();
+        return override != null ? override : level.getRespawnData().pos();
+    }
+
     /**
      * Calculates base level from distance, depth, and height for a specific Y coordinate.
      * Deepness scaling only applies when Y &lt; seaLevel (default 64).
-     * Height scaling applies when Y > seaLevel and levelsPerHeight > 0.
+     * Height scaling applies when Y &gt; seaLevel and levelsPerHeight &gt; 0.
      */
     public static int calculateDistanceFactors(
-            ResourceKey<Level> dimension,
+            int seaLevel,
             double yPos,
             double distanceToSpawn,
             LevelingSettings settings) {
         double distanceLevel = distanceToSpawn * settings.levelsPerDistance();
-        
-        // Sea level is dimension-specific only (entities don't have their own sea level)
-        DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension);
-        int seaLevel = dimSettings.seaLevel();
-        
+
         double depthLevel = 0.0;
         double heightLevel = 0.0;
-        
-        // Deepness scaling: only applies when below sea level
+
         if (yPos < seaLevel && settings.levelsPerDeepness() > 0) {
-            double depthBelowSea = seaLevel - yPos;
-            depthLevel = depthBelowSea * settings.levelsPerDeepness();
+            depthLevel = (seaLevel - yPos) * settings.levelsPerDeepness();
         }
-        
-        // Height scaling: only applies when above sea level (uses entity/dimension setting)
+
         float levelsPerHeight = settings.levelsPerHeight();
         if (yPos > seaLevel && levelsPerHeight > 0) {
-            double heightAboveSea = yPos - seaLevel;
-            heightLevel = heightAboveSea * levelsPerHeight;
+            heightLevel = (yPos - seaLevel) * levelsPerHeight;
         }
-        
+
         return (int) (distanceLevel + depthLevel + heightLevel);
     }
 
@@ -221,23 +217,10 @@ public class LevelingUtils {
     }
 
     /**
-     * Calculates the base entity level at a given position.
-     * This includes starting level, distance factors, day scaling, and local difficulty.
-     * Note: Random bonus is excluded as it's per-entity and non-deterministic.
-     * 
-     * @param player The player (used for dimension access)
-     * @param pos The position to calculate level for
-     * @return The base level at this position
-     */
-    public static int calculateBaseEntityLevel(ServerPlayer player, BlockPos pos) {
-        return calculateBaseEntityLevel(player.level(), pos);
-    }
-
-    /**
      * Calculates the base entity level at a given position in a specific level.
      * This includes starting level, distance factors, day scaling, and local difficulty.
-     * Note: Random bonus is excluded as it's per-entity and non-deterministic.
-     * 
+     * Random bonus is excluded — it's per-entity and non-deterministic.
+     *
      * <p>This is the base level before:
      * <ul>
      *   <li>Player-based scaling (nearby player level bonuses)</li>
@@ -245,61 +228,36 @@ public class LevelingUtils {
      *   <li>Biome bonuses</li>
      *   <li>Random variation</li>
      * </ul>
-     * 
-     * @param level The server level
-     * @param pos The position to calculate level for
-     * @return The base level at this position
      */
     public static int calculateBaseEntityLevel(ServerLevel level, BlockPos pos) {
-        // Get dimension-specific settings (or fall back to global config)
-        ResourceKey<Level> dimension = level.dimension();
-        DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension, level.registryAccess().lookupOrThrow(Registries.DIMENSION));
+        DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(
+                level.dimension(),
+                level.registryAccess().lookupOrThrow(Registries.DIMENSION));
 
-        // Get spawn position (may be overridden by dimension settings)
-        BlockPos spawnPos = dimSettings.spawnPosOverride() != null ?
-                dimSettings.spawnPosOverride() : level.getRespawnData().pos();
-        // Use 2D horizontal distance (ignore Y) for distance-based scaling
-        double dx = spawnPos.getX() - pos.getX();
-        double dz = spawnPos.getZ() - pos.getZ();
-        double distanceToSpawn = Math.sqrt(dx * dx + dz * dz);
+        BlockPos spawnPos = getEffectiveSpawnPos(level, dimSettings);
+        double distanceToSpawn = horizontalDistance(spawnPos, pos);
 
-        // Starting level from dimension settings
         int baseLevel = dimSettings.startingLevel();
+        baseLevel += calculateDistanceFactors(dimSettings.seaLevel(), pos.getY(), distanceToSpawn, dimSettings);
 
-        // Distance and depth factors (using dimension-specific settings)
-        // Use BlockPos Y coordinate for position-based calculation
-        int distanceBonus = calculateDistanceFactors(dimension, pos.getY(), distanceToSpawn, dimSettings);
-        baseLevel += distanceBonus;
-
-        // Day scaling (from dimension settings, which fall back to config)
         long days = level.getOverworldClockTime() / 24000L;
         baseLevel += (int) (days * dimSettings.levelsPerDay());
 
-        // Local difficulty scaling (from dimension settings, which fall back to config)
         net.minecraft.world.DifficultyInstance difficulty = level.getCurrentDifficultyAt(pos);
-        float effectiveDifficulty = difficulty.getEffectiveDifficulty();
-        baseLevel += (int) (effectiveDifficulty * dimSettings.levelsPerLocalDifficulty());
-
-        // Note: Random bonus is excluded as it's per-entity and non-deterministic
+        baseLevel += (int) (difficulty.getEffectiveDifficulty() * dimSettings.levelsPerLocalDifficulty());
 
         return Math.max(1, baseLevel);
     }
 
     /**
      * Calculates the final displayed level (without player bonus) for client display.
-     * This accounts for max level cap and bypassing bonuses.
-     * 
-     * @param player The player (used for dimension/registry access)
-     * @param baseLevel The base level
-     * @param structureBonus The structure bonus info
-     * @param biomeBonus The biome bonus info
-     * @return The final displayed level without player bonus
+     * Accounts for max level cap and bypassing bonuses.
      */
-    public static int calculateDisplayedLevel(ServerPlayer player, int baseLevel,
+    public static int calculateDisplayedLevel(ServerLevel level, int baseLevel,
                                                StructureBonus structureBonus, BiomeBonus biomeBonus) {
-        ServerLevel level = player.level();
-        var dimensionSettings = DimensionsLevelingSettingsReloader.get(level.dimension(), level.registryAccess().lookupOrThrow(Registries.DIMENSION));
-        
+        DimensionLevelingSettings dimensionSettings = DimensionsLevelingSettingsReloader.get(
+                level.dimension(),
+                level.registryAccess().lookupOrThrow(Registries.DIMENSION));
         return calculateFinalDisplayLevel(baseLevel, structureBonus, biomeBonus, 0, dimensionSettings);
     }
 }

@@ -148,6 +148,19 @@ public interface PlayerLevelProvider {
     }
 
     /**
+     * Sums {@link #calculateBonusLevels(List)} across all enabled providers.
+     */
+    static int sumBonusLevels(List<ServerPlayer> nearbyPlayers) {
+        int total = 0;
+        for (PlayerLevelProvider provider : providers) {
+            if (provider.isEnabled()) {
+                total += provider.calculateBonusLevels(nearbyPlayers);
+            }
+        }
+        return total;
+    }
+
+    /**
      * Requests that the specified player's display level be recalculated and synced to clients.
      * Providers should call this method when they detect a change that would affect the player's level.
      * 
