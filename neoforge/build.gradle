@@ -28,6 +28,8 @@ dependencies {
     localRuntime("net.puffish:skillsmod:${puffish_skills_version}:neoforge")
     localRuntime("net.puffish:attributesmod:${puffish_attributes_version}:neoforge")
     localRuntime("curse.maven:default-skill-trees-1074229:${default_skill_trees_file}")
+    compileOnly "curse.maven:health-bars-1367734:8004270"
+    localRuntime "curse.maven:health-bars-1367734:8004270"
 }
 
 neoForge {

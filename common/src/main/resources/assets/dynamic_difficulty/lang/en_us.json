@@ -1,8 +1,8 @@
 {
-  "dynamic_difficulty.level": "Level %s",
+  "dynamic_difficulty.level": "Lv. %s",
   "dynamic_difficulty.level_info.breakdown": " (Environment: %s, Player: %s)",
-  "config.jade.plugin_dynamic_difficulty.level": "Level",
-  "jade.dynamic_difficulty.tooltip": "Level: %d",
+  "config.jade.plugin_dynamic_difficulty.level": "Lv.",
+  "jade.dynamic_difficulty.tooltip": "Lv.: %d",
   "attribute.dynamic_difficulty.damage_bonus": "Damage Bonus",
   "attribute.dynamic_difficulty.damage_multiplier": "Damage Multiplier",
   "attribute.dynamic_difficulty.magic_damage_bonus": "Magic Damage Bonus",
@@ -11,7 +11,7 @@
   "attribute.dynamic_difficulty.explosion_damage_multiplier": "Explosion Damage Multiplier",
   "attribute.dynamic_difficulty.projectile_damage_bonus": "Projectile Damage Bonus",
   "attribute.dynamic_difficulty.projectile_damage_multiplier": "Projectile Damage Multiplier",
-  "dynamic_difficulty.structure.level_info": "Level %s",
+  "dynamic_difficulty.structure.level_info": "Lv. %s",
   
   "item.dynamic_difficulty.potion_of_growth": "Potion of Growth",
   "item.dynamic_difficulty.elixir_of_nurturing": "Elixir of Nurturing",

@@ -8,7 +8,9 @@
     "LivingEntityMixin",
     "compat.puffish_skills.SkillsModMixin"
   ],
-  "client": [],
+  "client": [
+    "compat.healthbars.HealthTrackerRenderStateMixin"
+  ],
   "server": [],
   "injectors": {
     "defaultRequire": 1

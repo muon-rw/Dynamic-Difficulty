@@ -63,6 +63,11 @@ repositories {
     maven { url = "https://maven.bawnorton.com/releases" }
     // MixinSquared backup
     // maven { url = "https://maven.enjarai.dev/mirrors" }
+
+    maven {
+        name = "Fuzs"
+        url = uri("https://raw.githubusercontent.com/Fuzss/modresources/main/maven/")
+    }
 }
 
 sourcesJar {

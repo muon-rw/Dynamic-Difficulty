@@ -30,7 +30,7 @@ dependencies {
     // Fzzy Config
     implementation("me.fzzyhmstrs:fzzy_config:${fzzy_config}")
 
-    // Compat APIs (compile-only — real runtime comes from loader-specific builds)
+    // Compat
     compileOnly("net.puffish:skillsmod:${puffish_skills_version}")
 }
 

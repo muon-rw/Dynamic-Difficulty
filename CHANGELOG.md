@@ -1,3 +1,7 @@
+## 1.2.3
+- Add Health Bars (Fuzs) compat
+- Change default component from "Level n" to "Lv. n"
+
 ## 1.2.2
 - Fix startup crash on latest Neoforge
 

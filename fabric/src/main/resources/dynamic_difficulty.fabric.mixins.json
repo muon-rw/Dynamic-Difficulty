@@ -11,7 +11,8 @@
     "compat.puffish_skills.SkillsModMixin"
   ],
   "client": [
-    "client.EntityRendererMixin"
+    "client.EntityRendererMixin",
+    "compat.healthbars.HealthTrackerRenderStateMixin"
   ],
   "server": [],
   "injectors": {

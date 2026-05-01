@@ -25,6 +25,8 @@ dependencies {
     localRuntime("net.puffish:skillsmod:${puffish_skills_version}:fabric")
     localRuntime("net.puffish:attributesmod:${puffish_attributes_version}:fabric")
     localRuntime("curse.maven:default-skill-trees-1074229:${default_skill_trees_file}")
+    compileOnly "curse.maven:health-bars-1367734:8004271"
+    localRuntime "curse.maven:health-bars-1367734:8004271"
 }
 
 loom {
