@@ -18,6 +18,7 @@ public class TitleRenderer<T> {
     public Component displayedTitle = null;
     public int titleTimer = 0;
     public int cooldownTimer = 0;
+    protected Integer overrideColor = null;
 
     protected final int maxRecentListSize;
     protected final Supplier<Boolean> enabled;
@@ -58,6 +59,9 @@ public class TitleRenderer<T> {
     }
 
     protected int getTitleTextColor() {
+        if (overrideColor != null) {
+            return overrideColor;
+        }
         String colorStr = textColor.get();
         try {
             return (int) Long.parseLong(colorStr, 16);
@@ -209,7 +213,12 @@ public class TitleRenderer<T> {
     }
 
     public void displayTitle(Component titleText) {
+        displayTitle(titleText, null);
+    }
+
+    public void displayTitle(Component titleText, Integer overrideColor) {
         displayedTitle = titleText;
+        this.overrideColor = overrideColor;
         titleTimer = fadeInTime.get() + displayTime.get() + fadeOutTime.get();
     }
 

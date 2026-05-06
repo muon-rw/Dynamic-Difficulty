@@ -1,5 +1,6 @@
 package dev.muon.dynamic_difficulty.client.render;
 
+import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.config.Configs;
 import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
 import net.minecraft.util.Util;
@@ -16,6 +17,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.dimension.DimensionType;
+
+import org.jetbrains.annotations.Nullable;
 
 public class TitleRenderManager {
     private static TitleRenderManager instance;
@@ -175,16 +178,14 @@ public class TitleRenderManager {
             }
             
             if (shouldDisplay) {
-                Component dimensionName = getDimensionName(dimensionId);
-                if (dimensionName != null) {
-                    DimensionType currDimension = Minecraft.getInstance().level != null ?
-                            Minecraft.getInstance().level.dimensionType() : null;
-                    if (currDimension != null &&
-                            !dimensionTitleRenderer.matchesAnyRecentEntry(d -> d == currDimension)) {
+                DimensionTitle dimensionTitle = getDimensionTitle(dimensionId);
+                DimensionType currDimension = Minecraft.getInstance().level != null ?
+                        Minecraft.getInstance().level.dimensionType() : null;
+                if (currDimension != null &&
+                        !dimensionTitleRenderer.matchesAnyRecentEntry(d -> d == currDimension)) {
 
-                        dimensionTitleRenderer.displayTitle(dimensionName);
-                        dimensionTitleRenderer.addRecentEntry(currDimension);
-                    }
+                    dimensionTitleRenderer.displayTitle(dimensionTitle.name(), dimensionTitle.overrideColor());
+                    dimensionTitleRenderer.addRecentEntry(currDimension);
                 }
             }
         }
@@ -208,12 +209,10 @@ public class TitleRenderManager {
             DimensionType currDimension = world.dimensionType();
             if (!dimensionTitleRenderer.matchesAnyRecentEntry(d -> d == currDimension)) {
                 Identifier dimensionBaseKey = world.dimension().identifier();
-                Component dimensionTitle = getDimensionName(dimensionBaseKey);
+                DimensionTitle dimensionTitle = getDimensionTitle(dimensionBaseKey);
 
-                if (dimensionTitle != null) {
-                    dimensionTitleRenderer.displayTitle(dimensionTitle);
-                    dimensionTitleRenderer.addRecentEntry(currDimension);
-                }
+                dimensionTitleRenderer.displayTitle(dimensionTitle.name(), dimensionTitle.overrideColor());
+                dimensionTitleRenderer.addRecentEntry(currDimension);
             }
         }
     }
@@ -290,20 +289,29 @@ public class TitleRenderManager {
     }
 
     /**
-     * Get dimension name with Traveler's Titles preference.
-     * Falls back to standard dimension key, then formatted ID if no translation found.
+     * Resolved dimension title text plus an optional color override sourced from a
+     * Visual Traveler's Titles–style resource pack (`travelerstitles.namespace.path.color`).
      */
-    private Component getDimensionName(Identifier dimensionBaseKey) {
+    public record DimensionTitle(Component name, @Nullable Integer overrideColor) {}
+
+    /**
+     * Get dimension title with Traveler's Titles preference.
+     * Falls back to standard dimension key, then formatted ID if no translation found.
+     * If the resource pack provides a `<key>.color` hex entry, it is returned alongside
+     * so the renderer can override the configured text color for that dimension.
+     */
+    private DimensionTitle getDimensionTitle(Identifier dimensionBaseKey) {
         Language language = Language.getInstance();
 
         String travelersTitlesKey = Util.makeDescriptionId(TRAVELERS_TITLES_MOD_ID, dimensionBaseKey);
         if (language.has(travelersTitlesKey)) {
-            return Component.translatable(travelersTitlesKey);
+            Integer overrideColor = parseColorKey(language, travelersTitlesKey + ".color");
+            return new DimensionTitle(Component.translatable(travelersTitlesKey), overrideColor);
         }
 
         String dimensionKey = Util.makeDescriptionId("dimension", dimensionBaseKey);
         if (language.has(dimensionKey)) {
-            return Component.translatable(dimensionKey);
+            return new DimensionTitle(Component.translatable(dimensionKey), null);
         }
 
         String name = dimensionBaseKey.getPath()
@@ -321,7 +329,21 @@ public class TitleRenderManager {
             }
         }
 
-        return Component.literal(formattedName.toString().trim());
+        return new DimensionTitle(Component.literal(formattedName.toString().trim()), null);
+    }
+
+    @Nullable
+    private static Integer parseColorKey(Language language, String key) {
+        if (!language.has(key)) {
+            return null;
+        }
+        String hex = language.getOrDefault(key);
+        try {
+            return (int) Long.parseLong(hex.trim(), 16);
+        } catch (NumberFormatException e) {
+            DynamicDifficulty.LOGGER.warn("Invalid hex color '{}' for lang key {}", hex, key);
+            return null;
+        }
     }
 
     /**

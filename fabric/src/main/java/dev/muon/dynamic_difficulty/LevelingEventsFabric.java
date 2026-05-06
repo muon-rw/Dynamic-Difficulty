@@ -76,7 +76,7 @@ public class LevelingEventsFabric {
             }
         });
 
-        // Player dimension change — renamed from ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD
+        // Player dimension change. Renamed from ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD
         // (MC "World" → "Level" rename). Re-computes player level so clients see the new value immediately
         // after the transition rather than waiting for the periodic tick fallback.
         ServerEntityLevelChangeEvents.AFTER_PLAYER_CHANGE_LEVEL.register((player, origin, destination) -> {

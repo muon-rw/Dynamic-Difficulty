@@ -13,7 +13,10 @@ import dev.muon.dynamic_difficulty.api.StructureBonus;
 import dev.muon.dynamic_difficulty.config.Configs;
 import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
 import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
+import dev.muon.dynamic_difficulty.settings.LevelingSettings;
+import dev.muon.dynamic_difficulty.settings.LocationLevelingSettings;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
+import dev.muon.dynamic_difficulty.util.LocationBonusUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -309,18 +312,23 @@ public class ModCommands {
     
     ServerLevel level = player.level();
     BlockPos pos = player.blockPosition();
-    
-    // Get dimension settings
+
+    // Get dimension and chain-resolved settings (dim → biome → structure)
     ResourceKey<Level> dimension = level.dimension();
     Identifier dimensionId = dimension.identifier();
     Registry<Level> dimensionRegistry = level.registryAccess().lookupOrThrow(Registries.DIMENSION);
     DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension, dimensionRegistry);
-    
+    LevelingSettings settings = LocationBonusUtils.resolveLocationSettings(level, pos);
+
+    // Look up the per-location override settings for diagnostic display
+    LocationLevelingSettings.RawSettings biomeRaw = LocationBonusUtils.getBiomeSettingsAt(level, pos);
+    LocationLevelingSettings.RawSettings structureRaw = LocationBonusUtils.getStructureSettingsAt(level, pos);
+
     BlockPos spawnPos = LevelingUtils.getEffectiveSpawnPos(level, dimSettings);
     double distance = LevelingUtils.horizontalDistance(spawnPos, pos);
-    int distanceBonus = (int)(distance * dimSettings.levelsPerDistance());
-    
-    // Calculate depth/height
+    int distanceBonus = (int)(distance * settings.levelsPerDistance());
+
+    // Calculate depth/height (sea level is dimension-only)
     int seaLevel = dimSettings.seaLevel();
     int depthBonus = 0;
     int heightBonus = 0;
@@ -328,47 +336,41 @@ public class ModCommands {
     int heightBlocks = 0;
     if (pos.getY() < seaLevel) {
       depthBlocks = seaLevel - pos.getY();
-      if (dimSettings.levelsPerDeepness() > 0) {
-        depthBonus = (int) (depthBlocks * dimSettings.levelsPerDeepness());
+      if (settings.levelsPerDeepness() > 0) {
+        depthBonus = (int) (depthBlocks * settings.levelsPerDeepness());
       }
     }
     if (pos.getY() > seaLevel) {
       heightBlocks = pos.getY() - seaLevel;
-      if (dimSettings.levelsPerHeight() > 0) {
-        heightBonus = (int) (heightBlocks * dimSettings.levelsPerHeight());
+      if (settings.levelsPerHeight() > 0) {
+        heightBonus = (int) (heightBlocks * settings.levelsPerHeight());
       }
     }
-    
-    // Calculate day bonus
+
     long days = level.getOverworldClockTime() / 24000L;
-    int dayBonus = (int)(days * dimSettings.levelsPerDay());
-    
-    // Calculate local difficulty bonus
+    int dayBonus = (int)(days * settings.levelsPerDay());
+
     net.minecraft.world.DifficultyInstance difficulty = level.getCurrentDifficultyAt(pos);
     float effectiveDifficulty = difficulty.getEffectiveDifficulty();
-    int localDifficultyBonus = (int)(effectiveDifficulty * dimSettings.levelsPerLocalDifficulty());
-    
-    // Base level calculation
-    int startingLevel = dimSettings.startingLevel();
+    int localDifficultyBonus = (int)(effectiveDifficulty * settings.levelsPerLocalDifficulty());
+
+    int startingLevel = settings.startingLevel();
     int baseLevel = startingLevel + distanceBonus + depthBonus + heightBonus + dayBonus + localDifficultyBonus;
-    int maxLevel = dimSettings.maxLevel();
+    int maxLevel = settings.maxLevel();
     String maxLevelStr = maxLevel > 0 ? String.valueOf(maxLevel) : "unlimited";
-    
+
     // Get bonuses
     BiomeBonus biomeBonus = LevelingAPI.getBiomeBonus(level, pos);
     StructureBonus structureBonus = LevelingAPI.getStructureBonus(level, pos);
-    
-    // Get player multiplier override (dimension -> config)
-    Double playerMultiplierOverride = dimSettings.playerLevelMultiplier();
+
+    // Resolved player multiplier and apply-bonuses (chain: entity not relevant here, so dim → biome → structure)
+    Double playerMultiplierOverride = settings.playerLevelMultiplier();
     double playerMultiplier = playerMultiplierOverride != null ? playerMultiplierOverride : Configs.SYNC.playerLevelMultiplier.get();
-    String multiplierSource = playerMultiplierOverride != null ? "dimension override" : "config";
-    
-    // Get apply level bonuses override (dimension -> config)
-    DimensionLevelingSettings.ApplyLevelBonuses applyBonusesOverride = dimSettings.applyLevelBonuses();
+
+    DimensionLevelingSettings.ApplyLevelBonuses applyBonusesOverride = settings.applyLevelBonuses();
     boolean applyBiome = applyBonusesOverride == null || applyBonusesOverride.biome();
     boolean applyStructure = applyBonusesOverride == null || applyBonusesOverride.structure();
     boolean applyPlayer = applyBonusesOverride == null || applyBonusesOverride.player();
-    String bonusesSource = applyBonusesOverride != null ? "dimension override" : "config";
     
     // Player bonus
     int playerBonus = 0;
@@ -390,7 +392,7 @@ public class ModCommands {
     
     int totalCapped = structureNonBypassing + biomeNonBypassing + (playerBypassesCap ? 0 : playerBonus);
     int totalBypassing = structureBypassing + biomeBypassing + (playerBypassesCap ? playerBonus : 0);
-    int randomBonus = dimSettings.randomLevelBonus();
+    int randomBonus = settings.randomLevelBonus();
     
     // Final level calculation with ranges (random is applied before cap)
     int baseLow = baseLevel;
@@ -409,17 +411,26 @@ public class ModCommands {
     source.sendSystemMessage(Component.literal("§6=== Dynamic Difficulty Debug ==="));
     source.sendSystemMessage(Component.literal("§7Position: §f" + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()));
     source.sendSystemMessage(Component.literal("§7Dimension: §f" + dimensionId +" §7(sea lvl: §f" + seaLevel + "§7, spawn: §f" + spawnPos.getX() + ", " + spawnPos.getZ() + "§7)"));
-    source.sendSystemMessage(Component.literal("§7Scaling: §f" + dimSettings.levelsPerDistance() + "§7/dist, §f" + dimSettings.levelsPerDeepness() + "§7/depth, §f" + dimSettings.levelsPerHeight() + "§7/height, §f" + dimSettings.levelsPerDay() + "§7/day, §f" + dimSettings.levelsPerLocalDifficulty() + "§7/local, random: §f0-" + dimSettings.randomLevelBonus()));
-    
+    source.sendSystemMessage(Component.literal("§7Scaling: §f" + settings.levelsPerDistance() + "§7/dist, §f" + settings.levelsPerDeepness() + "§7/depth, §f" + settings.levelsPerHeight() + "§7/height, §f" + settings.levelsPerDay() + "§7/day, §f" + settings.levelsPerLocalDifficulty() + "§7/local, random: §f0-" + settings.randomLevelBonus()));
+
     // Show overrides if present
-    if (playerMultiplierOverride != null || applyBonusesOverride != null) {
+    String biomeOverridesDesc = biomeRaw != null ? describeOverrides(biomeRaw) : "";
+    String structureOverridesDesc = structureRaw != null ? describeOverrides(structureRaw) : "";
+    if (playerMultiplierOverride != null || applyBonusesOverride != null
+            || !biomeOverridesDesc.isEmpty() || !structureOverridesDesc.isEmpty()) {
       source.sendSystemMessage(Component.literal(""));
       source.sendSystemMessage(Component.literal("§7Overrides:"));
       if (playerMultiplierOverride != null) {
-        source.sendSystemMessage(Component.literal("§7  Player Multiplier: §f" + playerMultiplier + " §7(" + multiplierSource + ")"));
+        source.sendSystemMessage(Component.literal("§7  Player Multiplier: §f" + playerMultiplier));
       }
       if (applyBonusesOverride != null) {
-        source.sendSystemMessage(Component.literal("§7  Apply Bonuses: §fbiome=" + applyBiome + ", structure=" + applyStructure + ", player=" + applyPlayer + " §7(" + bonusesSource + ")"));
+        source.sendSystemMessage(Component.literal("§7  Apply Bonuses: §fbiome=" + applyBiome + ", structure=" + applyStructure + ", player=" + applyPlayer));
+      }
+      if (!biomeOverridesDesc.isEmpty()) {
+        source.sendSystemMessage(Component.literal("§7  Biome overrides: §f" + biomeOverridesDesc));
+      }
+      if (!structureOverridesDesc.isEmpty()) {
+        source.sendSystemMessage(Component.literal("§7  Structure overrides: §f" + structureOverridesDesc));
       }
     }
     source.sendSystemMessage(Component.literal(""));
@@ -436,14 +447,14 @@ public class ModCommands {
     // Base calculation
     source.sendSystemMessage(Component.literal("§7Base Calculation:"));
     source.sendSystemMessage(Component.literal("§7  Starting: §f" + startingLevel));
-    source.sendSystemMessage(Component.literal("§7  + Distance: §f" + distanceBonus + " §7(" + (int)distance + " × " + dimSettings.levelsPerDistance() + ")"));
+    source.sendSystemMessage(Component.literal("§7  + Distance: §f" + distanceBonus + " §7(" + (int)distance + " × " + settings.levelsPerDistance() + ")"));
     if (pos.getY() < seaLevel) {
-      source.sendSystemMessage(Component.literal("§7  + Depth: §f" + depthBonus + " §7(" + depthBlocks + " × " + dimSettings.levelsPerDeepness() + ")"));
+      source.sendSystemMessage(Component.literal("§7  + Depth: §f" + depthBonus + " §7(" + depthBlocks + " × " + settings.levelsPerDeepness() + ")"));
     } else {
-      source.sendSystemMessage(Component.literal("§7  + Height: §f" + heightBonus + " §7(" + heightBlocks + " × " + dimSettings.levelsPerHeight() + ")"));
+      source.sendSystemMessage(Component.literal("§7  + Height: §f" + heightBonus + " §7(" + heightBlocks + " × " + settings.levelsPerHeight() + ")"));
     }
-    source.sendSystemMessage(Component.literal("§7  + Days: §f" + dayBonus + " §7(" + days + " × " + dimSettings.levelsPerDay() + ")"));
-    source.sendSystemMessage(Component.literal("§7  + Local: §f" + localDifficultyBonus + " §7(" + String.format("%.2f", effectiveDifficulty) + " × " + dimSettings.levelsPerLocalDifficulty() + ")"));
+    source.sendSystemMessage(Component.literal("§7  + Days: §f" + dayBonus + " §7(" + days + " × " + settings.levelsPerDay() + ")"));
+    source.sendSystemMessage(Component.literal("§7  + Local: §f" + localDifficultyBonus + " §7(" + String.format("%.2f", effectiveDifficulty) + " × " + settings.levelsPerLocalDifficulty() + ")"));
     String baseRangeStr = randomBonus > 0 ? baseLevel + " (+0-" + randomBonus + " random)" : String.valueOf(baseLevel);
     source.sendSystemMessage(Component.literal("§7  = Base Level: §f" + baseRangeStr + " §7(max: " + maxLevelStr + ")"));
     source.sendSystemMessage(Component.literal(""));
@@ -496,5 +507,30 @@ public class ModCommands {
   
   private static String formatRange(int low, int high) {
     return low == high ? String.valueOf(low) : low + "-" + high;
+  }
+
+  /**
+   * Renders a compact description of which override fields a {@link LocationLevelingSettings.RawSettings}
+   * has set. The {@code level_bonus}/{@code bypasses_cap} pair is omitted because the
+   * structure/biome bonus lines already display it.
+   */
+  private static String describeOverrides(LocationLevelingSettings.RawSettings raw) {
+    StringBuilder sb = new StringBuilder();
+    raw.startingLevel().ifPresent(v -> appendField(sb, "starting_level", v));
+    raw.maxLevel().ifPresent(v -> appendField(sb, "max_level", v));
+    raw.levelsPerDistance().ifPresent(v -> appendField(sb, "levels_per_distance", v));
+    raw.levelsPerDeepness().ifPresent(v -> appendField(sb, "levels_per_deepness", v));
+    raw.levelsPerHeight().ifPresent(v -> appendField(sb, "levels_per_height", v));
+    raw.levelsPerDay().ifPresent(v -> appendField(sb, "levels_per_day", v));
+    raw.levelsPerLocalDifficulty().ifPresent(v -> appendField(sb, "levels_per_local_difficulty", v));
+    raw.randomLevelBonus().ifPresent(v -> appendField(sb, "random_level_bonus", v));
+    raw.playerLevelMultiplier().ifPresent(v -> appendField(sb, "player_level_multiplier", v));
+    raw.attributeModifiers().ifPresent(map -> appendField(sb, "attribute_modifiers", "[" + map.size() + " entries]"));
+    return sb.toString();
+  }
+
+  private static void appendField(StringBuilder sb, String name, Object value) {
+    if (sb.length() > 0) sb.append(", ");
+    sb.append(name).append("=").append(value);
   }
 }

@@ -38,7 +38,7 @@ public class DynamicDifficultyClient implements ClientModInitializer {
             SyncLevelingData.processPendingData();
         });
         
-        // HUD rendering for titles — 26.1 uses HudElementRegistry + HudElement
+        // HUD rendering for titles. 26.1 uses HudElementRegistry + HudElement
         HudElement titleHud = (guiGraphics, deltaTracker) -> {
             if (Minecraft.getInstance().player != null) {
                 TitleRenderManager.getInstance().renderTitles(

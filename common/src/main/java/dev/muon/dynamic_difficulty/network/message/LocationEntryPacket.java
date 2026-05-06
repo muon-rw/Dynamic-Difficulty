@@ -15,47 +15,59 @@ import org.jetbrains.annotations.Nullable;
 public class LocationEntryPacket implements CustomPacketPayload {
     public static final CustomPacketPayload.Type<LocationEntryPacket> TYPE =
             new CustomPacketPayload.Type<>(DynamicDifficulty.id("location_entry"));
-    
+
     public static final StreamCodec<FriendlyByteBuf, LocationEntryPacket> CODEC = CustomPacketPayload.codec(
         LocationEntryPacket::write,
         LocationEntryPacket::new
     );
-    
+
     public enum EntryType {
         STRUCTURE,
         BIOME,
         DIMENSION
     }
-    
+
     private final EntryType entryType;
     @Nullable
     private final Identifier locationId;
-    private final int locationBonus;
+    /** Bonus contribution that respects the max-level cap. */
+    private final int nonBypassingBonus;
+    /** Bonus contribution that bypasses the max-level cap. */
+    private final int bypassingBonus;
     private final int baseLevel;
     private final int playerBonus;
-    private final int displayedLevel; // Final calculated level without player bonus (accounts for max level cap and bypassing bonuses)
-    
-    public LocationEntryPacket(EntryType entryType, @Nullable Identifier locationId, int locationBonus, int baseLevel, int playerBonus, int displayedLevel) {
+    /** Final calculated level without player bonus (accounts for max level cap and bypassing bonuses). */
+    private final int displayedLevel;
+    /** Effective max-level cap at this position (after biome/structure overrides). 0 = unlimited. */
+    private final int maxLevel;
+
+    public LocationEntryPacket(EntryType entryType, @Nullable Identifier locationId,
+                                int nonBypassingBonus, int bypassingBonus,
+                                int baseLevel, int playerBonus, int displayedLevel, int maxLevel) {
         this.entryType = entryType;
         this.locationId = locationId;
-        this.locationBonus = locationBonus;
+        this.nonBypassingBonus = nonBypassingBonus;
+        this.bypassingBonus = bypassingBonus;
         this.baseLevel = baseLevel;
         this.playerBonus = playerBonus;
         this.displayedLevel = displayedLevel;
+        this.maxLevel = maxLevel;
     }
-    
+
     public void write(FriendlyByteBuf buf) {
         buf.writeEnum(entryType);
         buf.writeBoolean(locationId != null);
         if (locationId != null) {
             buf.writeIdentifier(locationId);
         }
-        buf.writeInt(locationBonus);
+        buf.writeInt(nonBypassingBonus);
+        buf.writeInt(bypassingBonus);
         buf.writeInt(baseLevel);
         buf.writeInt(playerBonus);
         buf.writeInt(displayedLevel);
+        buf.writeInt(maxLevel);
     }
-    
+
     public LocationEntryPacket(FriendlyByteBuf buf) {
         this.entryType = buf.readEnum(EntryType.class);
         if (buf.readBoolean()) {
@@ -63,17 +75,24 @@ public class LocationEntryPacket implements CustomPacketPayload {
         } else {
             this.locationId = null;
         }
-        this.locationBonus = buf.readInt();
+        this.nonBypassingBonus = buf.readInt();
+        this.bypassingBonus = buf.readInt();
         this.baseLevel = buf.readInt();
         this.playerBonus = buf.readInt();
         this.displayedLevel = buf.readInt();
+        this.maxLevel = buf.readInt();
+    }
+
+    /** Total bonus (sum of bypassing and non-bypassing). */
+    public int totalBonus() {
+        return nonBypassingBonus + bypassingBonus;
     }
 
     @Override
     public CustomPacketPayload.Type<LocationEntryPacket> type() {
         return TYPE;
     }
-    
+
     /**
      * Client-side handling logic. Called by platform-specific packet handlers.
      * Must only be called on the client side.
@@ -84,23 +103,20 @@ public class LocationEntryPacket implements CustomPacketPayload {
         if (msg.locationId == null) {
             return;
         }
-        
+
         TitleRenderManager manager = TitleRenderManager.getInstance();
-        
+        int totalBonus = msg.totalBonus();
+
         switch (msg.entryType) {
             case STRUCTURE:
-                // Always update level info, but only show title if bonus > 0
-                manager.displayStructureTitle(msg.locationId, msg.locationBonus, msg.baseLevel, msg.playerBonus, msg.displayedLevel);
+                manager.displayStructureTitle(msg.locationId, totalBonus, msg.baseLevel, msg.playerBonus, msg.displayedLevel);
                 break;
             case BIOME:
-                // Always update level info, but only show title if bonus > 0
-                manager.displayBiomeTitle(msg.locationId, msg.locationBonus, msg.baseLevel, msg.playerBonus, msg.displayedLevel);
+                manager.displayBiomeTitle(msg.locationId, totalBonus, msg.baseLevel, msg.playerBonus, msg.displayedLevel);
                 break;
             case DIMENSION:
-                // Dimensions affect base level through settings, not bonuses
                 manager.displayDimensionTitle(msg.locationId, msg.baseLevel, msg.playerBonus, msg.displayedLevel);
                 break;
         }
     }
 }
-

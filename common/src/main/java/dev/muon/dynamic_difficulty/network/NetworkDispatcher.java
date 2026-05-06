@@ -50,8 +50,12 @@ public class NetworkDispatcher {
     getHelper().sendToAllPlayers(entity.level().getServer(), new SyncLevelingData(entity));
   }
   
-  public static void sendLocationEntry(ServerPlayer player, LocationEntryPacket.EntryType entryType, Identifier locationId, int locationBonus, int baseLevel, int playerBonus, int displayedLevel) {
-    getHelper().sendToPlayer(player, new LocationEntryPacket(entryType, locationId, locationBonus, baseLevel, playerBonus, displayedLevel));
+  public static void sendLocationEntry(ServerPlayer player, LocationEntryPacket.EntryType entryType,
+                                       Identifier locationId,
+                                       int nonBypassingBonus, int bypassingBonus,
+                                       int baseLevel, int playerBonus, int displayedLevel, int maxLevel) {
+    getHelper().sendToPlayer(player, new LocationEntryPacket(entryType, locationId,
+            nonBypassingBonus, bypassingBonus, baseLevel, playerBonus, displayedLevel, maxLevel));
   }
 
 }

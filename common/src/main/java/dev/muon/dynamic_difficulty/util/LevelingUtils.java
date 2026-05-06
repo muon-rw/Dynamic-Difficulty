@@ -184,12 +184,15 @@ public class LevelingUtils {
     /**
      * Calculates the final displayed level considering max level cap and bypassing bonuses.
      * This matches the logic in LevelingSystem.createLevelForEntity() for display purposes.
-     * 
+     *
+     * <p>The {@code playerBonus} is routed to the bypassing or non-bypassing bucket based on
+     * {@code Configs.SYNC.playerLevelBypassesCap}, mirroring the spawn-time logic.
+     *
      * @param baseLevel The base level (starting level + distance + day bonuses)
      * @param structureBonus The structure bonus info
      * @param biomeBonus The biome bonus info
-     * @param playerBonus The player bonus (always bypasses cap)
-     * @param dimensionSettings The dimension leveling settings
+     * @param playerBonus The player bonus
+     * @param settings The chain-resolved leveling settings at the position (provides {@code maxLevel})
      * @return The final level after applying max level cap and bypassing bonuses
      */
     public static int calculateFinalDisplayLevel(
@@ -197,39 +200,45 @@ public class LevelingUtils {
             StructureBonus structureBonus,
             BiomeBonus biomeBonus,
             int playerBonus,
-            DimensionLevelingSettings dimensionSettings) {
-        
-        // Apply non-bypassing bonuses (before cap)
-        int nonBypassingBonuses = structureBonus.nonBypassingBonus() + biomeBonus.nonBypassingBonus();
+            LevelingSettings settings) {
+
+        boolean playerBypasses = Configs.SYNC.playerLevelBypassesCap.get();
+        int nonBypassingBonuses = structureBonus.nonBypassingBonus() + biomeBonus.nonBypassingBonus()
+                + (playerBypasses ? 0 : playerBonus);
+        int bypassingBonuses = structureBonus.bypassingBonus() + biomeBonus.bypassingBonus()
+                + (playerBypasses ? playerBonus : 0);
+
         int levelWithNonBypassing = baseLevel + nonBypassingBonuses;
-        
-        // Apply max level cap
-        int maxLevel = dimensionSettings.maxLevel();
+        int maxLevel = settings.maxLevel();
         if (maxLevel > 1) {
             levelWithNonBypassing = Math.min(levelWithNonBypassing, maxLevel);
         }
-        
-        // Apply bypassing bonuses (after cap) - player bonus always bypasses
-        int bypassingBonuses = structureBonus.bypassingBonus() + biomeBonus.bypassingBonus() + playerBonus;
-        
-        // Final level
+
         return Math.max(1, levelWithNonBypassing + bypassingBonuses);
     }
 
     /**
-     * Calculates the base entity level at a given position in a specific level.
+     * Calculates the base entity level at a given position. Resolves the leveling chain
+     * internally; callers that already have resolved settings should use the
+     * {@link #calculateBaseEntityLevel(ServerLevel, BlockPos, LevelingSettings)} overload.
+     */
+    public static int calculateBaseEntityLevel(ServerLevel level, BlockPos pos) {
+        return calculateBaseEntityLevel(level, pos, LocationBonusUtils.resolveLocationSettings(level, pos));
+    }
+
+    /**
+     * Calculates the base entity level using already-resolved settings.
      * This includes starting level, distance factors, day scaling, and local difficulty.
-     * Random bonus is excluded — it's per-entity and non-deterministic.
+     * Random bonus is excluded; it's per-entity and non-deterministic.
      *
      * <p>This is the base level before:
      * <ul>
      *   <li>Player-based scaling (nearby player level bonuses)</li>
-     *   <li>Structure bonuses</li>
-     *   <li>Biome bonuses</li>
+     *   <li>Structure / biome additive bonuses</li>
      *   <li>Random variation</li>
      * </ul>
      */
-    public static int calculateBaseEntityLevel(ServerLevel level, BlockPos pos) {
+    public static int calculateBaseEntityLevel(ServerLevel level, BlockPos pos, LevelingSettings settings) {
         DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(
                 level.dimension(),
                 level.registryAccess().lookupOrThrow(Registries.DIMENSION));
@@ -237,27 +246,36 @@ public class LevelingUtils {
         BlockPos spawnPos = getEffectiveSpawnPos(level, dimSettings);
         double distanceToSpawn = horizontalDistance(spawnPos, pos);
 
-        int baseLevel = dimSettings.startingLevel();
-        baseLevel += calculateDistanceFactors(dimSettings.seaLevel(), pos.getY(), distanceToSpawn, dimSettings);
+        int baseLevel = settings.startingLevel();
+        baseLevel += calculateDistanceFactors(dimSettings.seaLevel(), pos.getY(), distanceToSpawn, settings);
 
         long days = level.getOverworldClockTime() / 24000L;
-        baseLevel += (int) (days * dimSettings.levelsPerDay());
+        baseLevel += (int) (days * settings.levelsPerDay());
 
         net.minecraft.world.DifficultyInstance difficulty = level.getCurrentDifficultyAt(pos);
-        baseLevel += (int) (difficulty.getEffectiveDifficulty() * dimSettings.levelsPerLocalDifficulty());
+        baseLevel += (int) (difficulty.getEffectiveDifficulty() * settings.levelsPerLocalDifficulty());
 
         return Math.max(1, baseLevel);
     }
 
     /**
      * Calculates the final displayed level (without player bonus) for client display.
+     * Resolves the leveling chain internally; callers that already have resolved settings
+     * should use the {@link #calculateDisplayedLevel(LevelingSettings, int, StructureBonus, BiomeBonus)}
+     * overload.
+     */
+    public static int calculateDisplayedLevel(ServerLevel level, BlockPos pos, int baseLevel,
+                                               StructureBonus structureBonus, BiomeBonus biomeBonus) {
+        return calculateDisplayedLevel(LocationBonusUtils.resolveLocationSettings(level, pos),
+                baseLevel, structureBonus, biomeBonus);
+    }
+
+    /**
+     * Calculates the final displayed level using already-resolved settings.
      * Accounts for max level cap and bypassing bonuses.
      */
-    public static int calculateDisplayedLevel(ServerLevel level, int baseLevel,
+    public static int calculateDisplayedLevel(LevelingSettings settings, int baseLevel,
                                                StructureBonus structureBonus, BiomeBonus biomeBonus) {
-        DimensionLevelingSettings dimensionSettings = DimensionsLevelingSettingsReloader.get(
-                level.dimension(),
-                level.registryAccess().lookupOrThrow(Registries.DIMENSION));
-        return calculateFinalDisplayLevel(baseLevel, structureBonus, biomeBonus, 0, dimensionSettings);
+        return calculateFinalDisplayLevel(baseLevel, structureBonus, biomeBonus, 0, settings);
     }
 }

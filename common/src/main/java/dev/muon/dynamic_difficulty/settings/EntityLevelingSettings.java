@@ -1,18 +1,11 @@
 package dev.muon.dynamic_difficulty.settings;
 
-import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import dev.muon.dynamic_difficulty.DynamicDifficulty;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import org.jetbrains.annotations.Nullable;
@@ -52,84 +45,31 @@ public record EntityLevelingSettings(
       Optional<DimensionLevelingSettings.ApplyLevelBonuses> applyLevelBonuses
   ) {
     /**
-     * Resolve raw settings into final settings, using dimension settings as fallback.
+     * Resolve raw settings into final settings, using the prior chain tier as fallback.
+     * Prior is typically a {@link DimensionLevelingSettings}, possibly chained through
+     * {@link LocationLevelingSettings} for biome/structure overrides.
      */
-    public EntityLevelingSettings resolve(DimensionLevelingSettings dimSettings) {
+    public EntityLevelingSettings resolve(LevelingSettings prior) {
       return new EntityLevelingSettings(
-          startingLevel.orElse(dimSettings.startingLevel()),
-          maxLevel.orElse(dimSettings.maxLevel()),
-          levelsPerDistance.orElse(dimSettings.levelsPerDistance()),
-          levelsPerDeepness.orElse(dimSettings.levelsPerDeepness()),
-          levelsPerHeight.orElse(dimSettings.levelsPerHeight()),
-          levelsPerDay.orElse(dimSettings.levelsPerDay()),
-          levelsPerLocalDifficulty.orElse(dimSettings.levelsPerLocalDifficulty()),
-          randomLevelBonus.orElse(dimSettings.randomLevelBonus()),
-          attributeModifiers.orElse(dimSettings.attributeModifiers()),
-          playerLevelMultiplier.orElse(dimSettings.playerLevelMultiplier()),
-          applyLevelBonuses.orElse(dimSettings.applyLevelBonuses())
+          startingLevel.orElse(prior.startingLevel()),
+          maxLevel.orElse(prior.maxLevel()),
+          levelsPerDistance.orElse(prior.levelsPerDistance()),
+          levelsPerDeepness.orElse(prior.levelsPerDeepness()),
+          levelsPerHeight.orElse(prior.levelsPerHeight()),
+          levelsPerDay.orElse(prior.levelsPerDay()),
+          levelsPerLocalDifficulty.orElse(prior.levelsPerLocalDifficulty()),
+          randomLevelBonus.orElse(prior.randomLevelBonus()),
+          attributeModifiers.orElse(prior.attributeModifiers()),
+          playerLevelMultiplier.orElse(prior.playerLevelMultiplier()),
+          applyLevelBonuses.orElse(prior.applyLevelBonuses())
       );
     }
   }
 
   // === Codecs ===
 
-  private record AttributeModifierEntry(Identifier attribute, double amount, String operation) {}
-
-  private static AttributeModifier.Operation parseOperation(String operationStr) {
-    for (AttributeModifier.Operation op : AttributeModifier.Operation.values()) {
-      if (op.getSerializedName().equals(operationStr)) {
-        return op;
-      }
-    }
-    DynamicDifficulty.LOGGER.warn("Invalid operation '{}'. Defaulting to add_value.", operationStr);
-    return AttributeModifier.Operation.ADD_VALUE;
-  }
-
-  // Codec that accepts both string (enum name) and int (legacy) for backwards compatibility
-  private static final Codec<String> OPERATION_CODEC = Codec.either(Codec.STRING, Codec.INT)
-      .xmap(
-          either -> either.map(
-              str -> str,
-              num -> {
-                DynamicDifficulty.LOGGER.warn("Numeric operation ID {} is deprecated. Use enum names instead.", num);
-                return AttributeModifier.Operation.BY_ID.apply(num).getSerializedName();
-              }
-          ),
-          str -> Either.left(str)
-      );
-
-  private static final Codec<AttributeModifierEntry> ATTRIBUTE_MODIFIER_ENTRY_CODEC =
-      RecordCodecBuilder.create(instance -> instance.group(
-          Identifier.CODEC.fieldOf("attribute").forGetter(AttributeModifierEntry::attribute),
-          Codec.DOUBLE.fieldOf("amount").forGetter(AttributeModifierEntry::amount),
-          OPERATION_CODEC.fieldOf("operation").forGetter(AttributeModifierEntry::operation)
-      ).apply(instance, AttributeModifierEntry::new));
-
   private static final Codec<Map<Attribute, AttributeModifier>> ATTRIBUTE_MODIFIERS_CODEC =
-      Codec.list(ATTRIBUTE_MODIFIER_ENTRY_CODEC)
-          .xmap(
-              list -> {
-                Map<Attribute, AttributeModifier> map = new HashMap<>();
-                for (AttributeModifierEntry entry : list) {
-                  Attribute attribute = BuiltInRegistries.ATTRIBUTE.getValue(entry.attribute());
-                  if (attribute != null) {
-                    AttributeModifier.Operation operation = parseOperation(entry.operation());
-                    Identifier modifierId = DynamicDifficulty.id(
-                        "entity_leveling_bonus_" + entry.attribute().getPath().replace("/", "_"));
-                    map.put(attribute, new AttributeModifier(modifierId, entry.amount(), operation));
-                  }
-                }
-                return map;
-              },
-              map -> {
-                List<AttributeModifierEntry> list = new ArrayList<>();
-                map.forEach((attr, modifier) -> {
-                  Identifier attrId = BuiltInRegistries.ATTRIBUTE.getKey(attr);
-                  list.add(new AttributeModifierEntry(attrId, modifier.amount(), modifier.operation().getSerializedName()));
-                });
-                return list;
-              }
-          );
+      AttributeModifierCodecs.mapCodec("entity_leveling_bonus_");
 
   /**
    * Codec for parsing raw settings from JSON. ALL fields are optional.

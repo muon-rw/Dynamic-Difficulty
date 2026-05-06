@@ -3,6 +3,7 @@ package dev.muon.dynamic_difficulty.api;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.LevelingSystem;
 import dev.muon.dynamic_difficulty.player.PlayerLevelCalculator;
+import dev.muon.dynamic_difficulty.settings.LocationLevelingSettings;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
 import dev.muon.dynamic_difficulty.util.LocationBonusUtils;
 import net.minecraft.core.BlockPos;
@@ -14,6 +15,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
@@ -269,7 +271,8 @@ public class LevelingAPI {
         int baseLevel = LevelingUtils.calculateBaseEntityLevel(level, pos);
         StructureBonus structureBonus = LocationBonusUtils.getStructureAt(level, pos, true);
         BiomeBonus biomeBonus = LocationBonusUtils.getBiomeAt(level, pos);
-        return Math.max(1, baseLevel + structureBonus.totalBonus() + biomeBonus.totalBonus());
+        // Apply chain-resolved cap and bypass split (mirrors createLevelForEntity).
+        return LevelingUtils.calculateDisplayedLevel(level, pos, baseLevel, structureBonus, biomeBonus);
     }
 
     /**
@@ -376,5 +379,73 @@ public class LevelingAPI {
      */
     public static int getPlayerDisplayLevel(@NotNull ServerPlayer player) {
         return PlayerLevelCalculator.calculatePlayerDisplayLevel(player);
+    }
+
+    /**
+     * Gets the merged structure leveling settings (raw / Optional fields) at a position.
+     * Combines the entry for each overlapping structure with their matching tags via per-field max.
+     *
+     * <p>Returns {@code null} if no structures with configured settings overlap this position.
+     * The returned object exposes both the override fields and the additive
+     * {@code levelBonus}/{@code bypassesCap} pair.
+     *
+     * <p><b>Side:</b> Server only
+     *
+     * @param level The server level
+     * @param pos The block position
+     * @return Merged raw settings, or {@code null} if no structure settings apply at this position
+     * @since 1.3.0
+     */
+    @Nullable
+    public static LocationLevelingSettings.RawSettings getStructureSettings(@NotNull ServerLevel level, @NotNull BlockPos pos) {
+        return LocationBonusUtils.getStructureSettingsAt(level, pos);
+    }
+
+    /**
+     * Gets the merged structure leveling settings at the entity's current position.
+     *
+     * <p><b>Side:</b> Server only
+     *
+     * @param entity The entity whose position to query
+     * @return Merged raw settings, or {@code null} if no structure settings apply (or if called on the client)
+     * @since 1.3.0
+     */
+    @Nullable
+    public static LocationLevelingSettings.RawSettings getStructureSettings(@NotNull LivingEntity entity) {
+        if (!(entity.level() instanceof ServerLevel serverLevel)) return null;
+        return LocationBonusUtils.getStructureSettingsAt(serverLevel, entity.blockPosition());
+    }
+
+    /**
+     * Gets the merged biome leveling settings (raw / Optional fields) at a position.
+     * Combines the biome's individual entry with all matching tag entries via per-field max.
+     *
+     * <p>Returns {@code null} if the biome at this position has no configured settings.
+     *
+     * <p><b>Side:</b> Server only
+     *
+     * @param level The server level
+     * @param pos The block position
+     * @return Merged raw settings, or {@code null} if the biome has no configured settings
+     * @since 1.3.0
+     */
+    @Nullable
+    public static LocationLevelingSettings.RawSettings getBiomeSettings(@NotNull ServerLevel level, @NotNull BlockPos pos) {
+        return LocationBonusUtils.getBiomeSettingsAt(level, pos);
+    }
+
+    /**
+     * Gets the merged biome leveling settings at the entity's current position.
+     *
+     * <p><b>Side:</b> Server only
+     *
+     * @param entity The entity whose position to query
+     * @return Merged raw settings, or {@code null} if no biome settings apply (or if called on the client)
+     * @since 1.3.0
+     */
+    @Nullable
+    public static LocationLevelingSettings.RawSettings getBiomeSettings(@NotNull LivingEntity entity) {
+        if (!(entity.level() instanceof ServerLevel serverLevel)) return null;
+        return LocationBonusUtils.getBiomeSettingsAt(serverLevel, entity.blockPosition());
     }
 }

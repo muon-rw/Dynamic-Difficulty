@@ -15,9 +15,9 @@ repositories {
     // ... other repositories
     // Dynamic Difficulty
     maven { url = "https://maven.muon.rip/releases/" }
-    // FzzyConfig (config backend — required on all loaders)
+    // FzzyConfig
     maven { url = "https://maven.fzzyhmstrs.me/" }
-    // Mixin Squared (Only required for Common/Fabric)
+    // Mixin Squared 
     maven { url = "https://maven.bawnorton.com/releases" }
 }
 ```
@@ -25,7 +25,7 @@ repositories {
 Set a mod version in `gradle.properties`
 
 ```properties
-dynamic_difficulty_version=1.1.1
+dynamic_difficulty_version=1.3.0
 minecraft_version=26.1.2
 fzzy_config=0.7.6+26.1
 ```
@@ -60,424 +60,235 @@ compileOnly("me.fzzyhmstrs:fzzy_config:${fzzy_config}")
 ---
 
 # Datapack Guide
-### NOTE: This guide is for 26.1.2 Only!
-*For older Minecraft versions, select the matching branch (e.g. `1.21.1-multiloader`, `1.21.11-multiloader`) — config file format and some config keys differ there.*
+> [!CAUTION]
+> ### This guide is for 26.1.2 Only!
+> For older Minecraft versions, select the matching branch (e.g. `1.21.1-multiloader`, `1.21.11-multiloader`). Config file format and some config keys differ there.*
 
 ## Config Files
 
-Dynamic Difficulty uses [FzzyConfig](https://modrinth.com/mod/fzzy-config), which splits the config into two TOML files under `config/dynamic_difficulty/`:
+Dynamic Difficulty uses [FzzyConfig](https://modrinth.com/mod/fzzy-config). Two TOML files under `config/dynamic_difficulty/`:
 
-| File | Purpose | Synced? |
-|------|---------|---------|
-| `dynamic_difficulty-sync.toml` | Gameplay values (leveling formulas, caps, mod integration, loot toggles, attribute bonuses). | **Yes** — server is authoritative; clients' local values are overwritten on join. |
-| `dynamic_difficulty-client.toml` | Rendering/HUD preferences (level plates, title overlays, colors, anchors, Jade toggle). | No — local only. |
+| File | Purpose | Synced |
+|---|---|---|
+| `dynamic_difficulty-sync.toml` | Gameplay values (leveling formulas, caps, mod integration, loot toggles, attribute bonuses). | **Yes**. Server is authoritative; client values are overwritten on join. |
+| `dynamic_difficulty-client.toml` | Rendering/HUD preferences (level plates, title overlays, colors, anchors, Jade toggle). | No |
 
-All keys use camelCase (e.g. `useDefaultLevelingSettings`, `levelsPerDistance`) — the previous `dynamic_difficulty-common.toml` with snake_case keys and `[section]` headers is gone. FzzyConfig also ships an in-game editor: open it from the Mods screen, or via the `/fzzy_config` command.
+FzzyConfig also ships an in-game editor, which you can open from the Mods screen or via `/fzzy_config`.
 
 ### Built-in Default Settings
 
-The mod ships with a built-in datapack containing default leveling settings for vanilla Minecraft and many popular mods. These settings are located in:
+The mod ships with a built-in datapack at (at `resourcepacks/default/data/` within the jar) containing dimension/entity/biome/structure presets for vanilla Minecraft and many popular mods (Cataclysm, Twilight Forest, Ice and Fire, etc.).
+
+To start clean without these settings, set `useDefaultLevelingSettings = false` in `dynamic_difficulty-sync.toml` (requires a restart).
+
+### How levels are calculated
+
+For each mob spawn:
+
+1. **Base level** is computed from:
+
+    ```
+    starting_level
+      + distance        × levels_per_distance
+      + depth           × levels_per_deepness         (if Y < sea_level)
+      + height          × levels_per_height           (if Y > sea_level)
+      + days            × levels_per_day
+      + localDifficulty × levels_per_local_difficulty
+      + random(0 .. random_level_bonus)
+    ```
+
+2. **+ non-bypassing bonuses** (`bypasses_cap: false`), then **capped at `max_level`** if `max_level > 0`
+3. **+ bypassing bonuses** (`bypasses_cap: true`) and player-based bonuses on top of the cap (player bypass behavior is configurable via `playerLevelBypassesCap`)
+
+All scaling factors come from the **resolution chain**:
 
 ```
-resourcepacks/default/data/
+config defaults → dimension → biome → structure → entity
 ```
 
-This includes dimension settings, entity settings, biome/structure bonuses, and more for mods like Cataclysm, Twilight Forest, Ice and Fire, and others.
+Each tier can override any standard scaling field (not just the additive `level_bonus`). A structure can set `levels_per_distance: 0` for a flat-leveled dungeon; a biome can supply its own `attribute_modifiers`; an entity can pin its `max_level`. Each tier overrides any field set by the prior tier; tiers that don't set a field inherit. `spawn_pos_override` / `sea_level` are dimension-only; `apply_level_bonuses` is dimension/entity-only.
 
-**Disabling Built-in Settings:**
+When multiple biome or structure entries match (individual + tags, or overlapping structures), override fields merge via **per-field max**: the largest value of each field wins independently. The `level_bonus`/`bypasses_cap` pair instead contributes via a bypass-cap bucket model (max bonus per bucket).
 
-If you want to start with a completely clean slate and define all settings yourself, you can disable the built-in datapack in `config/dynamic_difficulty/dynamic_difficulty-sync.toml`:
+**Example**, entity with `max_level: 20`:
+- Base: `1 + 1600×0.01 + 20×0.05 + 10×0.5 + 2.5×1.0` = **25**
+- Biome bonus (+5, respects cap): `25+5=30` → **capped to 20**
+- Structure bonus (+10, bypasses cap): **final 30**
 
-```toml
-# Requires a game restart to take effect
-useDefaultLevelingSettings = false
-```
-
-When disabled, only your custom datapacks will be loaded, giving you full control over all leveling settings.
-
-### How are levels calculated?
-
-1. **Base Level**
-    - The config file `dynamic_difficulty-sync.toml` defines default base levels, based on:
-        - `startingLevel` - Base level for all entities (default: 1)
-        - `levelsPerDistance` - Bonus per block from the world's spawn point (default: 0.01)
-        - `levelsPerDeepness` - Bonus per block below sea level (default: 0.0)
-        - `levelsPerHeight` - Bonus per block above sea level (default: 0.0)
-        - `levelsPerDay` - Bonus per in-game day passed (default: 0.0)
-        - `levelsPerLocalDifficulty` - Bonus based on Minecraft's local difficulty (default: 0.0)
-        - `randomLevelBonus` - Random bonus levels (0 to this value) (default: 0)
-    - **All fields are optional in datapacks** - omit a field to use config defaults
-    - Dimensions can override any of these defaults with a datapack (see [Dimensions](#dimensions))
-    - Entity-specific settings provide final authority over base level (see [Entities](#entities))
-    - **Note:** Deepness/height scaling use sea level (Y=64) as the reference point. Dimensions can override this with the `sea_level` field.
-
-2. **Non-Bypassing Bonuses** - Respect the `max_level` from Step 1
-    - Bonuses with `bypasses_cap: false` (default for all biome bonuses, see [Biomes](#biome-leveling-settings))
-    - If `max_level > 0`, the level is capped at this value
-    - Only applies to base level + non-bypassing bonuses
-
-3. **Bypassing Bonuses** - Applied in addition to `max_level`
-    - Bonuses with `bypasses_cap: true` (default for all structure bonuses, see [Structure Bonuses](#structure-bonuses))
-    - Player-based bonuses (scaled by nearby player levels, see [Player-based Scaling](#player-based-scaling))
-
-**Example:**
-- Entity with `max_level: 20` (datapack JSON key)
-- Base calculation:
-    - `startingLevel`: 1
-    - Distance from spawn: 1600 blocks × `levelsPerDistance` (0.01) = +16
-    - Depth: 20 blocks below sea level × `levelsPerDeepness` (0.05) = +1
-    - Days: 10 days × `levelsPerDay` (0.5) = +5
-    - Local difficulty: 2.5 × `levelsPerLocalDifficulty` (1.0) = +2
-    - Total base: **25**
-- Biome bonus (`bypasses_cap: false`): +5 → Total: 30 → **Capped to 20**
-- Structure bonus (`bypasses_cap: true`): +10 → **Final: 30**
-
-### Lookup Priority
-
-**Base settings** are resolved in this order (first match wins):
-1. **Entity Types** (e.g., `entities/zombie.json`)
-2. **Entity Type Tags** (e.g., `entity_tags/monsters.json`)
-3. **Fallback to dimension defaults** (`dimensions/overworld.json`)
-4. **Fallback to config defaults** (`config/dynamic_difficulty/dynamic_difficulty-sync.toml`)
-
-> **Note on keys:** Datapack JSON files use snake_case keys (`starting_level`, `max_level`, `levels_per_distance`, …). The TOML config file uses camelCase keys (`startingLevel`, `maxLevel`, `levelsPerDistance`, …). Don't mix them up — this is a common source of silent fallbacks.
+> **Note on keys:** Datapack JSONs use snake_case (`starting_level`, `max_level`); the TOML config uses camelCase (`startingLevel`, `maxLevel`). Mixing them silently falls back to defaults.
 
 ---
 
 ## Dimensions
 
-**Individual Dimensions:**
 ```
 data/<namespace>/leveling_settings/dimensions/<dimension_id>.json
-```
-
-**Dimension Tags:** (does anyone use these?)
-```
 data/<namespace>/leveling_settings/dimension_tags/<tag_id>.json
 ```
 
-**Examples:**
-- `data/minecraft/leveling_settings/dimensions/overworld.json`
-- `data/minecraft/leveling_settings/dimensions/the_nether.json`
-- `data/minecraft/leveling_settings/dimensions/the_end.json`
+All fields are optional; omitted fields fall back to the config defaults. Use `attribute_modifiers: []` to explicitly disable modifiers for the dimension.
 
-### JSON Format
-
-**All fields are optional** - omit any field to use the config default.
-
-**Example 1: Minimal - just override what you need**
+**Minimal:**
 ```json
-{
-  "max_level": 50,
-  "levels_per_day": 0.5
-}
+{ "max_level": 50, "levels_per_day": 0.5 }
 ```
 
-**Example 2: Override attribute modifiers**
+**With overrides, attribute modifiers, and bonus gating:**
 ```json
 {
   "starting_level": 1,
   "levels_per_distance": 0.005,
-  "levels_per_deepness": 0.05,
-  "attribute_modifiers": [
-    {
-      "attribute": "minecraft:attack_damage",
-      "amount": 0.3,
-      "operation": "add_value"
-    }
-  ]
-}
-```
-
-**Example 3: Using spawn_pos_override and height/day scaling**
-```json
-{
-  "levels_per_distance": 0.01,
   "levels_per_height": 0.02,
-  "levels_per_day": 0.5,
-  "levels_per_local_difficulty": 1.0,
-  "spawn_pos_override": {
-    "x": 0,
-    "z": 0
-  },
-  "sea_level": 64
+  "spawn_pos_override": { "x": 0, "z": 0 },
+  "sea_level": 64,
+  "attribute_modifiers": [
+    { "attribute": "minecraft:attack_damage", "amount": 0.3, "operation": "add_value" }
+  ],
+  "player_level_multiplier": 0.5,
+  "apply_level_bonuses": { "biome": true, "structure": false, "player": false }
 }
 ```
-
-**Example 4: Disable day/local scaling for a dimension (e.g., The End)**
-```json
-{
-  "levels_per_day": 0.0,
-  "levels_per_local_difficulty": 0.0
-}
-```
-
-**Example 5: Override player multiplier and control which bonuses apply**
-```json
-{
-  "player_level_multiplier": 0.0,
-  "apply_level_bonuses": {
-    "biome": true,
-    "structure": false,
-    "player": false
-  }
-}
-```
-
-This example:
-- Sets player level multiplier to 0.0 for entities in this dimension, note that this is identical to setting `"player"` to `false`
-- Allows biome bonuses to apply
-- Disables structure-based bonuses entirely for this dimension
 
 ### Fields
 
-| Field                 | Type | Default | Description                                                      |
-|-----------------------|------|---------|------------------------------------------------------------------|
-| `starting_level`      | Integer | config | Base level for entities in this dimension                        |
-| `max_level`           | Integer | config | Maximum level cap (0 = unlimited)                                |
-| `levels_per_distance` | Float | config | Levels added per block from spawn                                |
-| `levels_per_deepness` | Float | config | Levels added per block below sea level (only applies when Y < sea_level) |
-| `levels_per_height`   | Float | config | Levels added per block above sea level (only applies when Y > sea_level) |
-| `levels_per_day`      | Float | config | Levels added per in-game day passed                              |
-| `levels_per_local_difficulty` | Float | config | Levels added per point of local difficulty                |
-| `random_level_bonus`  | Integer | config | Random bonus levels (0 to this value)                            |
-| `spawn_pos_override`  | Object | `null` | Override spawn position (x, z only) for horizontal distance calculations |
-| `sea_level`           | Integer | 64 | Reference Y coordinate for depth/height calculations             |
-| `attribute_modifiers` | Array | config | Custom attribute bonuses per level                               |
-| `player_level_multiplier` | Double | config | Override the config `player_level_multiplier` for entities in this dimension |
-| `apply_level_bonuses` | Object | `null` | Control which bonuses are applied (see below)                    |
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `starting_level` | Integer | config | Base level |
+| `max_level` | Integer | config | Cap (`0` = unlimited) |
+| `levels_per_distance` | Float | config | Per block from spawn |
+| `levels_per_deepness` | Float | config | Per block below `sea_level` |
+| `levels_per_height` | Float | config | Per block above `sea_level` |
+| `levels_per_day` | Float | config | Per in-game day |
+| `levels_per_local_difficulty` | Float | config | Per point of local difficulty |
+| `random_level_bonus` | Integer | config | Max random bonus per entity |
+| `spawn_pos_override` | Object | `null` | `{x, z}` for distance origin (dimension-only) |
+| `sea_level` | Integer | 64 | Y reference for depth/height (dimension-only) |
+| `attribute_modifiers` | Array | config | Per-level attribute bonuses |
+| `player_level_multiplier` | Double | config | Player-bonus multiplier override |
+| `apply_level_bonuses` | Object | `null` | Bonus-source gate (see below) |
 
-**Note:** All fields are optional. Omitting a field uses the value from `dynamic_difficulty-sync.toml` config. For `attribute_modifiers`, use an empty array `[]` to explicitly disable modifiers for this dimension.
+### `apply_level_bonuses`
 
-**Note:** Dimension settings are used as fallback when no entity-specific settings exist. Dimensions can also override attribute modifiers, using the same format as entity settings (see [Attribute Modifiers](#attribute-modifiers) below).
+Disables specific bonus sources at this tier. When present, **all three fields are required**.
 
-**`apply_level_bonuses` Object:**
+| Field | Description |
+|---|---|
+| `biome` | If `false`, biome `level_bonus` is skipped |
+| `structure` | If `false`, structure `level_bonus` is skipped |
+| `player` | If `false`, player-based bonuses are skipped |
 
-Controls which level bonuses are applied to entities in this dimension. If the entire object is omitted, all bonuses are applied based on config settings.
-
-**Important:** When the `apply_level_bonuses` object is present, **all three fields are required**. You cannot omit individual fields within the object.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `biome` | Boolean | Yes (if object present) | Whether biome bonuses are applied |
-| `structure` | Boolean | Yes (if object present) | Whether structure bonuses are applied |
-| `player` | Boolean | Yes (if object present) | Whether player-based bonuses are applied |
-
-**Note:** When `apply_level_bonuses` is set, only bonuses with `true` values are applied. For example, setting `"player": false` will disable player-based level scaling entirely for entities in this dimension, regardless of the config setting.
-
-**Important:**
-- Deepness-based scaling (`levels_per_deepness`) only applies when Y < `sea_level` (default: 64). It does not affect entities above sea level.
-- Height-based scaling (`levels_per_height`) is optional and only applies when Y > `sea_level` and `levels_per_height` > 0.
-- The `sea_level` can be overridden per dimension to match different world generation (e.g., set to 0 for dimensions without a traditional sea level).
+The same shape applies at entity scope; entity overrides dimension. Biomes and structures cannot set this field.
 
 ---
 
 ## Entities
 
-**Individual Entities:**
 ```
 data/<namespace>/leveling_settings/entities/<entity_id>.json
-```
-
-**Entity Tags:**
-```
 data/<namespace>/leveling_settings/entity_tags/<tag_id>.json
 ```
 
-**Examples:**
-- `data/minecraft/leveling_settings/entities/zombie.json`
-- `data/minecraft/leveling_settings/entity_tags/monsters.json`
-- `data/cataclysm/leveling_settings/entities/the_harbinger.json`
+Same field set as [Dimensions](#dimensions), minus `spawn_pos_override` and `sea_level` (dimension-only). All fields optional; omitted fields inherit through the resolution chain.
 
-### JSON Format
+```json
+{ "max_level": 100 }
+```
 
-**All fields are optional** - omit any field to inherit from dimension settings (which fall back to config).
-
-**Example 1: Minimal - just set a max level for bosses**
 ```json
 {
-  "max_level": 100
+  "levels_per_distance": 0.0,
+  "player_level_multiplier": 2.0,
+  "attribute_modifiers": [
+    { "attribute": "minecraft:attack_damage", "amount": 0.5, "operation": "add_value" }
+  ],
+  "apply_level_bonuses": { "biome": true, "structure": false, "player": true }
 }
 ```
 
-**Example 2: Override attributes for a specific entity**
+### Attribute Modifiers
+
+Per-level attribute scaling. Each entry is `{attribute, amount, operation}`:
+
+```json
+"attribute_modifiers": [
+  { "attribute": "minecraft:attack_damage",                  "amount": 0.2,  "operation": "add_value" },
+  { "attribute": "minecraft:max_health",                     "amount": 0.05, "operation": "add_multiplied_base" },
+  { "attribute": "dynamic_difficulty:projectile_damage_bonus", "amount": 0.2, "operation": "add_value" }
+]
+```
+
+**Operations** (string enum names; legacy numeric ids `0`/`1`/`2` are deprecated):
+- `add_value`: flat addition (`+0.2` per level)
+- `add_multiplied_base`: % of entity's base value (`0.05` = +5% per level)
+- `add_multiplied_total`: % of base plus all other modifiers
+
+`attribute_modifiers: []` explicitly disables scaling at this tier.
+
+**Vanilla attributes** worth knowing: `minecraft:attack_damage`, `minecraft:max_health`, `minecraft:armor`, `minecraft:armor_toughness`, `minecraft:knockback_resistance`, `minecraft:movement_speed`.
+
+**Mod-added damage attributes:** `dynamic_difficulty:{projectile,explosion,damage,magic_damage}_{bonus,multiplier}`.
+
+---
+
+## Structure Settings
+
+```
+data/<namespace>/leveling_settings/structures/<structure_id>.json
+data/<namespace>/leveling_settings/structure_tags/<tag_id>.json
+```
+
+Structures sit between biomes and entities in the resolution chain. A structure entry can:
+- Contribute an additive `level_bonus` (default `bypasses_cap: true`)
+- **Override** any standard scaling field (`starting_level`, `levels_per_*`, `attribute_modifiers`, `player_level_multiplier`, …)
+
+**Pure bonus:**
+```json
+{ "level_bonus": 10, "bypasses_cap": true }
+```
+
+**Flat-leveled dungeon (override scaling, no bonus):**
 ```json
 {
-  "max_level": 50,
+  "starting_level": 30,
+  "max_level": 35,
+  "levels_per_distance": 0.0,
+  "levels_per_deepness": 0.0
+}
+```
+
+**Bonus + per-structure attribute modifiers:**
+```json
+{
+  "level_bonus": 10,
   "attribute_modifiers": [
-    {
-      "attribute": "minecraft:attack_damage",
-      "amount": 0.5,
-      "operation": "add_value"
-    }
+    { "attribute": "minecraft:armor", "amount": 0.5, "operation": "add_value" }
   ]
 }
 ```
 
-**Example 3: Disable distance scaling for a stationary enemy**
-```json
-{
-  "levels_per_distance": 0.0,
-  "levels_per_day": 0.0
-}
-```
-
-**Example 4: Override player multiplier and disable structure bonuses for a specific entity**
-```json
-{
-  "player_level_multiplier": 2.0,
-  "apply_level_bonuses": {
-    "biome": true,
-    "structure": false,
-    "player": true
-  }
-}
-```
-
-This example:
-- Doubles the player multiplier for this entity type (overrides dimension/config)
-- Allows biome and player bonuses
-- Disables structure bonuses for this entity type
-
 ### Fields
 
-| Field | Type | Default | Description                                    |
-|-------|------|---------|------------------------------------------------|
-| `starting_level` | Integer | dimension | Base level for this entity type                |
-| `max_level` | Integer | dimension | Maximum level cap (0 = unlimited)              |
-| `levels_per_distance` | Float | dimension | Levels added per block from world spawn        |
-| `levels_per_deepness` | Float | dimension | Levels added per block below sea level         |
-| `levels_per_height` | Float | dimension | Levels added per block above sea level         |
-| `levels_per_day` | Float | dimension | Levels added per in-game day passed            |
-| `levels_per_local_difficulty` | Float | dimension | Levels added per point of local difficulty     |
-| `random_level_bonus` | Integer | dimension | Random bonus levels (0 to this value)          |
-| `attribute_modifiers` | Array | dimension | Custom attribute bonuses per level             |
-| `player_level_multiplier` | Double | dimension | Override the player level multiplier (entity → dimension → config) |
-| `apply_level_bonuses` | Object | dimension | Control which bonuses are applied (see below) |
+All fields optional; omitted fields inherit through the chain. Field set is the same as [Dimensions](#dimensions) **except** `apply_level_bonuses`, `spawn_pos_override`, and `sea_level` cannot be set on structures. The bonus pair is structure-specific:
 
-**Note:** All fields are optional. Omitting a field uses the value from the dimension settings, which in turn falls back to config. For `attribute_modifiers`, use an empty array `[]` to explicitly disable modifiers for this entity.
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `level_bonus` | Integer | `0` | Additive bonus inside this structure |
+| `bypasses_cap` | Boolean | `true` | Whether `level_bonus` bypasses `max_level` |
 
-**`apply_level_bonuses` Object:**
-
-Controls which level bonuses are applied to this entity type. If the entire object is omitted, inherits from dimension settings (which fall back to config defaults).
-
-**Important:** When the `apply_level_bonuses` object is present, **all three fields are required**. You cannot omit individual fields within the object.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `biome` | Boolean | Yes (if object present) | Whether biome bonuses are applied |
-| `structure` | Boolean | Yes (if object present) | Whether structure bonuses are applied |
-| `player` | Boolean | Yes (if object present) | Whether player-based bonuses are applied |
-
-**Note:** Entity-level `apply_level_bonuses` overrides dimension-level settings. For example, if a dimension disables player bonuses but an entity enables them, that entity will still receive player bonuses. The lookup priority is: entity → dimension → config.
-
-### Attribute Modifiers
-
-**Advanced:** Entities (and dimensions) can override the config's default attribute modifiers by specifying the `attribute_modifiers` array. This allows fine-grained control over how each entity type scales with level.
-
-Optional array of attribute bonuses applied per entity level:
-
-```json
-"attribute_modifiers": [
-  {
-    "attribute": "minecraft:attack_damage",
-    "amount": 0.2,
-    "operation": "add_value"
-  },
-  {
-    "attribute": "minecraft:max_health",
-    "amount": 0.05,
-    "operation": "add_multiplied_base"
-  },
-  {
-    "attribute": "dynamic_difficulty:projectile_damage_bonus",
-    "amount": 0.2,
-    "operation": "add_value"
-  }
-]
-```
-
-**Operation Types:**
-- `"add_value"` - Flat addition (e.g., +0.2 damage per level)
-- `"add_multiplied_base"` - Add percentage of entity's base value (`0.05`: +5% health per level)
-- `"add_multiplied_total"` - Same as `add_multiplied_base`, but multiply the "total" including all other modifiers
-
-**Note:** Legacy numeric operation IDs (`0`, `1`, `2`) are deprecated but still functional for backwards compatibility. They will log a deprecation warning and may be removed in a future version. Please use the enum serialized names shown above.
-
-**Common Attributes:**
-- `minecraft:attack_damage` - Attack damage
-- `minecraft:max_health` - Maximum health
-- `minecraft:armor` - Armor points
-- `minecraft:armor_toughness` - Armor toughness
-- `minecraft:knockback_resistance` - Knockback resistance
-- `minecraft:movement_speed` - Movement speed
-
-**Built-in Mod Attributes:**
-- `dynamic_difficulty:projectile_damage_bonus` - Bonus projectile damage
-- `dynamic_difficulty:projectile_damage_multiplier` - Projectile damage multiplier
-- `dynamic_difficulty:explosion_damage_bonus` - Bonus explosion damage
-- `dynamic_difficulty:explosion_damage_multiplier` - Explosion damage multiplier
-- `dynamic_difficulty:damage_bonus` - General damage bonus
-- `dynamic_difficulty:damage_multiplier` - General damage multiplier
-- `dynamic_difficulty:magic_damage_bonus` - Magic damage bonus
-- `dynamic_difficulty:magic_damage_multiplier` - Magic damage multiplier
-
----
-
-## Structure Bonuses
-
-Configure level bonuses for structures or structure tags. Structure bonuses **bypass the max level cap by default**.
-
-### File Locations
-
-**Individual Structures:**
-```
-data/<namespace>/leveling_settings/structures/<structure_id>.json
-```
-
-**Structure Tags:**
-```
-data/<namespace>/leveling_settings/structure_tags/<tag_id>.json
-```
-
-**Examples:**
-- `data/minecraft/leveling_settings/structures/trial_dungeon.json`
-- `data/minecraft/leveling_settings/structure_tags/village.json`
-- `data/dynamic_difficulty/leveling_settings/structure_tags/level_1.json`
-
-### JSON Format
-
-```json
-{
-  "level_bonus": 10,
-  "bypasses_cap": true
-}
-```
-
-### Fields
-
-| Field | Type | Default | Description                                            |
-|-------|------|---------|--------------------------------------------------------|
-| `level_bonus` | Integer | Required | Levels added to entities spawning in this structure    |
-| `bypasses_cap` | Boolean | `true` | Whether this bonus bypasses the entity's max level cap |
+**Merging:** when a structure matches an individual entry plus tags, or when multiple structures overlap one position, override fields merge via **per-field max**. The `level_bonus`/`bypasses_cap` pair contributes via the bypass-cap bucket model: max bonus per bucket (bypassing vs non-bypassing).
 
 ### Built-in Structure Tags
 
-The mod includes built-in structure tags in the `dynamic_difficulty` namespace:
+| Tag | Bonus | Cap |
+|---|---|---|
+| `dynamic_difficulty:level_1` | +5 | bypasses |
+| `dynamic_difficulty:level_2` | +10 | bypasses |
+| `dynamic_difficulty:level_3` | +15 | bypasses |
+| `dynamic_difficulty:level_4` | +20 | bypasses |
+| `dynamic_difficulty:level_5` | +25 | bypasses |
+| `dynamic_difficulty:level_6` | +30 | bypasses |
 
-- `dynamic_difficulty:level_1` - +5 levels (`bypasses_cap: true`)
-- `dynamic_difficulty:level_2` - +10 levels (`bypasses_cap: true`)
-- `dynamic_difficulty:level_3` - +15 levels (`bypasses_cap: true`)
-- `dynamic_difficulty:level_4` - +20 levels (`bypasses_cap: true`)
-- `dynamic_difficulty:level_5` - +25 levels (`bypasses_cap: true`)
-- `dynamic_difficulty:level_6` - +30 levels (`bypasses_cap: true`)
-
-These tags are defined in `data/dynamic_difficulty/tags/worldgen/structure/` and can be used to categorize structures by difficulty. You can add your own structures to these tags or create custom structure tags.
-
-**Example:** To add a structure to the `level_3` tag, create:
-```
-data/<namespace>/tags/worldgen/structure/level_3.json
-```
+Add structures to a tier by creating `data/<namespace>/tags/worldgen/structure/level_N.json`:
 
 ```json
 {
@@ -489,268 +300,110 @@ data/<namespace>/tags/worldgen/structure/level_3.json
 }
 ```
 
-**Note:** For modded structures, it's recommended to use the optional object format `{"id": "namespace:path", "required": false}` instead of plain strings. This prevents errors if the mod isn't installed.
+Use the `{"id": ..., "required": false}` form for modded structures so the tag still loads if the mod is missing.
 
 ---
 
-## Biome Leveling Settings
+## Biome Settings
 
-Configure level bonuses for biomes or biome tags. Biome bonuses **do NOT bypass the max level cap by default**.
-
-### File Locations
-
-**Individual Biomes:**
 ```
 data/<namespace>/leveling_settings/biomes/<biome_id>.json
-```
-
-**Biome Tags:**
-```
 data/<namespace>/leveling_settings/biome_tags/<tag_id>.json
 ```
 
-**Examples:**
-- `data/minecraft/leveling_settings/biomes/plains.json`
-- `data/minecraft/leveling_settings/biome_tags/is_ocean.json`
-- `data/minecraft/leveling_settings/biome_tags/is_overworld.json`
+Same field set and merging rules as [Structure Settings](#structure-settings). The only difference: `bypasses_cap` defaults to `false` for biomes.
 
-### JSON Format
+```json
+{ "level_bonus": 5, "bypasses_cap": false }
+```
+
+Biomes can also override scaling fields. For example, a hostile biome that bumps distance scaling and applies its own attribute modifiers:
 
 ```json
 {
+  "levels_per_distance": 0.02,
   "level_bonus": 5,
-  "bypasses_cap": false
+  "attribute_modifiers": [
+    { "attribute": "minecraft:attack_damage", "amount": 0.4, "operation": "add_value" }
+  ]
 }
 ```
 
-### Fields
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `level_bonus` | Integer | Required | Levels added to entities spawning in this biome |
-| `bypasses_cap` | Boolean | `false` | Whether this bonus bypasses the max level cap |
-
-**Note:** Biome bonuses with `bypasses_cap: false` are applied before the max level cap, while those with `bypasses_cap: true` are applied after (like structure bonuses).
-
 ---
 
-## Complete Example
-
-Here's a complete example datapack structure showing both custom mod and Minecraft namespaces:
+## Datapack Layout
 
 ```
-datapacks/my_custom_leveling/
+datapacks/my_pack/
 ├── pack.mcmeta
-└── data/
-    ├── mymod/
-    │   └── leveling_settings/
-    │       ├── entities/
-    │       │   └── custom_mob.json
-    │       ├── entity_tags/
-    │       │   └── bosses.json
-    │       ├── dimensions/
-    │       │   └── custom_dimension.json
-    │       ├── structures/
-    │       │   └── dungeon.json
-    │       ├── structure_tags/
-    │       │   └── difficult_structures.json
-    │       ├── biomes/
-    │       │   └── hostile_biome.json
-    │       └── biome_tags/
-    │           └── dangerous_biomes.json
-    └── minecraft/
-        └── leveling_settings/
-            ├── entities/
-            │   └── zombie.json
-            └── dimensions/
-                └── overworld.json
+└── data/<namespace>/leveling_settings/
+    ├── dimensions/<id>.json     dimension_tags/<tag>.json
+    ├── biomes/<id>.json         biome_tags/<tag>.json
+    ├── structures/<id>.json     structure_tags/<tag>.json
+    └── entities/<id>.json       entity_tags/<tag>.json
 ```
 
-**Note:** The namespace is defined by the parent directory (`mymod/` or `minecraft/`), not in the filename. So `mymod/leveling_settings/biome_tags/dangerous_biomes.json` refers to the tag `mymod:dangerous_biomes`.
+The namespace comes from the directory under `data/`, not the filename. So `data/mymod/leveling_settings/biome_tags/foo.json` defines settings for the tag `mymod:foo`.
 
 ---
 
 ## Player-based Scaling
 
-Dynamic Difficulty supports player-based level scaling, where nearby players contribute bonus levels to mobs based on their own levels.
+When enabled, mobs gain bonus levels based on registered `PlayerLevelProvider` levels of nearby players (within a configurable radius, aggregated per a configurable strategy).
 
-### How It Works
+The contribution is scaled by `playerLevelMultiplier`, overridable per dimension/biome/structure/entity via `player_level_multiplier` in the resolution chain. Bypass behavior follows the `playerLevelBypassesCap` config (default: `true`, the bonus is added on top of `max_level`).
 
-- When enabled, the mod searches for players within a configured radius around each mob
-- Each player's level is calculated from registered `PlayerLevelProvider` implementations
-- The average (or configured aggregation method) of nearby player levels is used as a bonus
-- This bonus is scaled by the `player_level_multiplier` config value
-- Player-based bonuses **always bypass the max level cap**
+Config keys (`dynamic_difficulty-sync.toml`):
 
-### Configuration
+| Key | Default | Description |
+|---|---|---|
+| `applyPlayerBasedLeveling` | `true` | Master toggle |
+| `playerLevelRadius` | `128.0` | Search radius (blocks) |
+| `playerLevelMultiplier` | `1.0` | Default scaling multiplier |
+| `playerLevelBypassesCap` | `true` | If `false`, the bonus respects `max_level` |
+| `playerLevelDisplayStrategy` | `HIGHEST_PRIORITY` | How to aggregate multiple players |
 
-Configure player-based scaling in `dynamic_difficulty-sync.toml`:
-
-- `applyPlayerBasedLeveling` - Enable/disable player-based bonuses (default: `true`)
-- `playerLevelRadius` - Search radius for nearby players (default: `128.0`)
-- `playerLevelMultiplier` - Multiplier for player level bonuses (default: `1.0`)
-- `playerLevelDisplayStrategy` - How to aggregate multiple player levels (default: `HIGHEST_PRIORITY`)
-
-### Player Level Providers
-
-Some player level provider support is built-in.
-- Additional providers can be added via the API
-- Suggestions for new built-in providers are also welcome - Submit a GitHub issue!
-
-**Current Providers:**
-- Pufferfish's Skills
+**Built-in providers:** Pufferfish's Skills. Additional providers can be added via the API; suggestions for new built-ins are welcome. Open a GitHub issue.
 
 ---
 
 ## Loot Settings
 
-Dynamic Difficulty provides a flexible system for level-based loot drops.
+Level-gated drops are injected into entity loot via Global Loot Modifiers (NeoForge) or a mixin (Fabric). Toggle the entire system with `enableLevelBasedDrops` in `dynamic_difficulty-sync.toml`. To customize drops without disabling injection, override the loot table (see below).
 
-**Platform Implementation:**
-- **NeoForge:** Uses Global Loot Modifiers (GLMs) for loot injection
-- **Fabric:** Uses a mixin to inject the loot table directly
+### Loot Condition: `dynamic_difficulty:entity_level`
 
-### Configuration
-
-Level-based drops can be enabled/disabled in `dynamic_difficulty-sync.toml`:
-
-```toml
-# Whether mobs should drop level-up items based on their level
-enableLevelBasedDrops = true
-```
-
-**Note:** This config option toggles the entire built-in loot injection system. When disabled, no loot injection occurs regardless of what's in the loot table. If you want to keep loot injection active but customize the drops, override the loot table instead (see [Overriding the Built-in Loot](#overriding-the-built-in-loot)).
-
-### Built-in Loot Condition
-
-The mod provides a custom loot condition for level-gated drops:
-
-**Condition Type:** `dynamic_difficulty:entity_level`
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `min` | Integer | **OPTIONAL** - Minimum entity level (inclusive) |
-| `max` | Integer | **OPTIONAL** - Maximum entity level (inclusive) |
-| `exact` | Integer | **OPTIONAL** - Match exactly this level (overrides min/max) |
-
-**Examples:**
+Gate any loot pool by mob level. All fields optional (use `min`/`max` for ranges, `exact` for a single level; `exact` overrides `min`/`max`).
 
 ```json
-{
-  "condition": "dynamic_difficulty:entity_level",
-  "min": 20,
-  "max": 50
-}
+{ "condition": "dynamic_difficulty:entity_level", "min": 20, "max": 50 }
 ```
-
-```json
-{
-  "condition": "dynamic_difficulty:entity_level",
-  "min": 10
-}
-```
-
-```json
-{
-  "condition": "dynamic_difficulty:entity_level",
-  "exact": 100
-}
-```
-
-### Built-in Global Loot Modifier (NeoForge Only)
-
-On NeoForge, the mod includes a Global Loot Modifier (GLM) that injects a custom loot table into all entity drops.
-
-**File:** `data/dynamic_difficulty/loot_modifiers/inject_level_drops.json`
-
-```json
-{
-  "type": "dynamic_difficulty:inject_loot_table",
-  "conditions": [],
-  "loot_table": "dynamic_difficulty:inject/level_based_drops"
-}
-```
-
-**GLM Type:** `dynamic_difficulty:inject_loot_table`
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `conditions` | Array | Standard NeoForge loot conditions |
-| `loot_table` | Identifier | The loot table to inject into entity drops |
-
-**Note:** On Fabric, the loot table injection is handled via mixin instead. The same loot table (`dynamic_difficulty:inject/level_based_drops`) is used on both platforms.
 
 ### Built-in Loot Table
-
-The default level-based drops are defined in:
 
 ```
 data/dynamic_difficulty/loot_table/inject/level_based_drops.json
 ```
 
-This table uses multiple pools with `dynamic_difficulty:entity_level` conditions to provide tiered drops:
+Tiered level-up item drops:
 
-| Level Range | Available Drops |
-|-------------|-----------------|
-| 2-19 | Potion of Growth, Elixir of Nurturing, Draught of Ascension |
-| 20-39 | + Essence of Vitality |
-| 40-59 | + Crystal of Awakening |
-| 60-79 | Higher rarity weights |
+| Level Range | Drops |
+|---|---|
+| 2–19 | Potion of Growth, Elixir of Nurturing, Draught of Ascension |
+| 20–39 | + Essence of Vitality |
+| 40–59 | + Crystal of Awakening |
+| 60–79 | Higher rarity weights |
 | 80+ | Highest rarity weights |
 
-### Level-Up Item Caps
+Each level-up item has a configurable cap (`{itemName}MaxLevel` in sync TOML). Defaults: Potion of Growth 20, Elixir 40, Draught 60, Essence 80, Crystal 100. The drop ranges are tuned to match these caps; adjust both together if you change them.
 
-The built-in level-up items have configurable maximum level caps in `dynamic_difficulty-sync.toml`:
+### Customizing
 
-| Item | Default Max Level | Config Key |
-|------|-------------------|------------|
-| Potion of Growth | 20 | `potionOfGrowthMaxLevel` |
-| Elixir of Nurturing | 40 | `elixirOfNurturingMaxLevel` |
-| Draught of Ascension | 60 | `draughtOfAscensionMaxLevel` |
-| Essence of Vitality | 80 | `essenceOfVitalityMaxLevel` |
-| Crystal of Awakening | 100 | `crystalOfAwakeningMaxLevel` |
+- **Replace drops (both loaders):** put your own table at `data/dynamic_difficulty/loot_table/inject/level_based_drops.json`.
+- **Replace the GLM entirely (NeoForge):** override `data/dynamic_difficulty/loot_modifiers/inject_level_drops.json`.
+- **Add GLMs alongside (NeoForge):** add an entry in `data/neoforge/loot_modifiers/global_loot_modifiers.json` with `"replace": false` so you stack with the built-in.
 
-**Note:** The drop level ranges in the built-in loot table are designed to match these caps. For example, entities level 2-19 can drop Potion of Growth (which levels mobs up to 20), while entities level 20+ start dropping Elixir of Nurturing (which can raise mobs to 40), and so on. This creates a natural progression where defeating higher-level mobs yields items capable of creating even stronger mobs.
-
-If you modify these caps in the config, consider also updating the loot table ranges to match.
-
-### Overriding the Built-in Loot
-
-To customize or replace the built-in loot behavior, you have several options:
-
-**Option 1: Replace the loot table (easiest, works on both platforms)**
-
-Create your own loot table at `data/dynamic_difficulty/loot_table/inject/level_based_drops.json` in your datapack. Both NeoForge and Fabric will automatically use your table instead.
-
-**Option 2: Replace the GLM entirely (NeoForge only)**
-
-Override the built-in GLM by creating your own file at:
-```
-data/dynamic_difficulty/loot_modifiers/inject_level_drops.json
-```
-
-This completely replaces the built-in GLM with your own configuration.
-
-**Option 3: Add additional GLMs (NeoForge only)**
-
-The `global_loot_modifiers.json` works like a tag — using `"replace": false` merges your entries with existing ones. You only need to include your own GLM:
-
-```
-data/neoforge/loot_modifiers/global_loot_modifiers.json
-```
-
-```json
-{
-  "replace": false,
-  "entries": [
-    "yourmod:additional_level_drops"
-  ]
-}
-```
-
-This adds your GLM alongside the built-in one without affecting other mods.
-
-### Example: Custom Level-Based Loot Table
+**Custom-table example** (1% diamond drop from level-50+ mobs):
 
 ```json
 {
@@ -759,35 +412,22 @@ This adds your GLM alongside the built-in one without affecting other mods.
     {
       "rolls": 1,
       "entries": [
-        {
-          "type": "minecraft:item",
-          "name": "minecraft:diamond",
-          "weight": 1
-        },
-        {
-          "type": "minecraft:empty",
-          "weight": 99
-        }
+        { "type": "minecraft:item", "name": "minecraft:diamond", "weight": 1 },
+        { "type": "minecraft:empty", "weight": 99 }
       ],
       "conditions": [
-        {
-          "condition": "dynamic_difficulty:entity_level",
-          "min": 50
-        }
+        { "condition": "dynamic_difficulty:entity_level", "min": 50 }
       ]
     }
   ]
 }
 ```
 
-This example gives a 1% chance to drop a diamond from entities level 50 or higher.
-
 ---
 
-## Tips:
+## Tips
 
-1. Use the `/dynamic_difficulty dumpStructures` command for a list of registered structures and their configured bonuses.
-2. Use `/dynamic_difficulty debug location` to see a full breakdown of level calculation for where you're standing
-3. You can check if your datapack is loaded in game by using `/datapack list`
-4. Datapacks are best edited with [VSCode](https://code.visualstudio.com/)
-5. Open your *entire datapack folder* in VScode to manage all files at once - Infinitely easier to organize lots of files and folders, rather than relying on Explorer/Finder! 
+- `/dynamic_difficulty debug location`: full breakdown of the level calculation at your position (base, overrides, bonuses, cap, final). Indispensable when something looks off.
+- `/dynamic_difficulty dumpStructures`: lists registered structures and their configured bonuses.
+- `/datapack list`: confirm your datapack is loaded.
+- Edit datapacks with [VSCode](https://code.visualstudio.com/) by opening the *entire datapack folder*. Much easier than poking files through Explorer/Finder.

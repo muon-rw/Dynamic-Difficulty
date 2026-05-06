@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.At;
  * during render-state extraction; the resulting {@code displayName} field is
  * read by every downstream draw call (centered title, inline name, width
  * measurements). Wrapping the {@code getDisplayName} invoke once here covers
- * the full bar UI without touching Fuzs' visibility logic — the bar still
+ * the full bar UI without touching Fuzs' visibility logic. The bar still
  * shows or hides under Health Bars' own rules.
  */
 @Mixin(value = HealthTrackerRenderState.class, remap = false)

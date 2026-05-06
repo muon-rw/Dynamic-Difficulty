@@ -1,3 +1,11 @@
+## 1.3.0
+- Biome/structure datapacks can now override any base setting (`starting_level`, `levels_per_*`, `attribute_modifiers`, `player_level_multiplier`, …), not just `level_bonus`/`bypasses_cap`
+- Resolution chain is now dimension -> biome -> structure -> entity
+- Multi-tag and overlapping-structure matches merge per highest of each field
+- Breaking: location packet wire format; old clients must update
+- Better compat for Visual Traveler's Titles
+- Codebase cleanup
+
 ## 1.2.4
 - Internal cleanup and optimizations
 
