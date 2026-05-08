@@ -84,17 +84,20 @@ sourceSets.configureEach {
 }
 
 if (project.findProperty('fabric_modpack_path')) {
+    def fabricModpackDest = new File(project.fabric_modpack_path).with { f ->
+        f.absolute ? f : new File(System.getProperty('user.home'), project.fabric_modpack_path)
+    }
     tasks.register('sendToModpackFab', Copy) {
         group = 'publishing'
-        description = "Copies the Fabric dev jar into ${project.fabric_modpack_path}"
+        description = "Copies the Fabric dev jar into ${fabricModpackDest}"
         dependsOn tasks.named('jar')
         from tasks.named('jar').flatMap { it.archiveFile }
-        into project.fabric_modpack_path
+        into fabricModpackDest
         rename { String fileName ->
             fileName.replace(project.version.toString(), 'dev')
         }
         doLast {
-            println "Fabric dev jar sent to: ${project.fabric_modpack_path}"
+            println "Fabric dev jar sent to: ${fabricModpackDest}"
         }
     }
 }
