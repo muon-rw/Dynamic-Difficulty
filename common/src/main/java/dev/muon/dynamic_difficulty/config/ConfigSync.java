@@ -117,8 +117,8 @@ public class ConfigSync extends Config {
 
     @Comment("Multiplier for player level bonuses applied to mobs\n" +
             "This scales the bonus that nearby players add to mob levels\n" +
-            "1.0 = normal scaling, 0.5 = half effect, 2.0 = double effect")
-    public ValidatedDouble playerLevelMultiplier = new ValidatedDouble(1.0D, 10.0D, 0.0D);
+            "1.0 = 1 level per point (typically), 0.5 = half effect, 2.0 = double effect")
+    public ValidatedDouble playerLevelMultiplier = new ValidatedDouble(0.3D, 10.0D, 0.0D);
 
     @Comment("Whether to factor in player levels when calculating mob levels")
     public ValidatedBoolean applyPlayerBasedLeveling = new ValidatedBoolean(true);

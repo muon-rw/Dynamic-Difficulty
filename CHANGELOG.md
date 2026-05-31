@@ -1,3 +1,6 @@
+## 1.3.1
+- Change default player scaling multiplier 1.0 -> 0.3 (0.3 mob levels per player level)
+
 ## 1.3.0
 - Biome/structure datapacks can now override any base setting (`starting_level`, `levels_per_*`, `attribute_modifiers`, `player_level_multiplier`, …), not just `level_bonus`/`bypasses_cap`
 - Resolution chain is now dimension -> biome -> structure -> entity
