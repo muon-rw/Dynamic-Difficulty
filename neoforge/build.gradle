@@ -102,17 +102,20 @@ sourceSets.configureEach {
 }
 
 if (project.findProperty('neoforge_modpack_path')) {
+    def neoModpackDest = new File(project.neoforge_modpack_path).with { f ->
+        f.absolute ? f : new File(System.getProperty('user.home'), project.neoforge_modpack_path)
+    }
     tasks.register('sendToModpackNeo', Copy) {
         group = 'publishing'
-        description = "Copies the NeoForge dev jar into ${project.neoforge_modpack_path}"
+        description = "Copies the NeoForge dev jar into ${neoModpackDest}"
         dependsOn tasks.named('jar')
         from tasks.named('jar').flatMap { it.archiveFile }
-        into project.neoforge_modpack_path
+        into neoModpackDest
         rename { String fileName ->
             fileName.replace(project.version.toString(), 'dev')
         }
         doLast {
-            println "NeoForge dev jar sent to: ${project.neoforge_modpack_path}"
+            println "NeoForge dev jar sent to: ${neoModpackDest}"
         }
     }
 }
