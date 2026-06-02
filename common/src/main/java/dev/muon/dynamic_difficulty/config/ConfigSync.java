@@ -230,7 +230,6 @@ public class ConfigSync extends Config {
     private static List<AttributeBonus> getDefaultAttributeBonuses() {
         return Arrays.asList(
                 new AttributeBonus("minecraft", "attack_damage", 0.25D, AttributeModifier.Operation.ADD_VALUE),
-                new AttributeBonus("minecraft", "armor", 0.2D, AttributeModifier.Operation.ADD_VALUE),
                 new AttributeBonus("minecraft", "max_health", 0.05D, AttributeModifier.Operation.ADD_MULTIPLIED_BASE),
                 new AttributeBonus("dynamic_difficulty", "projectile_damage_bonus", 0.25D, AttributeModifier.Operation.ADD_VALUE),
                 new AttributeBonus("dynamic_difficulty", "magic_damage_bonus", 0.25D, AttributeModifier.Operation.ADD_VALUE),

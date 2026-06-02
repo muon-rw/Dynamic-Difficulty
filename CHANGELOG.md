@@ -1,3 +1,6 @@
+## 1.3.2
+- Default config no longer grants mob armor per level
+
 ## 1.3.1
 - Change default player scaling multiplier 1.0 -> 0.3 (0.3 mob levels per player level)
 
