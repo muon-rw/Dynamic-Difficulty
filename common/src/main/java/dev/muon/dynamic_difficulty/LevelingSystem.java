@@ -6,8 +6,8 @@ import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
 import dev.muon.dynamic_difficulty.api.StructureBonus;
 import dev.muon.dynamic_difficulty.config.ConfigSync;
 import dev.muon.dynamic_difficulty.config.Configs;
-import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
-import dev.muon.dynamic_difficulty.data.EntityLevelingSettingsReloader;
+import dev.muon.dynamic_difficulty.data.DimensionLevelingSettingsStore;
+import dev.muon.dynamic_difficulty.data.EntityLevelingSettingsStore;
 import dev.muon.dynamic_difficulty.network.NetworkDispatcher;
 import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
 import dev.muon.dynamic_difficulty.settings.EntityLevelingSettings;
@@ -30,7 +30,6 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.DifficultyInstance;
-import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.HashMap;
@@ -38,57 +37,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Core leveling system for Dynamic Difficulty.
- *
- * IMPORTANT: This system handles levels differently for players vs non-players:
- *
- * MOBS/ENTITIES:
- * - Level determines combat power (health, damage, armor, etc.)
- * - Levels are calculated on spawn based on location, structures, nearby players
- * - Attribute bonuses are applied based on level
- * - Level can be changed at runtime via setAndUpdateLevel() or addLevels()
- *
- * PLAYERS:
- * - Level is used for display (shown above head, color-coding mob difficulty) and
- *   for calculating mob level bonuses based on nearby player proximity
- * - Player levels do NOT grant attribute bonuses
- * - Player levels are calculated from PlayerLevelProvider implementations (e.g., skill points)
- * - Cannot use setAndUpdateLevel() on players (throws exception)
- */
 public class LevelingSystem {
     private static final TagKey<EntityType<?>> FIXED_LEVEL_ENTITIES = TagKey.create(Registries.ENTITY_TYPE,
             DynamicDifficulty.id("fixed_level_entities"));
 
     public static boolean hasLevel(Entity entity) {
         if (entity instanceof LivingEntity living) {
-            // Check if entity has attachment data explicitly set (not just default value)
             return DynamicDifficulty.getHelper().getLevelAttachmentHelper().hasLevel(living);
         }
         return false;
     }
 
     /**
-     * Gets the level of any living entity, including players.
-     *
-     * IMPORTANT: Player levels are used for display (name tags, color-coding difficulty)
-     * and for calculating mob level bonuses based on nearby player proximity.
-     * Player levels do NOT grant attribute bonuses - players use the PlayerLevelProvider
-     * system to contribute to mob difficulty, not to gain power themselves.
-     *
-     * Non-player entity levels DO grant attribute bonuses and are used for combat scaling.
-     *
-     * @param entity The entity to get the level for
-     * @return The entity's level (1 if no level set)
+     * @return the entity's level, or 1 if no level is set.
      */
     public static int getLevel(LivingEntity entity) {
-        // Use attachment on both client and server - it's the single source of truth
-        // On client, if attachment hasn't been set yet (entity not synced), defaults to 1
         return DynamicDifficulty.getHelper().getLevelAttachmentHelper().getLevel(entity);
     }
 
     /**
-     * Internal: Sets the level attachment without updating attributes or syncing.
      * Use setAndUpdateLevel() for runtime level changes.
      */
     @ApiStatus.Internal
@@ -106,7 +73,7 @@ public class LevelingSystem {
      */
     public static void setAndUpdateLevel(LivingEntity entity, int newLevel) {
         if (entity instanceof ServerPlayer) {
-            throw new IllegalArgumentException("Cannot set levels on players - use PlayerLevelProvider system instead");
+            throw new IllegalArgumentException("Cannot set levels on players; use the PlayerLevelProvider system instead");
         }
 
         if (newLevel < 0) {
@@ -120,10 +87,8 @@ public class LevelingSystem {
         int oldLevel = getLevel(entity);
         setLevelAttachment(entity, newLevel);
 
-        // Reapply all attribute bonuses with new level
         applyAllLevelAttributes(entity);
 
-        // Sync to tracking clients if on server
         if (entity.level() instanceof ServerLevel) {
             NetworkDispatcher.syncLevelToClients(entity);
         }
@@ -146,7 +111,7 @@ public class LevelingSystem {
         setAndUpdateLevel(entity, newLevel);
     }
 
-    public static int createLevelForEntity(LivingEntity entity) {
+    public static int calculateLevelForEntity(LivingEntity entity) {
         if (!LevelingAPI.canHaveLevel(entity)) {
             return 1;
         }
@@ -182,7 +147,7 @@ public class LevelingSystem {
     }
 
     private static int calculateInitialLevel(LivingEntity entity, LevelingSettings settings) {
-        DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(entity.level().dimension());
+        DimensionLevelingSettings dimSettings = DimensionLevelingSettingsStore.get(entity.level().dimension());
         BlockPos spawnPos = LevelingUtils.getEffectiveSpawnPos(entity.level(), dimSettings);
         BlockPos entityPos = entity.blockPosition();
         double distanceToSpawn = LevelingUtils.horizontalDistance(spawnPos, entityPos);
@@ -291,7 +256,6 @@ public class LevelingSystem {
     public static Map<ResourceKey<Attribute>, AttributeModifier> getAttributeBonuses(LivingEntity entity) {
         LevelingSettings settings = getLevelingSettings(entity);
 
-        // Get modifiers from settings (already resolved through dim → biome → structure → entity)
         Map<Attribute, AttributeModifier> modifiers = settings.attributeModifiers();
 
         // null = field was omitted at all levels, fall back to config
@@ -304,7 +268,6 @@ public class LevelingSystem {
         return convertAttributeMapToKeyMap(modifiers);
     }
 
-    // Helper method to convert Map<Attribute, AttributeModifier> to Map<ResourceKey<Attribute>, AttributeModifier>
     private static Map<ResourceKey<Attribute>, AttributeModifier> convertAttributeMapToKeyMap(Map<Attribute, AttributeModifier> attributeMap) {
         Map<ResourceKey<Attribute>, AttributeModifier> keyMap = new HashMap<>();
         for (Map.Entry<Attribute, AttributeModifier> entry : attributeMap.entrySet()) {
@@ -348,10 +311,10 @@ public class LevelingSystem {
         if (entity.level() instanceof ServerLevel serverLevel) {
             prior = LocationBonusUtils.resolveLocationSettings(serverLevel, entity.blockPosition());
         } else {
-            prior = DimensionsLevelingSettingsReloader.get(entity.level().dimension());
+            prior = DimensionLevelingSettingsStore.get(entity.level().dimension());
         }
 
-        EntityLevelingSettings entityResolved = EntityLevelingSettingsReloader.get(entity.getType(), prior);
+        EntityLevelingSettings entityResolved = EntityLevelingSettingsStore.get(entity.getType(), prior);
         return entityResolved != null ? entityResolved : prior;
     }
 
@@ -364,9 +327,6 @@ public class LevelingSystem {
         return getLevelsFromNearbyPlayers(level, entity, getLevelingSettings(entity));
     }
 
-    /**
-     * Gets the level contribution from nearby players using already-resolved settings.
-     */
     public static int getLevelsFromNearbyPlayers(ServerLevel level, LivingEntity entity, LevelingSettings settings) {
         if (!Configs.SYNC.applyPlayerBasedLeveling.get()) {
             DynamicDifficulty.LOGGER.debug("Player-based leveling disabled in config");
@@ -404,18 +364,12 @@ public class LevelingSystem {
         return scaledBonus;
     }
 
-    /**
-     * Gets the structure bonus for an entity's current position.
-     */
     public static StructureBonus getStructureBonus(LivingEntity entity) {
         if (!(entity.level() instanceof ServerLevel serverLevel)) return StructureBonus.EMPTY;
 
         return LocationBonusUtils.getStructureAt(serverLevel, entity.blockPosition(), true);
     }
 
-    /**
-     * Gets the biome bonus for an entity's current position.
-     */
     public static BiomeBonus getBiomeBonus(LivingEntity entity) {
         if (!(entity.level() instanceof ServerLevel serverLevel)) return BiomeBonus.EMPTY;
 

@@ -19,9 +19,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
-/**
- * NeoForge-specific event handlers that delegate to common LevelingEvents.
- */
 @EventBusSubscriber(modid = DynamicDifficulty.MODID)
 public class LevelingEventsNeoForge {
 

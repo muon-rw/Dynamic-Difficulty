@@ -33,10 +33,7 @@ public class LevelPlateHandler {
     private static final boolean CHRONICLES_LEVELING_LOADED =
             DynamicDifficulty.isModLoaded("chronicles_leveling");
 
-    /**
-     * Whether level info should be injected into this entity's nameplate.
-     * Controlled by injectLevelIntoMobs and injectLevelIntoPlayers config options.
-     */
+    /** Controlled by injectLevelIntoMobs and injectLevelIntoPlayers config options. */
     public static boolean shouldInjectLevel(LivingEntity entity) {
         if (entity instanceof Player) {
             if (CHRONICLES_LEVELING_LOADED) return false;
@@ -45,11 +42,7 @@ public class LevelPlateHandler {
         return Configs.CLIENT.injectLevelIntoMobs.get();
     }
 
-    /**
-     * Whether this mod should override the default nameplate visibility for this entity.
-     * When false, vanilla decides when the nameplate is shown (sneaking, spectator, etc.).
-     * Controlled by overrideMobNameplateVisibility and overridePlayerNameplateVisibility config options.
-     */
+    /** When false, vanilla decides when the nameplate is shown (sneaking, spectator, etc.). */
     public static boolean shouldOverrideNameplateVisibility(LivingEntity entity) {
         return entity instanceof Player
                 ? Configs.CLIENT.overridePlayerNameplateVisibility.get()
@@ -74,7 +67,6 @@ public class LevelPlateHandler {
 
         MutableComponent fullDisplayName = originalName.copy();
 
-        // Build level component
         MutableComponent levelComponent = Component.literal(" ")
                 .append(Component.translatable("dynamic_difficulty.level", entityLevel))
                 .withStyle(style -> style.withColor(getLevelColor(Minecraft.getInstance().player, entity)));
@@ -84,13 +76,8 @@ public class LevelPlateHandler {
     }
 
     /**
-     * Get the color for level display based on player's level relative to the entity.
-     * Uses ARGB format (0xAARRGGBB) for name tag rendering.
+     * Returns ARGB format (0xAARRGGBB) for name tag rendering.
      * Public so other display systems (like Jade) can use the same color logic.
-     *
-     * @param player The player viewing the entity
-     * @param entity The entity being viewed
-     * @return ARGB color value
      */
     public static int getLevelColor(Player player, LivingEntity entity) {
         int playerLevel = player != null ? LevelingAPI.getLevel(player) : 0;
@@ -107,14 +94,6 @@ public class LevelPlateHandler {
         }
     }
 
-    /**
-     * Get the RGB color (without alpha) for level display.
-     * Useful for systems that don't use ARGB format.
-     *
-     * @param player The player viewing the entity
-     * @param entity The entity being viewed
-     * @return RGB color value
-     */
     public static int getLevelColorRGB(Player player, LivingEntity entity) {
         return getLevelColor(player, entity) & 0x00FFFFFF; // Strip alpha channel
     }
@@ -135,39 +114,50 @@ public class LevelPlateHandler {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer clientPlayer = minecraft.player;
 
-        // Early exit checks (cheap operations first)
-        if (clientPlayer == null) return false;
-        if (!Minecraft.renderNames()) return false;
-        if (entity.isVehicle()) return false;
-        if (entity == minecraft.getCameraEntity()) return false;
-        if (entity.isInvisibleTo(clientPlayer)) return false;
-
-        // Check distance before expensive line of sight check
-        double maxDistSq = Configs.CLIENT.renderDistance.get() * Configs.CLIENT.renderDistance.get();
-        if (entity.distanceToSqr(clientPlayer) > maxDistSq) {
-            return false;
-        }
+        if (!passesCheapGuards(entity, clientPlayer, minecraft)) return false;
+        if (!isWithinRenderDistance(entity, clientPlayer)) return false;
 
         ConfigClient.RenderBehavior behavior = Configs.CLIENT.renderBehavior.get();
         if (behavior == ConfigClient.RenderBehavior.NEVER) {
             return false;
         }
 
-        // Check if level should be shown before expensive operations
+        if (!passesLevelAndHiddenFilters(entity)) return false;
+        if (!hasLineOfSight(clientPlayer, entity)) return false;
+
+        return matchesRenderBehavior(behavior, minecraft, entity);
+    }
+
+    private static boolean passesCheapGuards(LivingEntity entity, LocalPlayer clientPlayer, Minecraft minecraft) {
+        if (clientPlayer == null) return false;
+        if (!Minecraft.renderNames()) return false;
+        if (entity.isVehicle()) return false;
+        if (entity == minecraft.getCameraEntity()) return false;
+        if (entity.isInvisibleTo(clientPlayer)) return false;
+        return true;
+    }
+
+    private static boolean isWithinRenderDistance(LivingEntity entity, LocalPlayer clientPlayer) {
+        double maxDistSq = Configs.CLIENT.renderDistance.get() * Configs.CLIENT.renderDistance.get();
+        return entity.distanceToSqr(clientPlayer) <= maxDistSq;
+    }
+
+    private static boolean passesLevelAndHiddenFilters(LivingEntity entity) {
         if (!LevelingAPI.shouldShowLevel(entity)) return false;
 
         String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
         if (Configs.CLIENT.hiddenLevelEntities.get().contains(entityId)) return false;
+        return true;
+    }
 
-        // Line of sight check - expensive raycast, but only done after all cheap checks pass
-        // Can be disabled via config for better performance
+    private static boolean hasLineOfSight(LocalPlayer clientPlayer, LivingEntity entity) {
         if (Configs.CLIENT.enableLineOfSightCheck.get()) {
-            if (!clientPlayer.hasLineOfSight(entity)) {
-                return false;
-            }
+            return clientPlayer.hasLineOfSight(entity);
         }
+        return true;
+    }
 
-        // Final behavior checks
+    private static boolean matchesRenderBehavior(ConfigClient.RenderBehavior behavior, Minecraft minecraft, LivingEntity entity) {
         switch (behavior) {
             case NEVER:
                 return false;

@@ -12,15 +12,11 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Resolved dimension leveling settings. All fields have values (no nulls for primitive-like fields).
- * Created by resolving RawDimensionSettings with config defaults.
- */
 public record DimensionLevelingSettings(
         int startingLevel,
         int maxLevel,
         float levelsPerDistance,
-        float levelsPerDeepness,
+        float levelsPerDepth,
         float levelsPerHeight,
         float levelsPerDay,
         float levelsPerLocalDifficulty,
@@ -32,9 +28,6 @@ public record DimensionLevelingSettings(
         @Nullable ApplyLevelBonuses applyLevelBonuses)
         implements LevelingSettings {
 
-    /**
-     * Raw settings as parsed from JSON. All fields are Optional to support "omit = use config default".
-     */
     public record RawSettings(
             Optional<Integer> startingLevel,
             Optional<Integer> maxLevel,
@@ -50,9 +43,6 @@ public record DimensionLevelingSettings(
             Optional<Double> playerLevelMultiplier,
             Optional<ApplyLevelBonuses> applyLevelBonuses
     ) {
-        /**
-         * Resolve raw settings into final settings, using config defaults for any omitted fields.
-         */
         public DimensionLevelingSettings resolve() {
             return new DimensionLevelingSettings(
                     startingLevel.orElseGet(() -> Configs.SYNC.startingLevel.get()),
@@ -72,12 +62,6 @@ public record DimensionLevelingSettings(
         }
     }
 
-    // === Codecs ===
-
-    /**
-     * Controls which level bonuses are applied (biome, structure, player).
-     * If null, all bonuses are applied based on config settings.
-     */
     public record ApplyLevelBonuses(
             boolean biome,
             boolean structure,
@@ -100,9 +84,6 @@ public record DimensionLevelingSettings(
     private static final Codec<Map<Attribute, AttributeModifier>> ATTRIBUTE_MODIFIERS_CODEC =
             AttributeModifierCodecs.mapCodec("dimension_leveling_bonus_");
 
-    /**
-     * Codec for parsing raw settings from JSON. ALL fields are optional.
-     */
     public static final Codec<RawSettings> RAW_CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.optionalFieldOf("starting_level").forGetter(RawSettings::startingLevel),
             Codec.INT.optionalFieldOf("max_level").forGetter(RawSettings::maxLevel),
@@ -130,7 +111,7 @@ public record DimensionLevelingSettings(
                     Optional.of(settings.startingLevel()),
                     Optional.of(settings.maxLevel()),
                     Optional.of(settings.levelsPerDistance()),
-                    Optional.of(settings.levelsPerDeepness()),
+                    Optional.of(settings.levelsPerDepth()),
                     Optional.of(settings.levelsPerHeight()),
                     Optional.of(settings.levelsPerDay()),
                     Optional.of(settings.levelsPerLocalDifficulty()),
@@ -143,9 +124,6 @@ public record DimensionLevelingSettings(
             )
     );
 
-    /**
-     * Creates default settings entirely from config values.
-     */
     public static DimensionLevelingSettings createDefault() {
         return new DimensionLevelingSettings(
                 Configs.SYNC.startingLevel.get(),

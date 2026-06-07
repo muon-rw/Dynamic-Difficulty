@@ -10,15 +10,11 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Resolved entity leveling settings. All fields have values.
- * Created by resolving RawSettings with dimension settings as fallback.
- */
 public record EntityLevelingSettings(
     int startingLevel,
     int maxLevel,
     float levelsPerDistance,
-    float levelsPerDeepness,
+    float levelsPerDepth,
     float levelsPerHeight,
     float levelsPerDay,
     float levelsPerLocalDifficulty,
@@ -29,7 +25,7 @@ public record EntityLevelingSettings(
     implements LevelingSettings {
 
   /**
-   * Raw settings as parsed from JSON. All fields are Optional to support "omit = use dimension default".
+   * Optional fields: omit = use dimension default.
    */
   public record RawSettings(
       Optional<Integer> startingLevel,
@@ -44,36 +40,26 @@ public record EntityLevelingSettings(
       Optional<Double> playerLevelMultiplier,
       Optional<DimensionLevelingSettings.ApplyLevelBonuses> applyLevelBonuses
   ) {
-    /**
-     * Resolve raw settings into final settings, using the prior chain tier as fallback.
-     * Prior is typically a {@link DimensionLevelingSettings}, possibly chained through
-     * {@link LocationLevelingSettings} for biome/structure overrides.
-     */
-    public EntityLevelingSettings resolve(LevelingSettings prior) {
+    public EntityLevelingSettings resolve(LevelingSettings fallback) {
       return new EntityLevelingSettings(
-          startingLevel.orElse(prior.startingLevel()),
-          maxLevel.orElse(prior.maxLevel()),
-          levelsPerDistance.orElse(prior.levelsPerDistance()),
-          levelsPerDeepness.orElse(prior.levelsPerDeepness()),
-          levelsPerHeight.orElse(prior.levelsPerHeight()),
-          levelsPerDay.orElse(prior.levelsPerDay()),
-          levelsPerLocalDifficulty.orElse(prior.levelsPerLocalDifficulty()),
-          randomLevelBonus.orElse(prior.randomLevelBonus()),
-          attributeModifiers.orElse(prior.attributeModifiers()),
-          playerLevelMultiplier.orElse(prior.playerLevelMultiplier()),
-          applyLevelBonuses.orElse(prior.applyLevelBonuses())
+          startingLevel.orElse(fallback.startingLevel()),
+          maxLevel.orElse(fallback.maxLevel()),
+          levelsPerDistance.orElse(fallback.levelsPerDistance()),
+          levelsPerDeepness.orElse(fallback.levelsPerDepth()),
+          levelsPerHeight.orElse(fallback.levelsPerHeight()),
+          levelsPerDay.orElse(fallback.levelsPerDay()),
+          levelsPerLocalDifficulty.orElse(fallback.levelsPerLocalDifficulty()),
+          randomLevelBonus.orElse(fallback.randomLevelBonus()),
+          attributeModifiers.orElse(fallback.attributeModifiers()),
+          playerLevelMultiplier.orElse(fallback.playerLevelMultiplier()),
+          applyLevelBonuses.orElse(fallback.applyLevelBonuses())
       );
     }
   }
 
-  // === Codecs ===
-
   private static final Codec<Map<Attribute, AttributeModifier>> ATTRIBUTE_MODIFIERS_CODEC =
       AttributeModifierCodecs.mapCodec("entity_leveling_bonus_");
 
-  /**
-   * Codec for parsing raw settings from JSON. ALL fields are optional.
-   */
   public static final Codec<RawSettings> RAW_CODEC = RecordCodecBuilder.create(instance -> instance.group(
       Codec.INT.optionalFieldOf("starting_level").forGetter(RawSettings::startingLevel),
       Codec.INT.optionalFieldOf("max_level").forGetter(RawSettings::maxLevel),

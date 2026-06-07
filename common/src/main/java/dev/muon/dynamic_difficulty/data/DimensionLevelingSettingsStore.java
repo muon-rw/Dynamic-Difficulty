@@ -16,11 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Storage and lookup for dimension leveling settings.
- * Platform-specific reloaders populate this via loadSettings/loadTagSettings.
- */
-public class DimensionsLevelingSettingsReloader {
+public class DimensionLevelingSettingsStore {
   private static final Logger LOGGER = LogUtils.getLogger();
   private static final Map<Identifier, DimensionLevelingSettings> INDIVIDUAL_SETTINGS = new HashMap<>();
   private static final Map<TagKey<Level>, DimensionLevelingSettings> TAG_SETTINGS = new HashMap<>();
@@ -53,9 +49,6 @@ public class DimensionsLevelingSettingsReloader {
     return DimensionLevelingSettings.createDefault();
   }
 
-  /**
-   * Checks if a dimension has custom leveling settings (either individual or tag-based).
-   */
   public static boolean hasCustomSettings(ResourceKey<Level> dimension, Registry<Level> dimensionRegistry) {
     if (INDIVIDUAL_SETTINGS.containsKey(dimension.identifier())) {
       return true;
@@ -79,18 +72,12 @@ public class DimensionsLevelingSettingsReloader {
     return false;
   }
 
-  /**
-   * Load individual dimension settings. Called by platform-specific reloaders.
-   */
   public static void loadSettings(Map<Identifier, DimensionLevelingSettings> settings) {
     INDIVIDUAL_SETTINGS.clear();
     INDIVIDUAL_SETTINGS.putAll(settings);
     LOGGER.info("Loaded {} individual dimension leveling settings from 'leveling_settings/dimensions'", INDIVIDUAL_SETTINGS.size());
   }
 
-  /**
-   * Load tag-based dimension settings. Called by platform-specific reloaders.
-   */
   public static void loadTagSettings(Map<Identifier, DimensionLevelingSettings> tagSettings) {
     TAG_SETTINGS.clear();
     tagSettings.forEach((id, settings) -> TAG_SETTINGS.put(TagKey.create(Registries.DIMENSION, id), settings));

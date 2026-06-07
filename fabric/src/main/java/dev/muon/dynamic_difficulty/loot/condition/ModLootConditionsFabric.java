@@ -16,7 +16,6 @@ public class ModLootConditionsFabric {
     );
 
     public static void init() {
-        // Populate common registry reference
         ModLootConditions.ENTITY_LEVEL = ENTITY_LEVEL;
     }
 }

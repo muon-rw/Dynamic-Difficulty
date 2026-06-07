@@ -16,44 +16,30 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface LevelingSettings {
 
-  /**
-   * Returns the base level before any scaling is applied.
-   */
   int startingLevel();
 
   /**
-   * Returns the maximum level cap. Levels above this are capped (unless bypassed).
-   * A value of 0 means unlimited.
+   * A value of 0 means unlimited; levels above the cap are capped unless bypassed.
    */
   int maxLevel();
 
-  /**
-   * Returns the levels added per block of horizontal distance from spawn.
-   */
   float levelsPerDistance();
 
-  /**
-   * Returns the levels added per block below sea level (depth-based scaling).
-   */
-  float levelsPerDeepness();
+  float levelsPerDepth();
 
   /**
-   * Returns the levels added per block above sea level (height-based scaling).
+   * Above sea level.
    */
   float levelsPerHeight();
 
-  /**
-   * Returns the levels added per in-game day passed.
-   */
   float levelsPerDay();
 
   /**
-   * Returns the levels added per point of local difficulty (0.0 to 6.75).
+   * Range 0.0 to 6.75.
    */
   float levelsPerLocalDifficulty();
 
   /**
-   * Returns the maximum random bonus levels added to each entity.
    * Actual bonus is random from 0 to this value.
    */
   int randomLevelBonus();

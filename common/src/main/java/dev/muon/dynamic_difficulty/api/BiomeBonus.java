@@ -14,7 +14,6 @@ public record BiomeBonus(
     int nonBypassingBonus,
     int bypassingBonus
 ) {
-    /** Empty result for when there's no biome bonus configured */
     public static final BiomeBonus EMPTY = new BiomeBonus(null, 0, 0);
     
     public int totalBonus() {

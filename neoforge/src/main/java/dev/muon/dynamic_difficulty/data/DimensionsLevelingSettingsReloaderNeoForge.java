@@ -56,6 +56,6 @@ public class DimensionsLevelingSettingsReloaderNeoForge extends ContextAwareRelo
                     .result()
                     .ifPresent(pair -> settings.put(entry.getKey(), pair.getFirst()));
         }
-        DimensionsLevelingSettingsReloader.loadSettings(settings);
+        DimensionLevelingSettingsStore.loadSettings(settings);
     }
 }

@@ -51,7 +51,6 @@ public class ModItemsFabric {
     );
     
     public static void init() {
-        // Populate common registry references
         ModItems.POTION_OF_GROWTH = POTION_OF_GROWTH;
         ModItems.ELIXIR_OF_NURTURING = ELIXIR_OF_NURTURING;
         ModItems.DRAUGHT_OF_ASCENSION = DRAUGHT_OF_ASCENSION;

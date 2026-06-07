@@ -1,7 +1,7 @@
 package dev.muon.dynamic_difficulty.network;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
-import dev.muon.dynamic_difficulty.network.message.LocationEntryPacket;
+import dev.muon.dynamic_difficulty.network.message.LocationEntry;
 import dev.muon.dynamic_difficulty.network.message.SyncLevelingData;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -9,9 +9,6 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
-/**
- * NeoForge packet registration.
- */
 @EventBusSubscriber(modid = DynamicDifficulty.MODID)
 public class NetworkRegistration {
 
@@ -27,8 +24,8 @@ public class NetworkRegistration {
         );
         
         registrar.playToClient(
-                LocationEntryPacket.TYPE,
-                LocationEntryPacket.CODEC,
+                LocationEntry.TYPE,
+                LocationEntry.CODEC,
                 NetworkRegistration::handleLocationEntry
         );
 
@@ -42,10 +39,10 @@ public class NetworkRegistration {
         });
     }
     
-    private static void handleLocationEntry(final LocationEntryPacket msg, final IPayloadContext context) {
+    private static void handleLocationEntry(final LocationEntry msg, final IPayloadContext context) {
         context.enqueueWork(() -> {
             if (context.flow().isClientbound()) {
-                LocationEntryPacket.handleOnClient(msg);
+                LocationEntry.handleOnClient(msg);
             }
         });
     }

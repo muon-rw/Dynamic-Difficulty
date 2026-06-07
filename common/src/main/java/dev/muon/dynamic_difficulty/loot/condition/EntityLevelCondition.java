@@ -13,9 +13,6 @@ import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import java.util.Optional;
 
 /**
- * Loot condition that checks if an entity's level is within a specified range.
- * This allows datapack creators and modpack makers to create level-gated loot drops.
- *
  * Example JSON:
  * {
  *   "condition": "dynamic_difficulty:entity_level",
@@ -52,12 +49,10 @@ public record EntityLevelCondition(Optional<Integer> min, Optional<Integer> max,
 
         int entityLevel = LevelingAPI.getLevel(living);
 
-        // Check exact level if specified
         if (exact.isPresent()) {
             return entityLevel == exact.get();
         }
 
-        // Check min/max range
         if (min.isPresent() && entityLevel < min.get()) {
             return false;
         }
@@ -69,9 +64,6 @@ public record EntityLevelCondition(Optional<Integer> min, Optional<Integer> max,
         return true;
     }
 
-    /**
-     * Builder for creating EntityLevelCondition instances programmatically
-     */
     public static class Builder implements LootItemCondition.Builder {
         private Optional<Integer> min = Optional.empty();
         private Optional<Integer> max = Optional.empty();
@@ -104,9 +96,6 @@ public record EntityLevelCondition(Optional<Integer> min, Optional<Integer> max,
         }
     }
 
-    /**
-     * Creates a new builder for this condition
-     */
     public static Builder builder() {
         return new Builder();
     }

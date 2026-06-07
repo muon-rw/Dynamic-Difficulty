@@ -11,7 +11,7 @@ import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
 import dev.muon.dynamic_difficulty.api.StructureBonus;
 import dev.muon.dynamic_difficulty.config.Configs;
-import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
+import dev.muon.dynamic_difficulty.data.DimensionLevelingSettingsStore;
 import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
 import dev.muon.dynamic_difficulty.settings.LevelingSettings;
 import dev.muon.dynamic_difficulty.settings.LocationLevelingSettings;
@@ -40,17 +40,9 @@ import net.minecraft.world.level.levelgen.structure.Structure;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Common command registration logic.
- * Platform-specific code should call {@link #register(CommandDispatcher)}.
- */
 public class ModCommands {
-  
-  /**
-   * Registers all mod commands. Called from platform-specific event handlers.
-   */
+
   public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-    // Level add command
     LiteralArgumentBuilder<CommandSourceStack> addLevelCommand =
         Commands.literal("dynamic_difficulty")
             .then(
@@ -64,8 +56,7 @@ public class ModCommands {
                                             .executes(ModCommands::executeAddLevelCommand)))))
             .requires(ModCommands::hasPermission);
     dispatcher.register(addLevelCommand);
-    
-    // Level set command
+
     LiteralArgumentBuilder<CommandSourceStack> setLevelCommand =
         Commands.literal("dynamic_difficulty")
             .then(
@@ -79,8 +70,7 @@ public class ModCommands {
                                             .executes(ModCommands::executeSetLevelCommand)))))
             .requires(ModCommands::hasPermission);
     dispatcher.register(setLevelCommand);
-    
-    // Level get command
+
     LiteralArgumentBuilder<CommandSourceStack> getLevelCommand =
         Commands.literal("dynamic_difficulty")
             .then(
@@ -92,8 +82,7 @@ public class ModCommands {
                                     .executes(ModCommands::executeGetLevelCommand))))
             .requires(ModCommands::hasPermission);
     dispatcher.register(getLevelCommand);
-    
-    // Dump structures command
+
     LiteralArgumentBuilder<CommandSourceStack> dumpStructuresCommand =
         Commands.literal("dynamic_difficulty")
             .then(
@@ -101,8 +90,7 @@ public class ModCommands {
                     .executes(ModCommands::executeDumpStructuresCommand))
             .requires(ModCommands::hasPermission);
     dispatcher.register(dumpStructuresCommand);
-    
-    // Debug location command
+
     LiteralArgumentBuilder<CommandSourceStack> debugLocationCommand =
         Commands.literal("dynamic_difficulty")
             .then(
@@ -226,7 +214,6 @@ public class ModCommands {
     try {
       Registry<Structure> structureRegistry = server.registryAccess().lookupOrThrow(Registries.STRUCTURE);
       
-      // Get all structure IDs from target namespaces
       Set<Identifier> allStructureIdsInTargetNamespaces = structureRegistry.keySet().stream()
           .filter(id -> TARGET_NAMESPACES.contains(id.getNamespace()))
           .collect(Collectors.toSet());
@@ -265,7 +252,6 @@ public class ModCommands {
             }
         }
       
-      // Dump uncategorized structures
       DynamicDifficulty.LOGGER.info("--- Uncategorized Structures (from target namespaces) ---");
       List<Identifier> uncategorizedStructures = allStructureIdsInTargetNamespaces.stream()
           .filter(id -> !categorizedStructureIds.contains(id))
@@ -278,7 +264,6 @@ public class ModCommands {
         uncategorizedStructures.forEach(id -> DynamicDifficulty.LOGGER.info(id.toString()));
       }
       
-      // Also dump all structure tags that exist
       DynamicDifficulty.LOGGER.info("--- All Available Structure Tags ---");
         structureRegistry.getTags()
                 .map(HolderSet.Named::key)
@@ -304,31 +289,90 @@ public class ModCommands {
   
   private static int executeDebugLocationCommand(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
     CommandSourceStack source = context.getSource();
-    
+
     if (!(source.getEntity() instanceof ServerPlayer player)) {
       source.sendFailure(Component.literal("This command can only be executed by a player"));
       return 0;
     }
-    
+
     ServerLevel level = player.level();
     BlockPos pos = player.blockPosition();
 
-    // Get dimension and chain-resolved settings (dim → biome → structure)
+    ResolvedSettings resolved = resolveSettings(level, pos);
+    BaseLevel base = computeBaseLevel(level, pos, resolved);
+    PlayerBonus player2 = computePlayerBonus(player, resolved);
+    FinalRanges ranges = computeFinalRanges(resolved, base, player2);
+
+    sendDebugReport(source, level, pos, resolved, base, player2, ranges);
+    return 1;
+  }
+
+  private record ResolvedSettings(
+      Identifier dimensionId,
+      DimensionLevelingSettings dimSettings,
+      LevelingSettings settings,
+      LocationLevelingSettings.RawSettings biomeRaw,
+      LocationLevelingSettings.RawSettings structureRaw,
+      BiomeBonus biomeBonus,
+      StructureBonus structureBonus,
+      Double playerMultiplierOverride,
+      double playerMultiplier,
+      DimensionLevelingSettings.ApplyLevelBonuses applyBonusesOverride,
+      boolean applyBiome,
+      boolean applyStructure,
+      boolean applyPlayer) {}
+
+  private static ResolvedSettings resolveSettings(ServerLevel level, BlockPos pos) {
     ResourceKey<Level> dimension = level.dimension();
     Identifier dimensionId = dimension.identifier();
     Registry<Level> dimensionRegistry = level.registryAccess().lookupOrThrow(Registries.DIMENSION);
-    DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension, dimensionRegistry);
+    DimensionLevelingSettings dimSettings = DimensionLevelingSettingsStore.get(dimension, dimensionRegistry);
     LevelingSettings settings = LocationBonusUtils.resolveLocationSettings(level, pos);
 
-    // Look up the per-location override settings for diagnostic display
     LocationLevelingSettings.RawSettings biomeRaw = LocationBonusUtils.getBiomeSettingsAt(level, pos);
     LocationLevelingSettings.RawSettings structureRaw = LocationBonusUtils.getStructureSettingsAt(level, pos);
+
+    BiomeBonus biomeBonus = LevelingAPI.getBiomeBonus(level, pos);
+    StructureBonus structureBonus = LevelingAPI.getStructureBonus(level, pos);
+
+    Double playerMultiplierOverride = settings.playerLevelMultiplier();
+    double playerMultiplier = playerMultiplierOverride != null ? playerMultiplierOverride : Configs.SYNC.playerLevelMultiplier.get();
+
+    DimensionLevelingSettings.ApplyLevelBonuses applyBonusesOverride = settings.applyLevelBonuses();
+    boolean applyBiome = applyBonusesOverride == null || applyBonusesOverride.biome();
+    boolean applyStructure = applyBonusesOverride == null || applyBonusesOverride.structure();
+    boolean applyPlayer = applyBonusesOverride == null || applyBonusesOverride.player();
+
+    return new ResolvedSettings(dimensionId, dimSettings, settings, biomeRaw, structureRaw, biomeBonus, structureBonus,
+        playerMultiplierOverride, playerMultiplier, applyBonusesOverride, applyBiome, applyStructure, applyPlayer);
+  }
+
+  private record BaseLevel(
+      BlockPos spawnPos,
+      double distance,
+      int distanceBonus,
+      int seaLevel,
+      int depthBonus,
+      int heightBonus,
+      int depthBlocks,
+      int heightBlocks,
+      long days,
+      int dayBonus,
+      float effectiveDifficulty,
+      int localDifficultyBonus,
+      int startingLevel,
+      int baseLevel,
+      int maxLevel,
+      String maxLevelStr) {}
+
+  private static BaseLevel computeBaseLevel(ServerLevel level, BlockPos pos, ResolvedSettings resolved) {
+    LevelingSettings settings = resolved.settings();
+    DimensionLevelingSettings dimSettings = resolved.dimSettings();
 
     BlockPos spawnPos = LevelingUtils.getEffectiveSpawnPos(level, dimSettings);
     double distance = LevelingUtils.horizontalDistance(spawnPos, pos);
     int distanceBonus = (int)(distance * settings.levelsPerDistance());
 
-    // Calculate depth/height (sea level is dimension-only)
     int seaLevel = dimSettings.seaLevel();
     int depthBonus = 0;
     int heightBonus = 0;
@@ -336,8 +380,8 @@ public class ModCommands {
     int heightBlocks = 0;
     if (pos.getY() < seaLevel) {
       depthBlocks = seaLevel - pos.getY();
-      if (settings.levelsPerDeepness() > 0) {
-        depthBonus = (int) (depthBlocks * settings.levelsPerDeepness());
+      if (settings.levelsPerDepth() > 0) {
+        depthBonus = (int) (depthBlocks * settings.levelsPerDepth());
       }
     }
     if (pos.getY() > seaLevel) {
@@ -359,72 +403,84 @@ public class ModCommands {
     int maxLevel = settings.maxLevel();
     String maxLevelStr = maxLevel > 0 ? String.valueOf(maxLevel) : "unlimited";
 
-    // Get bonuses
-    BiomeBonus biomeBonus = LevelingAPI.getBiomeBonus(level, pos);
-    StructureBonus structureBonus = LevelingAPI.getStructureBonus(level, pos);
+    return new BaseLevel(spawnPos, distance, distanceBonus, seaLevel, depthBonus, heightBonus, depthBlocks, heightBlocks,
+        days, dayBonus, effectiveDifficulty, localDifficultyBonus, startingLevel, baseLevel, maxLevel, maxLevelStr);
+  }
 
-    // Resolved player multiplier and apply-bonuses (chain: entity not relevant here, so dim → biome → structure)
-    Double playerMultiplierOverride = settings.playerLevelMultiplier();
-    double playerMultiplier = playerMultiplierOverride != null ? playerMultiplierOverride : Configs.SYNC.playerLevelMultiplier.get();
+  private record PlayerBonus(int playerBonus, boolean playerBypassesCap) {}
 
-    DimensionLevelingSettings.ApplyLevelBonuses applyBonusesOverride = settings.applyLevelBonuses();
-    boolean applyBiome = applyBonusesOverride == null || applyBonusesOverride.biome();
-    boolean applyStructure = applyBonusesOverride == null || applyBonusesOverride.structure();
-    boolean applyPlayer = applyBonusesOverride == null || applyBonusesOverride.player();
-    
-    // Player bonus
+  private static PlayerBonus computePlayerBonus(ServerPlayer player, ResolvedSettings resolved) {
     int playerBonus = 0;
     boolean playerBypassesCap = Configs.SYNC.playerLevelBypassesCap.get();
-    if (Configs.SYNC.applyPlayerBasedLeveling.get() && applyPlayer) {
+    if (Configs.SYNC.applyPlayerBasedLeveling.get() && resolved.applyPlayer()) {
       int rawBonus = PlayerLevelProvider.getProviders().stream()
           .filter(PlayerLevelProvider::isEnabled)
           .mapToInt(provider -> provider.calculateBonusLevels(List.of(player)))
           .sum();
-      playerBonus = (int) (rawBonus * playerMultiplier);
+      playerBonus = (int) (rawBonus * resolved.playerMultiplier());
     }
-    
-    // Calculate totals - player bonus goes to capped or bypassing based on config
-    // Apply apply_level_bonuses overrides
-    int structureNonBypassing = applyStructure ? structureBonus.nonBypassingBonus() : 0;
-    int structureBypassing = applyStructure ? structureBonus.bypassingBonus() : 0;
-    int biomeNonBypassing = applyBiome ? biomeBonus.nonBypassingBonus() : 0;
-    int biomeBypassing = applyBiome ? biomeBonus.bypassingBonus() : 0;
-    
-    int totalCapped = structureNonBypassing + biomeNonBypassing + (playerBypassesCap ? 0 : playerBonus);
-    int totalBypassing = structureBypassing + biomeBypassing + (playerBypassesCap ? playerBonus : 0);
-    int randomBonus = settings.randomLevelBonus();
-    
-    // Final level calculation with ranges (random is applied before cap)
-    int baseLow = baseLevel;
-    int baseHigh = baseLevel + randomBonus;
-    
+    return new PlayerBonus(playerBonus, playerBypassesCap);
+  }
+
+  private record FinalRanges(
+      int totalCapped,
+      int totalBypassing,
+      int randomBonus,
+      int baseLow,
+      int baseHigh,
+      int cappedLow,
+      int cappedHigh,
+      int finalLow,
+      int finalHigh) {}
+
+  private static FinalRanges computeFinalRanges(ResolvedSettings resolved, BaseLevel base, PlayerBonus player) {
+    int structureNonBypassing = resolved.applyStructure() ? resolved.structureBonus().nonBypassingBonus() : 0;
+    int structureBypassing = resolved.applyStructure() ? resolved.structureBonus().bypassingBonus() : 0;
+    int biomeNonBypassing = resolved.applyBiome() ? resolved.biomeBonus().nonBypassingBonus() : 0;
+    int biomeBypassing = resolved.applyBiome() ? resolved.biomeBonus().bypassingBonus() : 0;
+
+    int totalCapped = structureNonBypassing + biomeNonBypassing + (player.playerBypassesCap() ? 0 : player.playerBonus());
+    int totalBypassing = structureBypassing + biomeBypassing + (player.playerBypassesCap() ? player.playerBonus() : 0);
+    int randomBonus = resolved.settings().randomLevelBonus();
+
+    int baseLow = base.baseLevel();
+    int baseHigh = base.baseLevel() + randomBonus;
+
     int preCappedLow = baseLow + totalCapped;
     int preCappedHigh = baseHigh + totalCapped;
-    
+
+    int maxLevel = base.maxLevel();
     int cappedLow = maxLevel > 0 ? Math.min(preCappedLow, maxLevel) : preCappedLow;
     int cappedHigh = maxLevel > 0 ? Math.min(preCappedHigh, maxLevel) : preCappedHigh;
-    
+
     int finalLow = cappedLow + totalBypassing;
     int finalHigh = cappedHigh + totalBypassing;
-    
-    // === Output ===
+
+    return new FinalRanges(totalCapped, totalBypassing, randomBonus, baseLow, baseHigh, cappedLow, cappedHigh, finalLow, finalHigh);
+  }
+
+  private static void sendDebugReport(CommandSourceStack source, ServerLevel level, BlockPos pos,
+      ResolvedSettings resolved, BaseLevel base, PlayerBonus player, FinalRanges ranges) {
+    LevelingSettings settings = resolved.settings();
+    int seaLevel = base.seaLevel();
+    BlockPos spawnPos = base.spawnPos();
+
     source.sendSystemMessage(Component.literal("§6=== Dynamic Difficulty Debug ==="));
     source.sendSystemMessage(Component.literal("§7Position: §f" + pos.getX() + ", " + pos.getY() + ", " + pos.getZ()));
-    source.sendSystemMessage(Component.literal("§7Dimension: §f" + dimensionId +" §7(sea lvl: §f" + seaLevel + "§7, spawn: §f" + spawnPos.getX() + ", " + spawnPos.getZ() + "§7)"));
-    source.sendSystemMessage(Component.literal("§7Scaling: §f" + settings.levelsPerDistance() + "§7/dist, §f" + settings.levelsPerDeepness() + "§7/depth, §f" + settings.levelsPerHeight() + "§7/height, §f" + settings.levelsPerDay() + "§7/day, §f" + settings.levelsPerLocalDifficulty() + "§7/local, random: §f0-" + settings.randomLevelBonus()));
+    source.sendSystemMessage(Component.literal("§7Dimension: §f" + resolved.dimensionId() +" §7(sea lvl: §f" + seaLevel + "§7, spawn: §f" + spawnPos.getX() + ", " + spawnPos.getZ() + "§7)"));
+    source.sendSystemMessage(Component.literal("§7Scaling: §f" + settings.levelsPerDistance() + "§7/dist, §f" + settings.levelsPerDepth() + "§7/depth, §f" + settings.levelsPerHeight() + "§7/height, §f" + settings.levelsPerDay() + "§7/day, §f" + settings.levelsPerLocalDifficulty() + "§7/local, random: §f0-" + settings.randomLevelBonus()));
 
-    // Show overrides if present
-    String biomeOverridesDesc = biomeRaw != null ? describeOverrides(biomeRaw) : "";
-    String structureOverridesDesc = structureRaw != null ? describeOverrides(structureRaw) : "";
-    if (playerMultiplierOverride != null || applyBonusesOverride != null
+    String biomeOverridesDesc = resolved.biomeRaw() != null ? describeOverrides(resolved.biomeRaw()) : "";
+    String structureOverridesDesc = resolved.structureRaw() != null ? describeOverrides(resolved.structureRaw()) : "";
+    if (resolved.playerMultiplierOverride() != null || resolved.applyBonusesOverride() != null
             || !biomeOverridesDesc.isEmpty() || !structureOverridesDesc.isEmpty()) {
       source.sendSystemMessage(Component.literal(""));
       source.sendSystemMessage(Component.literal("§7Overrides:"));
-      if (playerMultiplierOverride != null) {
-        source.sendSystemMessage(Component.literal("§7  Player Multiplier: §f" + playerMultiplier));
+      if (resolved.playerMultiplierOverride() != null) {
+        source.sendSystemMessage(Component.literal("§7  Player Multiplier: §f" + resolved.playerMultiplier()));
       }
-      if (applyBonusesOverride != null) {
-        source.sendSystemMessage(Component.literal("§7  Apply Bonuses: §fbiome=" + applyBiome + ", structure=" + applyStructure + ", player=" + applyPlayer));
+      if (resolved.applyBonusesOverride() != null) {
+        source.sendSystemMessage(Component.literal("§7  Apply Bonuses: §fbiome=" + resolved.applyBiome() + ", structure=" + resolved.applyStructure() + ", player=" + resolved.applyPlayer()));
       }
       if (!biomeOverridesDesc.isEmpty()) {
         source.sendSystemMessage(Component.literal("§7  Biome overrides: §f" + biomeOverridesDesc));
@@ -434,63 +490,57 @@ public class ModCommands {
       }
     }
     source.sendSystemMessage(Component.literal(""));
-    
-    // Location line
-    String locationStr = (int)distance + " blocks from spawn";
+
+    String locationStr = (int)base.distance() + " blocks from spawn";
     if (pos.getY() < seaLevel) {
-      locationStr += ", " + depthBlocks + " below sea lvl";
+      locationStr += ", " + base.depthBlocks() + " below sea lvl";
     } else {
-      locationStr += ", " + heightBlocks + " above sea lvl";
+      locationStr += ", " + base.heightBlocks() + " above sea lvl";
     }
     source.sendSystemMessage(Component.literal("§7Location: §f" + locationStr));
-    
-    // Base calculation
+
     source.sendSystemMessage(Component.literal("§7Base Calculation:"));
-    source.sendSystemMessage(Component.literal("§7  Starting: §f" + startingLevel));
-    source.sendSystemMessage(Component.literal("§7  + Distance: §f" + distanceBonus + " §7(" + (int)distance + " × " + settings.levelsPerDistance() + ")"));
+    source.sendSystemMessage(Component.literal("§7  Starting: §f" + base.startingLevel()));
+    source.sendSystemMessage(Component.literal("§7  + Distance: §f" + base.distanceBonus() + " §7(" + (int)base.distance() + " × " + settings.levelsPerDistance() + ")"));
     if (pos.getY() < seaLevel) {
-      source.sendSystemMessage(Component.literal("§7  + Depth: §f" + depthBonus + " §7(" + depthBlocks + " × " + settings.levelsPerDeepness() + ")"));
+      source.sendSystemMessage(Component.literal("§7  + Depth: §f" + base.depthBonus() + " §7(" + base.depthBlocks() + " × " + settings.levelsPerDepth() + ")"));
     } else {
-      source.sendSystemMessage(Component.literal("§7  + Height: §f" + heightBonus + " §7(" + heightBlocks + " × " + settings.levelsPerHeight() + ")"));
+      source.sendSystemMessage(Component.literal("§7  + Height: §f" + base.heightBonus() + " §7(" + base.heightBlocks() + " × " + settings.levelsPerHeight() + ")"));
     }
-    source.sendSystemMessage(Component.literal("§7  + Days: §f" + dayBonus + " §7(" + days + " × " + settings.levelsPerDay() + ")"));
-    source.sendSystemMessage(Component.literal("§7  + Local: §f" + localDifficultyBonus + " §7(" + String.format("%.2f", effectiveDifficulty) + " × " + settings.levelsPerLocalDifficulty() + ")"));
-    String baseRangeStr = randomBonus > 0 ? baseLevel + " (+0-" + randomBonus + " random)" : String.valueOf(baseLevel);
-    source.sendSystemMessage(Component.literal("§7  = Base Level: §f" + baseRangeStr + " §7(max: " + maxLevelStr + ")"));
+    source.sendSystemMessage(Component.literal("§7  + Days: §f" + base.dayBonus() + " §7(" + base.days() + " × " + settings.levelsPerDay() + ")"));
+    source.sendSystemMessage(Component.literal("§7  + Local: §f" + base.localDifficultyBonus() + " §7(" + String.format("%.2f", base.effectiveDifficulty()) + " × " + settings.levelsPerLocalDifficulty() + ")"));
+    String baseRangeStr = ranges.randomBonus() > 0 ? base.baseLevel() + " (+0-" + ranges.randomBonus() + " random)" : String.valueOf(base.baseLevel());
+    source.sendSystemMessage(Component.literal("§7  = Base Level: §f" + baseRangeStr + " §7(max: " + base.maxLevelStr() + ")"));
     source.sendSystemMessage(Component.literal(""));
-    
-    // Biome line
+
+    BiomeBonus biomeBonus = resolved.biomeBonus();
     if (biomeBonus.biomeId() != null) {
-      String biomeBonusStr = applyBiome ? formatBonus(biomeBonus.nonBypassingBonus(), biomeBonus.bypassingBonus()) : "§cdisabled";
-      String biomeStatus = applyBiome ? "" : " §7(disabled by override)";
+      String biomeBonusStr = resolved.applyBiome() ? formatBonus(biomeBonus.nonBypassingBonus(), biomeBonus.bypassingBonus()) : "§cdisabled";
+      String biomeStatus = resolved.applyBiome() ? "" : " §7(disabled by override)";
       source.sendSystemMessage(Component.literal("§7Biome: §f" + biomeBonus.biomeId() + " §7→ " + biomeBonusStr + biomeStatus));
     } else {
       source.sendSystemMessage(Component.literal("§7Biome: §cunknown"));
     }
-    
-    // Structure line
+
+    StructureBonus structureBonus = resolved.structureBonus();
     if (structureBonus.hasStructure()) {
-      String structureBonusStr = applyStructure ? formatBonus(structureBonus.nonBypassingBonus(), structureBonus.bypassingBonus()) : "§cdisabled";
-      String structureStatus = applyStructure ? "" : " §7(disabled by override)";
+      String structureBonusStr = resolved.applyStructure() ? formatBonus(structureBonus.nonBypassingBonus(), structureBonus.bypassingBonus()) : "§cdisabled";
+      String structureStatus = resolved.applyStructure() ? "" : " §7(disabled by override)";
       source.sendSystemMessage(Component.literal("§7Structure: §f" + structureBonus.structureId() + " §7→ " + structureBonusStr + structureStatus));
     } else {
       source.sendSystemMessage(Component.literal("§7Structure: §fnone"));
     }
-    
-    // Player line
-    String playerCapBehavior = playerBypassesCap ? "bypasses cap" : "respects cap";
-    String playerStatus = applyPlayer ? "" : " §7(disabled by override)";
-    source.sendSystemMessage(Component.literal("§7Player: §f+" + playerBonus + " §7(" + playerCapBehavior + ")" + playerStatus));
+
+    String playerCapBehavior = player.playerBypassesCap() ? "bypasses cap" : "respects cap";
+    String playerStatus = resolved.applyPlayer() ? "" : " §7(disabled by override)";
+    source.sendSystemMessage(Component.literal("§7Player: §f+" + player.playerBonus() + " §7(" + playerCapBehavior + ")" + playerStatus));
     source.sendSystemMessage(Component.literal(""));
-    
-    // Final line with ranges
-    String baseStr = formatRange(baseLow, baseHigh);
-    String cappedStr = formatRange(cappedLow, cappedHigh);
-    String finalStr = formatRange(finalLow, finalHigh);
-    
-    source.sendSystemMessage(Component.literal("§7Final: §f" + baseStr + " base + " + totalCapped + " §7→(Cap:" + maxLevelStr + ")§7→ §f" + cappedStr + " §7+ §f" + totalBypassing + " §7= §f§l" + finalStr));
-    
-    return 1;
+
+    String baseStr = formatRange(ranges.baseLow(), ranges.baseHigh());
+    String cappedStr = formatRange(ranges.cappedLow(), ranges.cappedHigh());
+    String finalStr = formatRange(ranges.finalLow(), ranges.finalHigh());
+
+    source.sendSystemMessage(Component.literal("§7Final: §f" + baseStr + " base + " + ranges.totalCapped() + " §7→(Cap:" + base.maxLevelStr() + ")§7→ §f" + cappedStr + " §7+ §f" + ranges.totalBypassing() + " §7= §f§l" + finalStr));
   }
   
   private static String formatBonus(int nonBypassing, int bypassing) {
@@ -509,11 +559,7 @@ public class ModCommands {
     return low == high ? String.valueOf(low) : low + "-" + high;
   }
 
-  /**
-   * Renders a compact description of which override fields a {@link LocationLevelingSettings.RawSettings}
-   * has set. The {@code level_bonus}/{@code bypasses_cap} pair is omitted because the
-   * structure/biome bonus lines already display it.
-   */
+  /** Omits the level_bonus/bypasses_cap pair; the structure/biome lines already display it. */
   private static String describeOverrides(LocationLevelingSettings.RawSettings raw) {
     StringBuilder sb = new StringBuilder();
     raw.startingLevel().ifPresent(v -> appendField(sb, "starting_level", v));

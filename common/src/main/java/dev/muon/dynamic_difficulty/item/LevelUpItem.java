@@ -18,24 +18,14 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * An item that increases a mob's level when used on it.
- * Cannot be used on players (they use the PlayerLevelProvider system).
- * <p>
- * Max level is retrieved from config at runtime, allowing config changes without restart.
+ * Cannot be used on players; they use the PlayerLevelProvider system.
+ * Max level is read from config at runtime, so config changes apply without a restart.
  */
 public class LevelUpItem extends Item {
     private final int levelsToAdd;
     private final Supplier<Integer> maxLevelSupplier;
     private final boolean hasGlint;
 
-    /**
-     * Creates a level-up item.
-     *
-     * @param properties       Item properties
-     * @param levelsToAdd      How many levels to add per use
-     * @param maxLevelSupplier Supplier that provides the max level from config
-     * @param hasGlint         Whether this item should have an enchantment glint
-     */
     public LevelUpItem(Item.Properties properties, int levelsToAdd, Supplier<Integer> maxLevelSupplier, boolean hasGlint) {
         super(properties);
         this.levelsToAdd = levelsToAdd;
@@ -43,9 +33,6 @@ public class LevelUpItem extends Item {
         this.hasGlint = hasGlint;
     }
 
-    /**
-     * Gets the current max level for this item from config.
-     */
     private int getMaxLevel() {
         return maxLevelSupplier.get();
     }
@@ -58,7 +45,6 @@ public class LevelUpItem extends Item {
     @Override
     @NotNull
     public InteractionResult interactLivingEntity(@NotNull ItemStack stack, @NotNull Player player, @NotNull LivingEntity target, @NotNull InteractionHand hand) {
-        // Can't be used on players
         if (target instanceof Player) {
             if (!player.level().isClientSide()) {
                 player.sendOverlayMessage(
@@ -69,7 +55,6 @@ public class LevelUpItem extends Item {
             return InteractionResult.FAIL;
         }
 
-        // Check if entity can have levels
         if (!LevelingAPI.canHaveLevel(target)) {
             if (!player.level().isClientSide()) {
                 player.sendOverlayMessage(
@@ -84,7 +69,6 @@ public class LevelUpItem extends Item {
             int currentLevel = LevelingAPI.getLevel(target);
             int maxLevel = getMaxLevel();
 
-            // Check if already at or above max level for this item
             if (currentLevel >= maxLevel) {
                 player.sendOverlayMessage(
                         Component.translatable("item.dynamic_difficulty.level_up.max_level_reached", maxLevel)
@@ -93,27 +77,23 @@ public class LevelUpItem extends Item {
                 return InteractionResult.FAIL;
             }
 
-            // Add levels, but cap at maxLevel
             int newLevel = Math.min(currentLevel + levelsToAdd, maxLevel);
 
             try {
                 LevelingAPI.setAndUpdateLevel(target, newLevel);
 
-                // Success message
                 player.sendOverlayMessage(
                         Component.translatable("item.dynamic_difficulty.level_up.success",
                                         target.getDisplayName(), currentLevel, newLevel)
                                 .withStyle(ChatFormatting.GREEN)
                 );
 
-                // Consume item in survival mode
                 if (!player.isCreative()) {
                     stack.shrink(1);
                 }
 
                 return InteractionResult.SUCCESS;
             } catch (IllegalArgumentException e) {
-                // Shouldn't happen, but handle gracefully
                 player.sendOverlayMessage(
                         Component.literal(e.getMessage()).withStyle(ChatFormatting.RED)
                 );

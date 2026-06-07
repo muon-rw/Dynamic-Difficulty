@@ -10,15 +10,14 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Packet to notify clients when entering a location (structure, biome, dimension).
- * Platform-specific code handles registration and the handle() method adapter.
  */
-public class LocationEntryPacket implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<LocationEntryPacket> TYPE =
+public class LocationEntry implements CustomPacketPayload {
+    public static final CustomPacketPayload.Type<LocationEntry> TYPE =
             new CustomPacketPayload.Type<>(DynamicDifficulty.id("location_entry"));
 
-    public static final StreamCodec<FriendlyByteBuf, LocationEntryPacket> CODEC = CustomPacketPayload.codec(
-        LocationEntryPacket::write,
-        LocationEntryPacket::new
+    public static final StreamCodec<FriendlyByteBuf, LocationEntry> CODEC = CustomPacketPayload.codec(
+        LocationEntry::write,
+        LocationEntry::new
     );
 
     public enum EntryType {
@@ -41,9 +40,9 @@ public class LocationEntryPacket implements CustomPacketPayload {
     /** Effective max-level cap at this position (after biome/structure overrides). 0 = unlimited. */
     private final int maxLevel;
 
-    public LocationEntryPacket(EntryType entryType, @Nullable Identifier locationId,
-                                int nonBypassingBonus, int bypassingBonus,
-                                int baseLevel, int playerBonus, int displayedLevel, int maxLevel) {
+    public LocationEntry(EntryType entryType, @Nullable Identifier locationId,
+                         int nonBypassingBonus, int bypassingBonus,
+                         int baseLevel, int playerBonus, int displayedLevel, int maxLevel) {
         this.entryType = entryType;
         this.locationId = locationId;
         this.nonBypassingBonus = nonBypassingBonus;
@@ -68,7 +67,7 @@ public class LocationEntryPacket implements CustomPacketPayload {
         buf.writeInt(maxLevel);
     }
 
-    public LocationEntryPacket(FriendlyByteBuf buf) {
+    public LocationEntry(FriendlyByteBuf buf) {
         this.entryType = buf.readEnum(EntryType.class);
         if (buf.readBoolean()) {
             this.locationId = buf.readIdentifier();
@@ -83,23 +82,18 @@ public class LocationEntryPacket implements CustomPacketPayload {
         this.maxLevel = buf.readInt();
     }
 
-    /** Total bonus (sum of bypassing and non-bypassing). */
     public int totalBonus() {
         return nonBypassingBonus + bypassingBonus;
     }
 
     @Override
-    public CustomPacketPayload.Type<LocationEntryPacket> type() {
+    public CustomPacketPayload.Type<LocationEntry> type() {
         return TYPE;
     }
 
-    /**
-     * Client-side handling logic. Called by platform-specific packet handlers.
-     * Must only be called on the client side.
-     */
-    public static void handleOnClient(LocationEntryPacket msg) {
-        // Always process packets - level info should update even if locationBonus is 0
-        // (dimensions affect base level, not bonuses)
+    /** Must only be called on the client side. */
+    public static void handleOnClient(LocationEntry msg) {
+        // Process even when locationBonus is 0; dimensions affect base level, not bonuses.
         if (msg.locationId == null) {
             return;
         }

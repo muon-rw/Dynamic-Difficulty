@@ -20,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
  *       {@code dimension → biome → structure → entity} as overrides.</li>
  *   <li>An additive {@link #levelBonus()}/{@link #bypassesCap()} pair preserved from the legacy
  *       structure/biome bonus model. Applied on top of the resolved chain via the cap-bypass split
- *       in {@code LevelingSystem.createLevelForEntity()}.</li>
+ *       in {@code LevelingSystem.calculateLevelForEntity()}.</li>
  * </ul>
  *
  * <p>{@link #applyLevelBonuses()} is exposed for {@link LevelingSettings} compatibility but is a
@@ -30,7 +30,7 @@ public record LocationLevelingSettings(
         int startingLevel,
         int maxLevel,
         float levelsPerDistance,
-        float levelsPerDeepness,
+        float levelsPerDepth,
         float levelsPerHeight,
         float levelsPerDay,
         float levelsPerLocalDifficulty,
@@ -71,7 +71,7 @@ public record LocationLevelingSettings(
                     startingLevel.orElse(prior.startingLevel()),
                     maxLevel.orElse(prior.maxLevel()),
                     levelsPerDistance.orElse(prior.levelsPerDistance()),
-                    levelsPerDeepness.orElse(prior.levelsPerDeepness()),
+                    levelsPerDeepness.orElse(prior.levelsPerDepth()),
                     levelsPerHeight.orElse(prior.levelsPerHeight()),
                     levelsPerDay.orElse(prior.levelsPerDay()),
                     levelsPerLocalDifficulty.orElse(prior.levelsPerLocalDifficulty()),
@@ -131,8 +131,6 @@ public record LocationLevelingSettings(
                 (existing, incoming) -> existing.amount() >= incoming.amount() ? existing : incoming));
         return Optional.of(merged);
     }
-
-    // === Codecs ===
 
     private static final Codec<Map<Attribute, AttributeModifier>> ATTRIBUTE_MODIFIERS_CODEC =
             AttributeModifierCodecs.mapCodec("location_leveling_bonus_");

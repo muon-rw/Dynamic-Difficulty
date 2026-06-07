@@ -59,7 +59,6 @@ public class ModAttributesNeoForge {
     }
     
     public static void init() {
-        // Populate common registry references (DeferredHolder implements Holder)
         ModAttributes.PROJECTILE_DAMAGE_BONUS = PROJECTILE_DAMAGE_BONUS;
         ModAttributes.PROJECTILE_DAMAGE_MULTIPLIER = PROJECTILE_DAMAGE_MULTIPLIER;
         ModAttributes.EXPLOSION_DAMAGE_BONUS = EXPLOSION_DAMAGE_BONUS;

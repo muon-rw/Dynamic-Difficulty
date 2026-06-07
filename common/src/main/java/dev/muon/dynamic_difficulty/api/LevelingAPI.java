@@ -151,7 +151,7 @@ public class LevelingAPI {
      * @since 1.0.0
      */
     public static int calculateLevelForEntity(@NotNull LivingEntity entity) {
-        return LevelingSystem.createLevelForEntity(entity);
+        return LevelingSystem.calculateLevelForEntity(entity);
     }
 
     /**
@@ -271,7 +271,7 @@ public class LevelingAPI {
         int baseLevel = LevelingUtils.calculateBaseEntityLevel(level, pos);
         StructureBonus structureBonus = LocationBonusUtils.getStructureAt(level, pos, true);
         BiomeBonus biomeBonus = LocationBonusUtils.getBiomeAt(level, pos);
-        // Apply chain-resolved cap and bypass split (mirrors createLevelForEntity).
+        // Apply chain-resolved cap and bypass split (mirrors calculateLevelForEntity).
         return LevelingUtils.calculateDisplayedLevel(level, pos, baseLevel, structureBonus, biomeBonus);
     }
 

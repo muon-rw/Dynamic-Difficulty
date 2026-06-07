@@ -7,30 +7,15 @@ import net.minecraft.server.level.ServerPlayer;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * Helper class for calculating player display levels from registered providers.
- * 
- * Note: Player levels are used for both display (via this class) and mob scaling
- * (via PlayerLevelProvider.calculateBonusLevels()). The display strategy configured
- * here only affects what level is shown to players, not how mobs are scaled.
- */
 public class PlayerLevelCalculator {
-    
-    /**
-     * Calculates the display level for a player based on all enabled providers
-     * and the configured display strategy. This aggregated level is used for
-     * displaying above the player's head and color-coding mob difficulty.
-     *
-     * @param player The player to calculate the level for
-     * @return The calculated display level
-     */
+
     public static int calculatePlayerDisplayLevel(ServerPlayer player) {
         List<PlayerLevelProvider> enabledProviders = PlayerLevelProvider.getProviders().stream()
                 .filter(PlayerLevelProvider::isEnabled)
                 .toList();
         
         if (enabledProviders.isEmpty()) {
-            return 1; // Default level if no providers
+            return 1;
         }
         
         PlayerLevelDisplayStrategy strategy = Configs.SYNC.playerLevelDisplayStrategy.get();

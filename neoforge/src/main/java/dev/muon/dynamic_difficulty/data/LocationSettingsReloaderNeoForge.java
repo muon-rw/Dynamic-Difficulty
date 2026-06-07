@@ -16,11 +16,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
-/**
- * Shared base for the four neoforge reload listeners that load
- * {@link LocationLevelingSettings.RawSettings} from a directory under {@code data/<ns>/leveling_settings/}.
- * Concrete subclasses supply the codec, directory path, listener name, and the apply target.
- */
 abstract class LocationSettingsReloaderNeoForge extends ContextAwareReloadListener {
     private static final Gson GSON = new Gson();
 

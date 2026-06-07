@@ -43,7 +43,6 @@ public class MixinConfigPluginNeoForge implements IMixinConfigPlugin {
                     // Collect all mod IDs in the path after "compat" until the class name
                     for (int j = i + 1; j < parts.length - 1; j++) { // -1 to exclude the class name
                         String potentialModId = parts[j];
-                        // Skip excluded directories
                         if (!excludedDirectories.contains(potentialModId)) {
                             requiredMods.add(potentialModId);
                         }
@@ -70,7 +69,6 @@ public class MixinConfigPluginNeoForge implements IMixinConfigPlugin {
     }
 
     private String getSimpleMixinName(String mixinClassName) {
-        // Extract just the class name from the full package path
         String[] parts = mixinClassName.split("\\.");
         return parts[parts.length - 1];
     }

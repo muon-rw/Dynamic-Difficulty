@@ -2,7 +2,7 @@ package dev.muon.dynamic_difficulty.util;
 
 import dev.muon.dynamic_difficulty.api.BiomeBonus;
 import dev.muon.dynamic_difficulty.api.StructureBonus;
-import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
+import dev.muon.dynamic_difficulty.data.DimensionLevelingSettingsStore;
 import dev.muon.dynamic_difficulty.data.LocationLevelingSettingsStore;
 import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
 import dev.muon.dynamic_difficulty.settings.LevelingSettings;
@@ -26,16 +26,12 @@ import java.util.Optional;
 
 public final class LocationBonusUtils {
 
-    private LocationBonusUtils() {} // Utility class
+    private LocationBonusUtils() {}
 
     /**
-     * Finds the structure with the highest bonus at the given position.
-     *
-     * @param level The server level
-     * @param pos The block position
      * @param onlyWithBonuses If true, only returns structures whose settings include a non-zero bonus.
      *                        If false, returns any structure (for StructureCredits-like display).
-     * @return The structure bonus info (structureId may be null if no structure at position)
+     * @return structureId may be null if no structure at position.
      */
     public static StructureBonus getStructureAt(ServerLevel level, BlockPos pos, boolean onlyWithBonuses) {
         Registry<Structure> structureRegistry = level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
@@ -128,12 +124,7 @@ public final class LocationBonusUtils {
     }
 
     /**
-     * Gets biome bonus information at the given position.
-     * Minecraft caches biome lookups internally, so no additional caching needed.
-     *
-     * @param level The server level
-     * @param pos The block position
-     * @return The biome bonus info (biomeId may be null if lookup fails)
+     * @return biomeId may be null if lookup fails.
      */
     public static BiomeBonus getBiomeAt(ServerLevel level, BlockPos pos) {
         Registry<Biome> biomeRegistry = level.registryAccess().lookupOrThrow(Registries.BIOME);
@@ -185,7 +176,7 @@ public final class LocationBonusUtils {
      * spawn here?" queries that aren't tied to a specific entity.
      */
     public static LevelingSettings resolveLocationSettings(ServerLevel level, BlockPos pos) {
-        DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(level.dimension());
+        DimensionLevelingSettings dimSettings = DimensionLevelingSettingsStore.get(level.dimension());
         LevelingSettings result = dimSettings;
 
         LocationLevelingSettings.RawSettings biomeRaw = getBiomeSettingsAt(level, pos);

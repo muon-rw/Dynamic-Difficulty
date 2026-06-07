@@ -20,25 +20,28 @@ public class DynamicDifficultyClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        // Register client-side packet handlers
         NetworkRegistration.registerClient();
-        
-        registerEventCallbacks();
+
+        registerClientTick();
+        registerTitleHud();
+        registerEntityUnload();
+        registerDisconnect();
     }
 
-    private void registerEventCallbacks() {
-        // Client tick - title rendering and cache cleanup
+    private void registerClientTick() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             TitleRenderManager.getInstance().clientTick();
             if (client.player != null) {
                 TitleRenderManager.getInstance().playerTick(client.player);
             }
 
-            // Process pending sync data (for entities that weren't loaded when packet arrived)
+            // entities may not be loaded when their sync packet arrives
             SyncLevelingData.processPendingData();
         });
-        
-        // HUD rendering for titles. 26.1 uses HudElementRegistry + HudElement
+    }
+
+    private void registerTitleHud() {
+        // 26.1 HUD API: HudElementRegistry + HudElement
         HudElement titleHud = (guiGraphics, deltaTracker) -> {
             if (Minecraft.getInstance().player != null) {
                 TitleRenderManager.getInstance().renderTitles(
@@ -48,18 +51,20 @@ public class DynamicDifficultyClient implements ClientModInitializer {
             }
         };
         HudElementRegistry.addLast(DynamicDifficulty.id("titles"), titleHud);
-        
-        // Entity unload - clean up caches
+    }
+
+    private void registerEntityUnload() {
         ClientEntityEvents.ENTITY_UNLOAD.register((entity, world) -> {
             if (entity instanceof LivingEntity) {
                 SyncLevelingData.removePendingData(entity.getId());
             }
         });
-        
-        // Disconnect - clear all caches
+    }
+
+    private void registerDisconnect() {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             TitleRenderManager.getInstance().clearCache();
             SyncLevelingData.clearPendingData();
         });
     }
-} 
+}

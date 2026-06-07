@@ -30,6 +30,6 @@ public class DimensionTagLevelingSettingsReloaderFabric extends SimpleJsonResour
             Map<Identifier, DimensionLevelingSettings> prepared,
             @NotNull ResourceManager resourceManager,
             @NotNull ProfilerFiller profiler) {
-        DimensionsLevelingSettingsReloader.loadTagSettings(prepared);
+        DimensionLevelingSettingsStore.loadTagSettings(prepared);
     }
 }

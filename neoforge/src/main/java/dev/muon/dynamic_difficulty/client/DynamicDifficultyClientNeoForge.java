@@ -8,10 +8,6 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
-/**
- * Client-only mod class that registers the config screen for the NeoForge mods page.
- * The config button appears when selecting this mod in the mod list.
- */
 @Mod(value = DynamicDifficulty.MODID, dist = Dist.CLIENT)
 public class DynamicDifficultyClientNeoForge {
 

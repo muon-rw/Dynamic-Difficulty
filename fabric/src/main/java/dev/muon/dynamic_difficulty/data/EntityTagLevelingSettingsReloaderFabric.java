@@ -30,6 +30,6 @@ public class EntityTagLevelingSettingsReloaderFabric extends SimpleJsonResourceR
             Map<Identifier, EntityLevelingSettings.RawSettings> prepared,
             @NotNull ResourceManager resourceManager,
             @NotNull ProfilerFiller profiler) {
-        EntityLevelingSettingsReloader.loadTagSettings(prepared);
+        EntityLevelingSettingsStore.loadTagSettings(prepared);
     }
 }

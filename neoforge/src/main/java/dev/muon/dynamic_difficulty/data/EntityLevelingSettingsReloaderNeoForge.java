@@ -56,6 +56,6 @@ public class EntityLevelingSettingsReloaderNeoForge extends ContextAwareReloadLi
                     .result()
                     .ifPresent(pair -> settings.put(entry.getKey(), pair.getFirst()));
         }
-        EntityLevelingSettingsReloader.loadSettings(settings);
+        EntityLevelingSettingsStore.loadSettings(settings);
     }
 }

@@ -12,11 +12,13 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.ARGB;
 
 public class LevelInfoRenderer extends TitleRenderer<Void> {
+    private static final int NO_RECENT_ENTRY_TRACKING = 0;
+
     private Component displayedLevelInfo = null;
 
     public LevelInfoRenderer() {
         super(
-                0, // No recent entries tracking for level info
+                NO_RECENT_ENTRY_TRACKING,
                 () -> true, // Always enabled (handled in renderText)
                 Configs.CLIENT.levelInfoFadeInTime,
                 Configs.CLIENT.levelInfoDisplayTime,
@@ -74,7 +76,6 @@ public class LevelInfoRenderer extends TitleRenderer<Void> {
         guiGraphics.pose().scale(textSizeValue, textSizeValue);
 
         int levelInfoWidth = fontRenderer.width(displayedLevelInfo);
-        // Derive alignment from anchor point
         // Note: alignmentOffset needs to account for scaled width
         ConfigClient.AnchorPoint anchorPoint = anchor.get();
         float alignmentOffset = getAlignmentOffset(anchorPoint, levelInfoWidth) * textSizeValue;
@@ -91,18 +92,10 @@ public class LevelInfoRenderer extends TitleRenderer<Void> {
         guiGraphics.pose().popMatrix();
     }
 
-    /**
-     * Display level info using the calculated displayed level from the server.
-     * The server calculates this with proper max level cap and bypassing bonus handling.
-     * 
-     * @param displayedLevel The final calculated level without player bonus (from server)
-     * @param playerBonus The player bonus to show separately
-     */
     public void displayLevelInfo(int displayedLevel, int playerBonus) {
         int totalLevel = displayedLevel + playerBonus;
         MutableComponent levelInfo = Component.literal("Lv. " + totalLevel);
 
-        // Only show breakdown if advanced tooltips is enabled and there's a player bonus
         if (Minecraft.getInstance().options.advancedItemTooltips && playerBonus > 0) {
             levelInfo.append(Component.translatable("dynamic_difficulty.level_info.breakdown", displayedLevel, playerBonus)
                     .withStyle(ChatFormatting.GRAY));

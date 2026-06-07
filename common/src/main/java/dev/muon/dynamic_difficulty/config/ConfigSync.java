@@ -31,9 +31,6 @@ import java.util.Optional;
 /**
  * Server-authoritative gameplay configuration, synced from server to connected clients.
  *
- * <p>Holds every Dynamic Difficulty gameplay value that both sides must agree on:
- * leveling parameters, scaling curves, blacklists, attribute bonuses, item level caps.
- *
  * <p>File: <code>config/dynamic_difficulty/dynamic_difficulty-sync.toml</code>
  *
  * @see ConfigClient for client-only rendering settings
@@ -60,16 +57,12 @@ public class ConfigSync extends Config {
         LevelingUtils.reloadConfigCache();
     }
 
-    // --- Built-in Datapack ---
-
     @Comment("--- Built-in Datapack ---\n" +
             "Whether to load the built-in default leveling settings datapack\n" +
             "This includes dimension, entity, biome, and structure level bonuses for vanilla and various mods\n" +
             "Disable this if you want to start with a clean slate and define all settings yourself\n" +
             "Requires a game restart to take effect")
     public ValidatedBoolean useDefaultLevelingSettings = new ValidatedBoolean(true);
-
-    // --- Base Leveling ---
 
     @Comment("--- Base Leveling ---\n" +
             "Base level for all entities")
@@ -83,8 +76,6 @@ public class ConfigSync extends Config {
 
     @Comment("Additional experience multiplier per level")
     public ValidatedDouble expBonus = new ValidatedDouble(0.1D);
-
-    // --- Environmental Scaling ---
 
     @Comment("--- Environmental Leveling ---\n" +
             "How many levels to add per block from world spawn")
@@ -108,8 +99,6 @@ public class ConfigSync extends Config {
 
     @Comment("Exponential level scaling with depth")
     public ValidatedDouble levelPowerPerDeepness = new ValidatedDouble(0.0D);
-
-    // --- Player-Based Scaling ---
 
     @Comment("--- Player-Based Bonus Scaling ---\n" +
             "Radius to search for players when calculating level bonuses")
@@ -145,8 +134,6 @@ public class ConfigSync extends Config {
             "Set to 0 to disable periodic updates (only event-driven updates will occur)")
     public ValidatedInt playerLevelUpdateInterval = new ValidatedInt(600, 1200, 0);
 
-    // --- Playtime-Based Scaling ---
-
     @Comment("--- Playtime-Based Scaling ---\n" +
             "Enable playtime-based level scaling\n" +
             "When enabled, uses Minecraft's built-in playtime statistic (Stats.PLAY_TIME)\n" +
@@ -158,8 +145,6 @@ public class ConfigSync extends Config {
             "Example: 2 players with 10 and 20 hours = 15 hours average = 15 * this_value levels")
     public ValidatedDouble levelsPerPlaytimeHour = new ValidatedDouble(0.1D);
 
-    // --- Puffish Skills Integration ---
-
     @Comment("--- Puffish Skills Integration ---\n" +
             "List of Puffish Skills tree IDs that should be excluded from player level calculations\n" +
             "Trees in this list will not contribute their points to player-based mob level scaling\n" +
@@ -167,8 +152,6 @@ public class ConfigSync extends Config {
             "Leave empty to include all trees in mob scaling")
     public ValidatedList<String> puffishSkillsTreeBlacklist = ValidatedList.ofString(
             List.of("puffish_skills:mining"));
-
-    // --- Entity Filtering ---
 
     @Comment("--- Entity Filtering ---\n" +
             "Whether passive mobs (animals) should be prevented from leveling")
@@ -184,8 +167,6 @@ public class ConfigSync extends Config {
             "Examples: [\"minecraft:zombie\", \"cataclysm:*\"]")
     public ValidatedList<String> whitelistedMobs = ValidatedList.ofString(Collections.emptyList());
 
-    // --- Attribute Bonuses ---
-
     @Comment("--- Attribute Bonuses ---\n" +
             "Attribute bonuses applied per entity level. Each entry has a three-part editor:\n" +
             " - attribute: resource location of a registered attribute (e.g. minecraft:attack_damage)\n" +
@@ -194,8 +175,6 @@ public class ConfigSync extends Config {
             "Leave empty to disable all attribute bonuses.")
     public ValidatedList<AttributeBonus> attributesBonuses =
             new ValidatedAny<>(new AttributeBonus()).toList(getDefaultAttributeBonuses());
-
-    // --- Level-Up Items ---
 
     @Comment("--- Level-Up Items ---\n" +
             "Maximum level that Potion of Growth can raise an entity to")
@@ -213,17 +192,12 @@ public class ConfigSync extends Config {
     @Comment("Maximum level that Crystal of Awakening can raise an entity to")
     public ValidatedInt crystalOfAwakeningMaxLevel = new ValidatedInt(100, 10000, 1);
 
-    // --- Level-Based Drops ---
-
     @Comment("--- Level-Based Drops ---\n" +
             "Whether mobs should drop level-up items based on their level\n" +
             "The drops are defined in data/dynamic_difficulty/loot_tables/inject/level_based_drops.json\n" +
             "Users can edit that file to customize drop rates, level ranges, and add custom items")
     public ValidatedBoolean enableLevelBasedDrops = new ValidatedBoolean(true);
 
-
-    // === Attribute Bonus Static Helpers ===
-    // Preserve the old Config.java helper API so leveling code keeps working.
 
     private static final Map<ResourceKey<Attribute>, AttributeModifier> ATTRIBUTE_BONUSES = new HashMap<>();
 
@@ -237,10 +211,6 @@ public class ConfigSync extends Config {
         );
     }
 
-    /**
-     * Force a rebuild of the cached {@link AttributeModifier} map from the current config state.
-     * Called from config-reload hooks.
-     */
     public static void reloadAttributeBonuses() {
         synchronized (ATTRIBUTE_BONUSES) {
             ATTRIBUTE_BONUSES.clear();
@@ -254,9 +224,6 @@ public class ConfigSync extends Config {
         }
     }
 
-    /**
-     * Lazily build and return the cached attribute bonus map.
-     */
     public static Map<ResourceKey<Attribute>, AttributeModifier> getAttributeBonuses() {
         if (ATTRIBUTE_BONUSES.isEmpty()) {
             synchronized (ATTRIBUTE_BONUSES) {
@@ -304,12 +271,8 @@ public class ConfigSync extends Config {
     }
 
     /**
-     * A single attribute-bonus entry. Rendered by FzzyConfig as a popup editor with three fields:
-     * an identifier picker, a numeric spinner, and an enum dropdown.
-     *
-     * <p>Implements {@link Walkable} so FzzyConfig reflects on the public {@code Validated*} fields
-     * to auto-generate the editor UI. The no-arg constructor is what FzzyConfig calls when a new
-     * list entry is created; the convenience constructor is used to build the default list above.
+     * Implements {@link Walkable} so FzzyConfig reflects over the public {@code Validated*} fields.
+     * The no-arg constructor is invoked for new list entries; the convenience constructor builds the default list.
      */
     public static class AttributeBonus implements Walkable {
 

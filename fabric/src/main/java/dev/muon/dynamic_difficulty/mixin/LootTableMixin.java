@@ -26,16 +26,15 @@ import java.util.function.Consumer;
 @Mixin(LootTable.class)
 public abstract class LootTableMixin {
 
-    // ThreadLocal guard to prevent infinite recursion
     @Unique
-    private static final ThreadLocal<Boolean> PROCESSING = ThreadLocal.withInitial(() -> false);
+    private static final ThreadLocal<Boolean> REENTRANCY_GUARD = ThreadLocal.withInitial(() -> false);
     
     @WrapMethod(
         method = "getRandomItemsRaw(Lnet/minecraft/world/level/storage/loot/LootContext;Ljava/util/function/Consumer;)V"
     )
     private void modifyLoot(LootContext context, Consumer<ItemStack> output, Operation<Void> original) {
         // Prevent infinite recursion - this mixin calls a loot table, which triggers the mixin again
-        if (PROCESSING.get()) {
+        if (REENTRANCY_GUARD.get()) {
             original.call(context, output);
             return;
         }
@@ -51,7 +50,6 @@ public abstract class LootTableMixin {
             return;
         }
 
-        // Only apply level-based drops if killed by a player
         if (findPlayer(context) == null) {
             original.call(context, output);
             return;
@@ -63,7 +61,7 @@ public abstract class LootTableMixin {
         }
 
         try {
-            PROCESSING.set(true);
+            REENTRANCY_GUARD.set(true);
             
             ObjectArrayList<ItemStack> originalLoot = new ObjectArrayList<>();
             Consumer<ItemStack> collector = originalLoot::add;
@@ -86,7 +84,7 @@ public abstract class LootTableMixin {
 
             originalLoot.forEach(output);
         } finally {
-            PROCESSING.set(false);
+            REENTRANCY_GUARD.set(false);
         }
     }
     

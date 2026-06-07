@@ -20,7 +20,6 @@ public class ModLootConditionsNeoForge {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     public static void init() {
-        // Populate common registry reference
         ModLootConditions.ENTITY_LEVEL = (Holder) ENTITY_LEVEL;
     }
 }

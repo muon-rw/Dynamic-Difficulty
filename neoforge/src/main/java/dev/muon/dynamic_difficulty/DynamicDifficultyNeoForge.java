@@ -21,18 +21,14 @@ import net.neoforged.neoforge.event.AddPackFindersEvent;
 public class DynamicDifficultyNeoForge {
 
     public DynamicDifficultyNeoForge(IEventBus eventBus, ModContainer modContainer) {
-        // Initialize platform helper first
         DynamicDifficulty.setHelper(new PlatformHelperNeoForge());
 
-        // Initialize common mod code (registers FzzyConfig configs at the top of init())
         DynamicDifficulty.init();
 
-        // Compat providers
         if (DynamicDifficulty.isModLoaded("puffish_skills")) {
             LevelingAPI.registerPlayerLevelProvider(new PuffishSkillsProviderNeoForge());
         }
 
-        // Registries
         ModAttributesNeoForge.REGISTRY.register(eventBus);
         ModItemsNeoForge.REGISTRY.register(eventBus);
         ModLootConditionsNeoForge.REGISTRY.register(eventBus);
@@ -43,7 +39,6 @@ public class DynamicDifficultyNeoForge {
         ModItemsNeoForge.init();
         ModLootConditionsNeoForge.init();
 
-        // Built-in datapack
         eventBus.addListener(this::addPackFinders);
     }
 

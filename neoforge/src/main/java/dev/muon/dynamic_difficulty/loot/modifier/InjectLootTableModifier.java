@@ -21,8 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Global loot modifier that injects a custom loot table into entity drops.
- * This allows a centralized loot table to be edited by users without touching vanilla tables.
+ * Lets a centralized loot table be edited by users without touching vanilla tables.
  */
 public class InjectLootTableModifier extends LootModifier {
     public static final MapCodec<InjectLootTableModifier> CODEC = RecordCodecBuilder.mapCodec(instance ->
@@ -34,7 +33,7 @@ public class InjectLootTableModifier extends LootModifier {
     private final Identifier lootTable;
 
     // ThreadLocal guard to prevent infinite recursion
-    private static final ThreadLocal<Boolean> PROCESSING = ThreadLocal.withInitial(() -> false);
+    private static final ThreadLocal<Boolean> REENTRANCY_GUARD = ThreadLocal.withInitial(() -> false);
 
     public InjectLootTableModifier(LootItemCondition[] conditions, int priority, Identifier lootTable) {
         super(conditions, priority);
@@ -51,7 +50,7 @@ public class InjectLootTableModifier extends LootModifier {
             return generatedLoot;
         }
 
-        if (PROCESSING.get()) {
+        if (REENTRANCY_GUARD.get()) {
             return generatedLoot;
         }
 
@@ -60,9 +59,8 @@ public class InjectLootTableModifier extends LootModifier {
         }
 
         try {
-            PROCESSING.set(true);
-            
-            // Get the loot table to inject
+            REENTRANCY_GUARD.set(true);
+
             ResourceKey<LootTable> tableKey = ResourceKey.create(Registries.LOOT_TABLE, lootTable);
             LootTable table = context.getLevel().getServer().reloadableRegistries().getLootTable(tableKey);
             
@@ -70,19 +68,16 @@ public class InjectLootTableModifier extends LootModifier {
                 DynamicDifficulty.LOGGER.warn("Configured inject loot table {} not found or is empty!", lootTable);
                 return generatedLoot;
             }
-            
-            // Add loot from the configured table into the original drop table
+
             table.getRandomItems(context, generatedLoot::add);
 
             return generatedLoot;
         } finally {
-            PROCESSING.set(false);
+            REENTRANCY_GUARD.set(false);
         }
     }
     
-    /**
-     * Comprehensive player search (similar to Apotheosis GenContext.findPlayer)
-     */
+    /** Mirrors Apotheosis GenContext.findPlayer. */
     @Nullable
     private Player findPlayer(LootContext ctx) {
         if (ctx.getOptionalParameter(LootContextParams.ATTACKING_ENTITY) instanceof Player p) return p;

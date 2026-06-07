@@ -22,10 +22,6 @@ public class PuffishSkillsProviderFabric implements PlayerLevelProvider {
         return 10;
     }
 
-    /**
-     * Gets the total spent skill points for a player across ALL unlocked categories.
-     * Used for DISPLAY purposes (shown above player's head, color-coding mob difficulty).
-     */
     @Override
     public int getPlayerLevel(ServerPlayer player) {
         return SkillsAPI.streamUnlockedCategories(player)
@@ -33,10 +29,6 @@ public class PuffishSkillsProviderFabric implements PlayerLevelProvider {
                 .sum();
     }
     
-    /**
-     * Calculates bonus levels for mob scaling based on nearby players.
-     * Excludes blacklisted skill trees from the calculation.
-     */
     @Override
     public int calculateBonusLevels(List<ServerPlayer> players) {
         if (players.isEmpty()) {

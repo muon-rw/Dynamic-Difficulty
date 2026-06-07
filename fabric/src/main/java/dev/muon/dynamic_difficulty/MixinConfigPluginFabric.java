@@ -33,27 +33,7 @@ public class MixinConfigPluginFabric implements IMixinConfigPlugin {
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
         if (mixinClassName.contains(".compat.")) {
-
-            // Each subdirectory within /compat/ is a modid
-            String[] parts = mixinClassName.split("\\.");
-            List<String> requiredMods = new ArrayList<>();
-
-            // EXCEPT: Directory names that shouldn't be considered mod IDs
-            Set<String> excludedDirectories = Set.of("client", "accessor");
-
-            for (int i = 0; i < parts.length; i++) {
-                if (parts[i].equals("compat")) {
-                    // Collect all mod IDs in the path after "compat" until the class name
-                    for (int j = i + 1; j < parts.length - 1; j++) { // -1 to exclude the class name
-                        String potentialModId = parts[j];
-                        // Skip excluded directories
-                        if (!excludedDirectories.contains(potentialModId)) {
-                            requiredMods.add(potentialModId);
-                        }
-                    }
-                    break;
-                }
-            }
+            List<String> requiredMods = extractRequiredMods(mixinClassName);
 
             for (String modId : requiredMods) {
                 if (!isModLoaded(modId)) {
@@ -72,8 +52,26 @@ public class MixinConfigPluginFabric implements IMixinConfigPlugin {
         return true;
     }
 
+    private List<String> extractRequiredMods(String mixinClassName) {
+        String[] parts = mixinClassName.split("\\.");
+        List<String> requiredMods = new ArrayList<>();
+        Set<String> excludedDirectories = Set.of("client", "accessor");
+
+        for (int i = 0; i < parts.length; i++) {
+            if (parts[i].equals("compat")) {
+                for (int j = i + 1; j < parts.length - 1; j++) { // -1 to exclude the class name
+                    String potentialModId = parts[j];
+                    if (!excludedDirectories.contains(potentialModId)) {
+                        requiredMods.add(potentialModId);
+                    }
+                }
+                break;
+            }
+        }
+        return requiredMods;
+    }
+
     private String getSimpleMixinName(String mixinClassName) {
-        // Extract just the class name from the full package path
         String[] parts = mixinClassName.split("\\.");
         return parts[parts.length - 1];
     }

@@ -20,13 +20,10 @@ public class DynamicDifficulty {
     }
 
     public static void init() {
-        // Register FzzyConfig configs (client, server, sync) before anything else uses them.
         Configs.register();
 
-        // Register player level update callback
         PlayerLevelUpdateHandler.registerCallback(PlayerLevelUpdateHandler::updatePlayerLevel);
 
-        // Register built-in playtime provider (always available)
         LevelingAPI.registerPlayerLevelProvider(new PlaytimePlayerLevelProvider());
         
         // Mod-specific providers are registered in platform-specific init code

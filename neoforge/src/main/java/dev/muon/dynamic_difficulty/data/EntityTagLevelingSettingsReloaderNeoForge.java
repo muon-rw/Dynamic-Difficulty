@@ -56,6 +56,6 @@ public class EntityTagLevelingSettingsReloaderNeoForge extends ContextAwareReloa
                     .result()
                     .ifPresent(pair -> settings.put(entry.getKey(), pair.getFirst()));
         }
-        EntityLevelingSettingsReloader.loadTagSettings(settings);
+        EntityLevelingSettingsStore.loadTagSettings(settings);
     }
 }

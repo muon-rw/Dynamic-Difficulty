@@ -140,15 +140,11 @@ public class TitleRenderer<T> {
         return new float[]{x, y};
     }
 
-    /**
-     * Get text alignment offset based on anchor point
-     * LEFT anchors = 0 (left align), CENTER anchors = -width/2 (center), RIGHT anchors = -width (right align)
-     */
     protected float getAlignmentOffset(ConfigClient.AnchorPoint anchorPoint, int textWidth) {
         return switch (anchorPoint) {
-            case TOP_LEFT, CENTER_LEFT, BOTTOM_LEFT -> 0;  // Left-align
-            case TOP_CENTER, CENTER, BOTTOM_CENTER -> -textWidth / 2.0F;  // Center
-            case TOP_RIGHT, CENTER_RIGHT, BOTTOM_RIGHT -> -textWidth;  // Right-align
+            case TOP_LEFT, CENTER_LEFT, BOTTOM_LEFT -> 0;
+            case TOP_CENTER, CENTER, BOTTOM_CENTER -> -textWidth / 2.0F;
+            case TOP_RIGHT, CENTER_RIGHT, BOTTOM_RIGHT -> -textWidth;
         };
     }
 

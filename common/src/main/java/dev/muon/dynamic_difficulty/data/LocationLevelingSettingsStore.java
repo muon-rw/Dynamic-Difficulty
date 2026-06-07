@@ -19,22 +19,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Generic storage and lookup for location-scoped (structure or biome) leveling settings.
- *
- * <p>Stores individual settings keyed by {@link Identifier} and tag-keyed settings keyed by
- * {@link TagKey}. Lookup returns settings already merged across the individual entry plus all
- * matching tags via per-field max. Callers who need the underlying entries (for the bonus path's
- * bucket-max model) should use {@link #getMatching}.
- */
+/** Merges the individual entry with all matching tag entries via per-field max. */
 public final class LocationLevelingSettingsStore<T> {
   private static final Logger LOGGER = LogUtils.getLogger();
 
-  /** Store for structure-scoped settings (data/[ns]/leveling_settings/structures + structure_tags). */
   public static final LocationLevelingSettingsStore<Structure> STRUCTURES =
           new LocationLevelingSettingsStore<>(Registries.STRUCTURE, "structures", "structure_tags");
 
-  /** Store for biome-scoped settings (data/[ns]/leveling_settings/biomes + biome_tags). */
   public static final LocationLevelingSettingsStore<Biome> BIOMES =
           new LocationLevelingSettingsStore<>(Registries.BIOME, "biomes", "biome_tags");
 
@@ -89,18 +80,12 @@ public final class LocationLevelingSettingsStore<T> {
     return result;
   }
 
-  /**
-   * Load individual settings. Called by platform-specific reloaders.
-   */
   public void loadSettings(Map<Identifier, LocationLevelingSettings.RawSettings> settings) {
     individual.clear();
     individual.putAll(settings);
     LOGGER.info("Loaded {} individual leveling settings from 'leveling_settings/{}'", individual.size(), individualLogLabel);
   }
 
-  /**
-   * Load tag-based settings. Called by platform-specific reloaders.
-   */
   public void loadTagSettings(Map<Identifier, LocationLevelingSettings.RawSettings> tagSettings) {
     tags.clear();
     tagSettings.forEach((id, settings) -> tags.put(TagKey.create(registryKey, id), settings));

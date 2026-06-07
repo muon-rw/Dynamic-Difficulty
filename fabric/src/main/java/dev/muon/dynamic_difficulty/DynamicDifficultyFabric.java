@@ -20,13 +20,10 @@ public class DynamicDifficultyFabric implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        // Initialize platform helper first
         DynamicDifficulty.setHelper(new PlatformHelperFabric());
 
-        // Common init (registers FzzyConfig configs at the top of DynamicDifficulty.init())
         DynamicDifficulty.init();
 
-        // Register built-in datapack with default settings (if enabled in config)
         if (Configs.SYNC.useDefaultLevelingSettings.get()) {
             FabricLoader.getInstance().getModContainer(DynamicDifficulty.MODID).ifPresent(container -> {
                 ResourceManagerHelper.registerBuiltinResourcePack(
@@ -37,14 +34,13 @@ public class DynamicDifficultyFabric implements ModInitializer {
                 );
             });
         }
-        // Register mod-specific providers
         if (DynamicDifficulty.isModLoaded("puffish_skills")) {
             LevelingAPI.registerPlayerLevelProvider(new PuffishSkillsProviderFabric());
         }
 
         // Register attachment types early - MUST happen before networking to ensure
         // attachments are registered on clients before sync packets arrive
-        EntityLevelAttachmentFabric.init();
+        EntityLevelAttachmentFabric.registerAttachments();
 
         ModAttributesFabric.init();
         ModItemsFabric.init();
@@ -53,10 +49,8 @@ public class DynamicDifficultyFabric implements ModInitializer {
 
         NetworkRegistration.register();
 
-        // Register data reloaders
         registerDataReloaders();
 
-        // Register event handlers
         LevelingEventsFabric.init();
     }
 

@@ -5,18 +5,6 @@ import me.fzzyhmstrs.fzzy_config.api.RegisterType;
 
 import java.util.function.Supplier;
 
-/**
- * Central access point and registration hook for the mod's FzzyConfig instances.
- *
- * <p>Three configs are registered on mod init, split by how each is loaded and synced:
- * <ul>
- *   <li>{@link #CLIENT} ({@link RegisterType#CLIENT}): local-only preferences</li>
- *   <li>{@link #SYNC}   ({@link RegisterType#BOTH}): server-authoritative, synced to clients</li>
- * </ul>
- *
- * <p>After {@link #register()} runs, read values anywhere via e.g.
- * {@code Configs.SYNC.startingLevel.get()} or {@code Configs.CLIENT.showStructureTitles.get()}.
- */
 public final class Configs {
 
     public static ConfigClient CLIENT;

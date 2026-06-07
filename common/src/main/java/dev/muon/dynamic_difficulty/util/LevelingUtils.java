@@ -5,7 +5,7 @@ import dev.muon.dynamic_difficulty.LevelingEvents;
 import dev.muon.dynamic_difficulty.api.BiomeBonus;
 import dev.muon.dynamic_difficulty.api.StructureBonus;
 import dev.muon.dynamic_difficulty.config.Configs;
-import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
+import dev.muon.dynamic_difficulty.data.DimensionLevelingSettingsStore;
 import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
 import dev.muon.dynamic_difficulty.settings.LevelingSettings;
 import net.minecraft.core.BlockPos;
@@ -24,15 +24,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Utility methods for the Dynamic Difficulty mod.
- * These methods handle general-purpose calculations and checks that aren't part of the core leveling system.
- */
 public class LevelingUtils {
     private static final TagKey<EntityType<?>> PASSIVE_WHITELIST = TagKey.create(Registries.ENTITY_TYPE,
             DynamicDifficulty.id("passive_whitelist"));
 
-    // Cached config values to avoid string concatenation on hot path
     private static final Set<String> BLACKLISTED_NAMESPACES = new HashSet<>();
     private static final Set<Identifier> BLACKLISTED_IDS = new HashSet<>();
     private static final Set<String> WHITELISTED_NAMESPACES = new HashSet<>();
@@ -40,7 +35,6 @@ public class LevelingUtils {
     private static boolean configCacheInitialized = false;
 
     /**
-     * Reloads the cached whitelist/blacklist configuration.
      * @see LevelingEvents#onConfigReload()
      */
     public static void reloadConfigCache() {
@@ -78,9 +72,6 @@ public class LevelingUtils {
         }
     }
 
-    /**
-     * Checks if an entity type can have levels applied based on configuration and entity properties
-     */
     public static boolean canHaveLevel(Entity entity) {
         if (!(entity instanceof LivingEntity)) return false;
         if (entity.getType() == EntityType.PLAYER) return false;
@@ -98,9 +89,6 @@ public class LevelingUtils {
         return checkWhitelistBlacklist(entity);
     }
 
-    /**
-     * Checks if an entity's level should be displayed based on configuration
-     */
     public static boolean shouldShowLevel(Entity entity) {
         Identifier entityId = EntityType.getKey(entity.getType());
         List<? extends String> blacklist = Configs.CLIENT.hiddenLevelEntities.get();
@@ -141,8 +129,8 @@ public class LevelingUtils {
         double depthLevel = 0.0;
         double heightLevel = 0.0;
 
-        if (yPos < seaLevel && settings.levelsPerDeepness() > 0) {
-            depthLevel = (seaLevel - yPos) * settings.levelsPerDeepness();
+        if (yPos < seaLevel && settings.levelsPerDepth() > 0) {
+            depthLevel = (seaLevel - yPos) * settings.levelsPerDepth();
         }
 
         float levelsPerHeight = settings.levelsPerHeight();
@@ -153,12 +141,7 @@ public class LevelingUtils {
         return (int) (distanceLevel + depthLevel + heightLevel);
     }
 
-    /**
-     * Checks if an entity is allowed to have levels based on whitelist/blacklist configuration.
-     * Uses cached config values to avoid string concatenation on hot path.
-     */
     private static boolean checkWhitelistBlacklist(Entity entity) {
-        // Initialize cache on first use if not already done
         if (!configCacheInitialized) {
             reloadConfigCache();
         }
@@ -166,13 +149,11 @@ public class LevelingUtils {
         Identifier entityId = EntityType.getKey(entity.getType());
         String namespace = entityId.getNamespace();
 
-        // Check blacklist using cached sets (no string concatenation)
         synchronized (BLACKLISTED_NAMESPACES) {
             if (BLACKLISTED_NAMESPACES.contains(namespace) || BLACKLISTED_IDS.contains(entityId)) {
                 return false;
             }
 
-            // Check whitelist - if empty in config, allow all
             if (Configs.SYNC.whitelistedMobs.get().isEmpty()) {
                 return true;
             }
@@ -183,7 +164,7 @@ public class LevelingUtils {
 
     /**
      * Calculates the final displayed level considering max level cap and bypassing bonuses.
-     * This matches the logic in LevelingSystem.createLevelForEntity() for display purposes.
+     * This matches the logic in LevelingSystem.calculateLevelForEntity() for display purposes.
      *
      * <p>The {@code playerBonus} is routed to the bypassing or non-bypassing bucket based on
      * {@code Configs.SYNC.playerLevelBypassesCap}, mirroring the spawn-time logic.
@@ -239,7 +220,7 @@ public class LevelingUtils {
      * </ul>
      */
     public static int calculateBaseEntityLevel(ServerLevel level, BlockPos pos, LevelingSettings settings) {
-        DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(
+        DimensionLevelingSettings dimSettings = DimensionLevelingSettingsStore.get(
                 level.dimension(),
                 level.registryAccess().lookupOrThrow(Registries.DIMENSION));
 

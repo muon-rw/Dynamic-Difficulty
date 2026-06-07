@@ -13,23 +13,12 @@ import net.minecraft.resources.Identifier;
 
 import java.util.Collections;
 
-/**
- * Client-only configuration. Loaded on the client and never synced from the server.
- *
- * <p>Holds every Dynamic Difficulty rendering/display preference: HUD toggles,
- * nameplate injection, title popups, and associated timing/color knobs.
- *
- * <p>File: <code>config/dynamic_difficulty/dynamic_difficulty-client.toml</code>
- *
- * @see ConfigSync for server-authoritative, synced gameplay settings
- */
+/** Client-only; never synced from the server. @see ConfigSync */
 public class ConfigClient extends Config {
 
     public ConfigClient() {
         super(Identifier.fromNamespaceAndPath(DynamicDifficulty.MODID, "client"));
     }
-
-    // --- Enum types (moved from old Config.java) ---
 
     public enum RenderBehavior {
         ALWAYS,
@@ -48,8 +37,6 @@ public class ConfigClient extends Config {
         BOTTOM_CENTER,
         BOTTOM_RIGHT
     }
-
-    // --- Level Plate Settings ---
 
     @Comment("--- Level Plate Settings ---\n" +
             "Determines when entity levels are rendered: ALWAYS, NEVER, or LOOKING_AT (only when the player is looking directly at/near the entity).")
@@ -91,19 +78,13 @@ public class ConfigClient extends Config {
             "Level injection (if enabled) still applies when vanilla shows the nameplate")
     public ValidatedBoolean overridePlayerNameplateVisibility = new ValidatedBoolean(true);
 
-    // --- Integration Options ---
-
     @Comment("--- Integration Options ---\n" +
             "Show entity levels in Jade tooltips (requires Jade to be installed)")
     public ValidatedBoolean enableJadeIntegration = new ValidatedBoolean(true);
 
-    // --- Entity Settings ---
-
     @Comment("--- Entity Settings ---\n" +
             "Entities (by ID or 'modid:*') whose levels should NOT be rendered on nameplates.")
     public ValidatedList<String> hiddenLevelEntities = ValidatedList.ofString(Collections.emptyList());
-
-    // --- Structure Title Display ---
 
     @Comment("--- Structure Title Display ---\n" +
             "Display structure names and level bonuses when entering structures\n" +
@@ -141,8 +122,6 @@ public class ConfigClient extends Config {
 
     @Comment("Y offset from anchor point for structure title position")
     public ValidatedInt structureTitleYOffset = new ValidatedInt(-82);
-
-    // --- Biome Title Display ---
 
     @Comment("--- Biome Title Display ---\n" +
             "Display biome names when entering biomes\n" +
@@ -187,8 +166,6 @@ public class ConfigClient extends Config {
     @Comment("Number of recent biomes to cache (prevents spam)")
     public ValidatedInt biomeRecentCacheSize = new ValidatedInt(5, 20, 0);
 
-    // --- Dimension Title Display ---
-
     @Comment("--- Dimension Title Display ---\n" +
             "Display dimension names when entering dimensions\n" +
             "Defaults to false if Traveler's Titles mod is loaded")
@@ -225,8 +202,6 @@ public class ConfigClient extends Config {
 
     @Comment("Y offset from anchor point for dimension title position")
     public ValidatedInt dimensionTitleYOffset = new ValidatedInt(-35);
-
-    // --- Level Info Display ---
 
     @Comment("--- Level Info Display ---\n" +
             "Time in ticks for level info to fade in")

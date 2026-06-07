@@ -56,6 +56,6 @@ public class DimensionTagLevelingSettingsReloaderNeoForge extends ContextAwareRe
                     .result()
                     .ifPresent(pair -> settings.put(entry.getKey(), pair.getFirst()));
         }
-        DimensionsLevelingSettingsReloader.loadTagSettings(settings);
+        DimensionLevelingSettingsStore.loadTagSettings(settings);
     }
 }

@@ -2,7 +2,7 @@ package dev.muon.dynamic_difficulty.client.render;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.config.Configs;
-import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
+import dev.muon.dynamic_difficulty.data.DimensionLevelingSettingsStore;
 import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -32,7 +32,6 @@ public class TitleRenderManager {
 
     private DimensionType currentDimension = null;
 
-    // Track final displayed values to detect actual changes (avoids retriggering on location change with same level)
     private int lastDisplayedLevel = -1;
     private int lastPlayerBonus = -1;
 
@@ -69,9 +68,6 @@ public class TitleRenderManager {
         }
     }
 
-    /**
-     * Called on player tick to detect biome/dimension changes
-     */
     public void playerTick(Player player) {
         if (player instanceof LocalPlayer && player.level().isLoaded(player.blockPosition())) {
             BlockPos playerPos = player.blockPosition();
@@ -88,10 +84,7 @@ public class TitleRenderManager {
         }
     }
 
-    /**
-     * Called when player changes dimension.
-     * Resets biome cache since biome titles are dimension-specific.
-     */
+    /** Clears the biome cache; biome titles are dimension-specific. */
     private void playerChangedDimension(Player player) {
         if (Configs.CLIENT.showBiomeTitles.get()) {
             biomeTitleRenderer.clearTimer();
@@ -100,17 +93,9 @@ public class TitleRenderManager {
         }
     }
 
-    /**
-     * Display structure title when notified by server
-     */
     public void displayStructureTitle(Identifier structureId, int structureBonus, int baseLevel, int playerBonus, int displayedLevel) {
-        // Update level info only if displayed values changed
-        if (shouldUpdateLevelInfo(displayedLevel, playerBonus)) {
-            levelInfoRenderer.displayLevelInfo(displayedLevel, playerBonus);
-            lastDisplayedLevel = displayedLevel;
-            lastPlayerBonus = playerBonus;
-        }
-        
+        updateLevelInfoIfChanged(displayedLevel, playerBonus);
+
         if (Configs.CLIENT.showStructureTitles.get()) {
             boolean shouldDisplay = !Configs.CLIENT.structureTitleOnlyAnnounceIfModified.get() || structureBonus > 0;
             if (shouldDisplay && !structureTitleRenderer.matchesAnyRecentEntry(id -> id.equals(structureId))) {
@@ -121,23 +106,14 @@ public class TitleRenderManager {
         }
     }
 
-    /**
-     * Display biome title when notified by server
-     */
     public void displayBiomeTitle(Identifier biomeId, int biomeBonus, int baseLevel, int playerBonus, int displayedLevel) {
-        // Update level info only if displayed values changed
-        if (shouldUpdateLevelInfo(displayedLevel, playerBonus)) {
-            levelInfoRenderer.displayLevelInfo(displayedLevel, playerBonus);
-            lastDisplayedLevel = displayedLevel;
-            lastPlayerBonus = playerBonus;
-        }
-        
+        updateLevelInfoIfChanged(displayedLevel, playerBonus);
+
         if (Configs.CLIENT.showBiomeTitles.get()) {
             boolean shouldDisplay = !Configs.CLIENT.biomeTitleOnlyAnnounceIfModified.get() || biomeBonus > 0;
             if (shouldDisplay) {
                 Component biomeName = getBiomeName(biomeId);
                 if (biomeName != null) {
-                    // Check if we've recently shown this biome by comparing displayed name
                     if (biomeTitleRenderer.displayedTitle == null ||
                             !biomeName.getString().equals(biomeTitleRenderer.displayedTitle.getString())) {
 
@@ -155,24 +131,16 @@ public class TitleRenderManager {
         }
     }
 
-    /**
-     * Display dimension title when notified by server
-     * Note: Dimensions affect base level through settings, not bonuses
-     */
+    /** Dimensions affect base level through settings, not bonuses. */
     public void displayDimensionTitle(Identifier dimensionId, int baseLevel, int playerBonus, int displayedLevel) {
-        // Update level info only if displayed values changed
-        if (shouldUpdateLevelInfo(displayedLevel, playerBonus)) {
-            levelInfoRenderer.displayLevelInfo(displayedLevel, playerBonus);
-            lastDisplayedLevel = displayedLevel;
-            lastPlayerBonus = playerBonus;
-        }
-        
+        updateLevelInfoIfChanged(displayedLevel, playerBonus);
+
         if (Configs.CLIENT.showDimensionTitles.get()) {
             boolean shouldDisplay = true;
             if (Configs.CLIENT.dimensionTitleOnlyAnnounceIfModified.get()) {
                 Level world = Minecraft.getInstance().level;
                 if (world != null) {
-                    shouldDisplay = DimensionsLevelingSettingsReloader.hasCustomSettings(
+                    shouldDisplay = DimensionLevelingSettingsStore.hasCustomSettings(
                             world.dimension(), world.registryAccess().lookupOrThrow(Registries.DIMENSION));
                 }
             }
@@ -191,9 +159,6 @@ public class TitleRenderManager {
         }
     }
 
-    /**
-     * Updates the dimension title if conditions are met
-     */
     private void updateDimensionTitle(Level world, Player player) {
         if (!Configs.CLIENT.showDimensionTitles.get()) {
             return;
@@ -201,7 +166,7 @@ public class TitleRenderManager {
 
         boolean shouldDisplay = true;
         if (Configs.CLIENT.dimensionTitleOnlyAnnounceIfModified.get()) {
-            shouldDisplay = DimensionsLevelingSettingsReloader.hasCustomSettings(
+            shouldDisplay = DimensionLevelingSettingsStore.hasCustomSettings(
                     world.dimension(), world.registryAccess().lookupOrThrow(Registries.DIMENSION));
         }
 
@@ -217,9 +182,6 @@ public class TitleRenderManager {
         }
     }
 
-    /**
-     * Updates the biome title if conditions are met
-     */
     private void updateBiomeTitle(Level world, BlockPos playerPos, Player player) {
         if (!Configs.CLIENT.showBiomeTitles.get() || biomeTitleRenderer.cooldownTimer > 0) {
             return;
@@ -248,18 +210,18 @@ public class TitleRenderManager {
         }
     }
 
-    /**
-     * Check if level info should be updated based on the final displayed values.
-     * Only triggers when the actual displayed level or player bonus changes,
-     * avoiding unnecessary updates when location changes but level stays the same.
-     */
+    private void updateLevelInfoIfChanged(int displayedLevel, int playerBonus) {
+        if (shouldUpdateLevelInfo(displayedLevel, playerBonus)) {
+            levelInfoRenderer.displayLevelInfo(displayedLevel, playerBonus);
+            lastDisplayedLevel = displayedLevel;
+            lastPlayerBonus = playerBonus;
+        }
+    }
+
     private boolean shouldUpdateLevelInfo(int displayedLevel, int playerBonus) {
-        // Always update on first call
         if (lastDisplayedLevel == -1) {
             return true;
         }
-        
-        // Only update if the displayed values actually changed
         return lastDisplayedLevel != displayedLevel || lastPlayerBonus != playerBonus;
     }
 
@@ -290,16 +252,11 @@ public class TitleRenderManager {
 
     /**
      * Resolved dimension title text plus an optional color override sourced from a
-     * Visual Traveler's Titles–style resource pack (`travelerstitles.namespace.path.color`).
+     * Visual Traveler's Titles-style resource pack (`travelerstitles.namespace.path.color`).
      */
     public record DimensionTitle(Component name, @Nullable Integer overrideColor) {}
 
-    /**
-     * Get dimension title with Traveler's Titles preference.
-     * Falls back to standard dimension key, then formatted ID if no translation found.
-     * If the resource pack provides a `<key>.color` hex entry, it is returned alongside
-     * so the renderer can override the configured text color for that dimension.
-     */
+    /** Lookup order: Traveler's Titles key, then standard dimension key, then formatted ID. */
     private DimensionTitle getDimensionTitle(Identifier dimensionBaseKey) {
         Language language = Language.getInstance();
 
@@ -346,10 +303,6 @@ public class TitleRenderManager {
         }
     }
 
-    /**
-     * Get biome name with Traveler's Titles preference.
-     * Falls back to standard biome key. Returns null if no translation found.
-     */
     private Component getBiomeName(Identifier biomeBaseKey) {
         Language language = Language.getInstance();
 
@@ -366,9 +319,6 @@ public class TitleRenderManager {
         return null;
     }
 
-    /**
-     * Clear all cached state (called on disconnect)
-     */
     public void clearCache() {
         structureTitleRenderer.recentEntries.clear();
         structureTitleRenderer.displayedTitle = null;

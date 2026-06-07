@@ -37,14 +37,12 @@ public class ClientEventsNeoForge {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
-        
-        // Title rendering tick
+
         TitleRenderManager.getInstance().clientTick();
         if (minecraft.player != null) {
             TitleRenderManager.getInstance().playerTick(minecraft.player);
         }
-        
-        // Process pending sync data (for entities that weren't loaded when packet arrived)
+
         SyncLevelingData.processPendingData();
     }
     

@@ -7,7 +7,7 @@ import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
 import dev.muon.dynamic_difficulty.api.StructureBonus;
 import dev.muon.dynamic_difficulty.config.Configs;
 import dev.muon.dynamic_difficulty.network.NetworkDispatcher;
-import dev.muon.dynamic_difficulty.network.message.LocationEntryPacket;
+import dev.muon.dynamic_difficulty.network.message.LocationEntry;
 import dev.muon.dynamic_difficulty.settings.LevelingSettings;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
 import dev.muon.dynamic_difficulty.util.LocationBonusUtils;
@@ -23,17 +23,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Tracks player locations (structure, biome, dimension) and sends level info updates to clients.
- * Uses {@link dev.muon.dynamic_difficulty.util.LocationBonusUtils} for structure/biome lookups.
- */
 public class PlayerLocationTracker {
 
-    /** Consolidated player location state - one entry per player */
     private static final java.util.Map<UUID, PlayerLocationState> playerStates = new ConcurrentHashMap<>();
 
     /**
-     * Record holding all tracked location state for a player.
      * Caches {@code lastDisplayedLevel} (the chain-resolved final level at this position) so the
      * tracker fires a packet whenever it changes, capturing override-driven changes that wouldn't
      * surface via {@code totalBonus()} alone.
@@ -47,20 +41,10 @@ public class PlayerLocationTracker {
         static final PlayerLocationState EMPTY = new PlayerLocationState(null, null, null, 0);
     }
 
-    /**
-     * Cleans up tracking data for a disconnected player.
-     */
     public static void cleanupPlayer(UUID playerId) {
         playerStates.remove(playerId);
     }
 
-    /**
-     * Periodic cleanup to remove stale entries for players who are no longer online.
-     * Should be called periodically (e.g., every 5 minutes) from server tick events.
-     *
-     * @param onlinePlayerIds Set of UUIDs for currently online players
-     * @return Number of stale entries cleaned up
-     */
     public static int cleanupStaleEntries(Set<UUID> onlinePlayerIds) {
         int initialSize = playerStates.size();
         playerStates.keySet().retainAll(onlinePlayerIds);
@@ -88,10 +72,6 @@ public class PlayerLocationTracker {
         return (int) (rawBonus * multiplier);
     }
 
-    /**
-     * Updates all player location tracking (structure, biome, dimension, displayed level) in a single
-     * pass. Consolidates checks to avoid redundant calculations (position, displayed level, player bonus).
-     */
     public static void updatePlayerLocation(ServerPlayer player) {
         BlockPos playerPos = player.blockPosition();
         ServerLevel level = player.level();
@@ -127,45 +107,66 @@ public class PlayerLocationTracker {
 
         // Priority: dimension > structure > biome > displayed-level (only one packet per tick).
         if (dimensionChanged) {
-            playerStates.put(playerId, new PlayerLocationState(null, null, currentDimension, displayedLevel));
-            DynamicDifficulty.LOGGER.debug("Dimension notification for {}: base={}, player={}",
-                    player.getName().getString(), currentBaseLevel, playerBonus);
-            NetworkDispatcher.sendLocationEntry(player, LocationEntryPacket.EntryType.DIMENSION,
-                    currentDimension.identifier(), 0, 0, currentBaseLevel, playerBonus, displayedLevel, maxLevel);
+            sendDimensionEntry(player, playerId, currentDimension, currentBaseLevel, playerBonus, displayedLevel, maxLevel);
             return;
         }
 
         if (structureChanged) {
-            playerStates.put(playerId, new PlayerLocationState(currentStructure, state.biomeId(), state.dimension(), displayedLevel));
-            Identifier sentId = currentStructure != null ? currentStructure : state.structureId();
-            int sentNonBypassing = currentStructure != null ? structureBonus.nonBypassingBonus() : 0;
-            int sentBypassing = currentStructure != null ? structureBonus.bypassingBonus() : 0;
-            DynamicDifficulty.LOGGER.debug("Structure notification for {}: base={}, structure={}+{}, player={}",
-                    player.getName().getString(), currentBaseLevel, sentNonBypassing, sentBypassing, playerBonus);
-            NetworkDispatcher.sendLocationEntry(player, LocationEntryPacket.EntryType.STRUCTURE,
-                    sentId, sentNonBypassing, sentBypassing, currentBaseLevel, playerBonus, displayedLevel, maxLevel);
+            sendStructureEntry(player, playerId, state, currentStructure, structureBonus, currentBaseLevel, playerBonus, displayedLevel, maxLevel);
             return;
         }
 
         if (biomeChanged) {
-            playerStates.put(playerId, new PlayerLocationState(state.structureId(), currentBiome, state.dimension(), displayedLevel));
-            DynamicDifficulty.LOGGER.debug("Biome notification for {}: base={}, biome={}+{}, player={}",
-                    player.getName().getString(), currentBaseLevel,
-                    biomeBonus.nonBypassingBonus(), biomeBonus.bypassingBonus(), playerBonus);
-            NetworkDispatcher.sendLocationEntry(player, LocationEntryPacket.EntryType.BIOME,
-                    currentBiome, biomeBonus.nonBypassingBonus(), biomeBonus.bypassingBonus(),
-                    currentBaseLevel, playerBonus, displayedLevel, maxLevel);
+            sendBiomeEntry(player, playerId, state, currentBiome, biomeBonus, currentBaseLevel, playerBonus, displayedLevel, maxLevel);
             return;
         }
 
-        // Displayed level changed: pick the most informative location id we have.
+        sendDisplayedLevelEntry(player, playerId, state, currentDimension, currentBiome, biomeBonus, currentBaseLevel, playerBonus, displayedLevel, maxLevel);
+    }
+
+    private static void sendDimensionEntry(ServerPlayer player, UUID playerId, ResourceKey<Level> currentDimension,
+            int currentBaseLevel, int playerBonus, int displayedLevel, int maxLevel) {
+        playerStates.put(playerId, new PlayerLocationState(null, null, currentDimension, displayedLevel));
+        DynamicDifficulty.LOGGER.debug("Dimension notification for {}: base={}, player={}",
+                player.getName().getString(), currentBaseLevel, playerBonus);
+        NetworkDispatcher.sendLocationEntry(player, LocationEntry.EntryType.DIMENSION,
+                currentDimension.identifier(), 0, 0, currentBaseLevel, playerBonus, displayedLevel, maxLevel);
+    }
+
+    private static void sendStructureEntry(ServerPlayer player, UUID playerId, PlayerLocationState state, Identifier currentStructure,
+            StructureBonus structureBonus, int currentBaseLevel, int playerBonus, int displayedLevel, int maxLevel) {
+        playerStates.put(playerId, new PlayerLocationState(currentStructure, state.biomeId(), state.dimension(), displayedLevel));
+        Identifier sentId = currentStructure != null ? currentStructure : state.structureId();
+        int sentNonBypassing = currentStructure != null ? structureBonus.nonBypassingBonus() : 0;
+        int sentBypassing = currentStructure != null ? structureBonus.bypassingBonus() : 0;
+        DynamicDifficulty.LOGGER.debug("Structure notification for {}: base={}, structure={}+{}, player={}",
+                player.getName().getString(), currentBaseLevel, sentNonBypassing, sentBypassing, playerBonus);
+        NetworkDispatcher.sendLocationEntry(player, LocationEntry.EntryType.STRUCTURE,
+                sentId, sentNonBypassing, sentBypassing, currentBaseLevel, playerBonus, displayedLevel, maxLevel);
+    }
+
+    private static void sendBiomeEntry(ServerPlayer player, UUID playerId, PlayerLocationState state, Identifier currentBiome,
+            BiomeBonus biomeBonus, int currentBaseLevel, int playerBonus, int displayedLevel, int maxLevel) {
+        playerStates.put(playerId, new PlayerLocationState(state.structureId(), currentBiome, state.dimension(), displayedLevel));
+        DynamicDifficulty.LOGGER.debug("Biome notification for {}: base={}, biome={}+{}, player={}",
+                player.getName().getString(), currentBaseLevel,
+                biomeBonus.nonBypassingBonus(), biomeBonus.bypassingBonus(), playerBonus);
+        NetworkDispatcher.sendLocationEntry(player, LocationEntry.EntryType.BIOME,
+                currentBiome, biomeBonus.nonBypassingBonus(), biomeBonus.bypassingBonus(),
+                currentBaseLevel, playerBonus, displayedLevel, maxLevel);
+    }
+
+    private static void sendDisplayedLevelEntry(ServerPlayer player, UUID playerId, PlayerLocationState state,
+            ResourceKey<Level> currentDimension, Identifier currentBiome, BiomeBonus biomeBonus,
+            int currentBaseLevel, int playerBonus, int displayedLevel, int maxLevel) {
+        // Pick the most informative location id we have.
         playerStates.put(playerId, new PlayerLocationState(state.structureId(), state.biomeId(), state.dimension(), displayedLevel));
         if (currentBiome != null) {
-            NetworkDispatcher.sendLocationEntry(player, LocationEntryPacket.EntryType.BIOME, currentBiome,
+            NetworkDispatcher.sendLocationEntry(player, LocationEntry.EntryType.BIOME, currentBiome,
                     biomeBonus.nonBypassingBonus(), biomeBonus.bypassingBonus(),
                     currentBaseLevel, playerBonus, displayedLevel, maxLevel);
         } else {
-            NetworkDispatcher.sendLocationEntry(player, LocationEntryPacket.EntryType.DIMENSION,
+            NetworkDispatcher.sendLocationEntry(player, LocationEntry.EntryType.DIMENSION,
                     currentDimension.identifier(), 0, 0, currentBaseLevel, playerBonus, displayedLevel, maxLevel);
         }
         DynamicDifficulty.LOGGER.debug("Displayed level update for {}: displayed={} (was {}), base={}, player={}",

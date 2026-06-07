@@ -16,14 +16,8 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 
 
-/**
- * Utility methods for handling loot tables and equipment for leveled entities.
- */
 public class LootUtils {
 
-    /**
-     * Adds equipment to an entity based on its level and entity type.
-     */
     public static void addEquipment(LivingEntity entity) {
         MinecraftServer server = entity.level().getServer();
         if (server == null) return;
@@ -35,29 +29,20 @@ public class LootUtils {
         }
     }
 
-    /**
-     * Gets the equipment loot table for a specific slot and entity type.
-     */
     private static LootTable getEquipmentLootTableForSlot(
             MinecraftServer server, LivingEntity entity, EquipmentSlot slot) {
         Identifier entityId = net.minecraft.world.entity.EntityType.getKey(entity.getType());
-        Identifier lootTableIdRL = getEquipmentTableId(slot, entityId);
-        ResourceKey<LootTable> lootTableKey = ResourceKey.create(Registries.LOOT_TABLE, lootTableIdRL);
+        Identifier lootTableId = getEquipmentTableId(slot, entityId);
+        ResourceKey<LootTable> lootTableKey = ResourceKey.create(Registries.LOOT_TABLE, lootTableId);
         return server.reloadableRegistries().getLootTable(lootTableKey);
     }
 
-    /**
-     * Generates the equipment loot table ID for a slot and entity type.
-     */
     private static Identifier getEquipmentTableId(
             EquipmentSlot slot, Identifier entityId) {
         String path = "equipment/" + entityId.getPath() + "_" + slot.getName();
         return Identifier.fromNamespaceAndPath(entityId.getNamespace(), path);
     }
 
-    /**
-     * Creates loot parameters for entity death/drops.
-     */
     public static LootParams createLootParams(LivingEntity entity, DamageSource damageSource) {
         ServerLevel level = (ServerLevel) entity.level();
         LootParams.Builder builder =
@@ -78,9 +63,6 @@ public class LootUtils {
         return builder.create(LootContextParamSets.ENTITY);
     }
 
-    /**
-     * Creates loot parameters for equipment generation.
-     */
     private static LootParams createEquipmentLootParams(LivingEntity entity) {
         return new LootParams.Builder((ServerLevel) entity.level())
                 .withParameter(LootContextParams.THIS_ENTITY, entity)

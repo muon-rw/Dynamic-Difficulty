@@ -7,13 +7,8 @@ import net.minecraft.world.entity.ai.attributes.RangedAttribute;
 
 import java.util.function.Supplier;
 
-/**
- * Common attribute definitions and registry references.
- * Attribute factories are defined here; platform code handles registration.
- */
 public class ModAttributes {
-    
-    // Registry references - initialized by platform-specific code
+
     public static Holder<Attribute> PROJECTILE_DAMAGE_BONUS;
     public static Holder<Attribute> PROJECTILE_DAMAGE_MULTIPLIER;
     public static Holder<Attribute> EXPLOSION_DAMAGE_BONUS;
@@ -22,9 +17,8 @@ public class ModAttributes {
     public static Holder<Attribute> DAMAGE_MULTIPLIER;
     public static Holder<Attribute> MAGIC_DAMAGE_BONUS;
     public static Holder<Attribute> MAGIC_DAMAGE_MULTIPLIER;
-    
-    // Attribute factories - shared definitions, platform code uses these for registration
-    public static final Supplier<Attribute> PROJECTILE_DAMAGE_BONUS_SUPPLIER = 
+
+    public static final Supplier<Attribute> PROJECTILE_DAMAGE_BONUS_SUPPLIER =
             () -> createAttribute("projectile_damage_bonus");
     public static final Supplier<Attribute> PROJECTILE_DAMAGE_MULTIPLIER_SUPPLIER = 
             () -> createAttribute("projectile_damage_multiplier");

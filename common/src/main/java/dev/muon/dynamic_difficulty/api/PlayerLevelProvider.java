@@ -33,31 +33,12 @@ public interface PlayerLevelProvider {
     List<PlayerLevelProvider> providers = new ArrayList<>();
 
     /**
-     * Determines if this provider is active and should contribute to level calculations.
-     * For example, return false if a config option disables this provider.
-     *
-     * @return true if this provider is enabled, false otherwise.
+     * Return false when a config option disables this provider.
      */
     boolean isEnabled();
 
     /**
-     * Gets the level for a single player from this provider's system.
-     * This is the core method that providers must implement.
-     * 
-     * This method is used for DISPLAY purposes:
-     * - Displaying the player's level above their head (name tags)
-     * - Color-coding mob difficulty indicators (red/yellow/green) relative to the player's level
-     * 
-     * IMPORTANT: This is NOT directly used for mob scaling. Mob scaling uses
-     * {@link #calculateBonusLevels(List)} instead, which by default averages this method's
-     * results but can be overridden to exclude certain progression from mob difficulty.
-     * 
-     * For example, a skill system provider might:
-     * - Include ALL skill trees in getPlayerLevel() (for display)
-     * - Exclude non-combat trees in calculateBonusLevels() (for mob scaling)
-     * 
-     * This allows players to see their full progression while preventing non-combat
-     * skills from making mobs harder.
+     * Returns the player's display level from this provider.
      *
      * @param player The player to get the level for
      * @return The player's display level from this provider (used for UI and color coding)
@@ -122,15 +103,10 @@ public interface PlayerLevelProvider {
      * to trigger recalculation when player data changes.
      */
     default void onRegistered() {
-        // Default: no-op, providers can override
     }
 
     /**
-     * Registers a player level provider.
-     * This method is called by {@link LevelingAPI#registerPlayerLevelProvider(PlayerLevelProvider)}.
-     * Mod authors should use the LevelingAPI method to register their providers.
-     *
-     * @param provider The provider instance to register.
+     * Mod authors should register via {@link LevelingAPI#registerPlayerLevelProvider(PlayerLevelProvider)} instead.
      */
     static void registerProvider(PlayerLevelProvider provider) {
         providers.add(provider);
@@ -138,10 +114,7 @@ public interface PlayerLevelProvider {
     }
 
     /**
-     * Retrieves all registered player level providers.
-     * This is used internally by Dynamic Difficulty to aggregate levels from all enabled providers.
-     *
-     * @return A list of all registered {@link PlayerLevelProvider} instances.
+     * Used internally by Dynamic Difficulty to aggregate levels from all enabled providers.
      */
     static List<PlayerLevelProvider> getProviders() {
         return providers;

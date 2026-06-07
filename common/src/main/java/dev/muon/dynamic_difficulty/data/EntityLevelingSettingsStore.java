@@ -16,13 +16,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Storage and lookup for entity leveling settings.
- * Platform-specific reloaders populate this via loadSettings/loadTagSettings.
- */
-public class EntityLevelingSettingsReloader {
+public class EntityLevelingSettingsStore {
   private static final Logger LOGGER = LogUtils.getLogger();
-  // Store raw settings - they get resolved at lookup time with dimension fallback
   private static final Map<Identifier, EntityLevelingSettings.RawSettings> INDIVIDUAL_SETTINGS = new HashMap<>();
   private static final Map<TagKey<EntityType<?>>, EntityLevelingSettings.RawSettings> TAG_SETTINGS = new HashMap<>();
 
@@ -68,9 +63,6 @@ public class EntityLevelingSettingsReloader {
     return null;
   }
 
-  /**
-   * Checks if an entity type has custom settings (individual or tag-based).
-   */
   public static boolean hasCustomSettings(EntityType<?> entityType) {
     Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
 
@@ -96,18 +88,12 @@ public class EntityLevelingSettingsReloader {
     return false;
   }
 
-  /**
-   * Load individual entity settings. Called by platform-specific reloaders.
-   */
   public static void loadSettings(Map<Identifier, EntityLevelingSettings.RawSettings> settings) {
     INDIVIDUAL_SETTINGS.clear();
     INDIVIDUAL_SETTINGS.putAll(settings);
     LOGGER.info("Loaded {} individual entity leveling settings from 'leveling_settings/entities'", INDIVIDUAL_SETTINGS.size());
   }
 
-  /**
-   * Load tag-based entity settings. Called by platform-specific reloaders.
-   */
   public static void loadTagSettings(Map<Identifier, EntityLevelingSettings.RawSettings> tagSettings) {
     TAG_SETTINGS.clear();
     tagSettings.forEach((id, settings) -> TAG_SETTINGS.put(TagKey.create(Registries.ENTITY_TYPE, id), settings));

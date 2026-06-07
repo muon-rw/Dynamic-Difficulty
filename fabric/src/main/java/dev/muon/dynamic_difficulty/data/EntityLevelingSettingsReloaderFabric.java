@@ -30,6 +30,6 @@ public class EntityLevelingSettingsReloaderFabric extends SimpleJsonResourceRelo
             Map<Identifier, EntityLevelingSettings.RawSettings> prepared,
             @NotNull ResourceManager resourceManager,
             @NotNull ProfilerFiller profiler) {
-        EntityLevelingSettingsReloader.loadSettings(prepared);
+        EntityLevelingSettingsStore.loadSettings(prepared);
     }
 }
