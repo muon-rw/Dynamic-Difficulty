@@ -1,3 +1,8 @@
+## 1.3.3
+- Disable all horizontal-distance-based-scaling by default
+- Add a few default biome-tag based bonuses
+- Fix a damage pipeline issue on Neoforge
+
 ## 1.3.2
 - Default config no longer grants mob armor per level
 

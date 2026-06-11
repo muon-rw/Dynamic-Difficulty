@@ -5,7 +5,6 @@
   "plugin": "dev.muon.dynamic_difficulty.MixinConfigPluginNeoForge",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "LivingEntityMixin",
     "compat.puffish_skills.SkillsModMixin"
   ],
   "client": [

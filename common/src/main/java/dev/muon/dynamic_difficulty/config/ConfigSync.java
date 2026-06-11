@@ -79,10 +79,10 @@ public class ConfigSync extends Config {
 
     @Comment("--- Environmental Leveling ---\n" +
             "How many levels to add per block from world spawn")
-    public ValidatedDouble levelsPerDistance = new ValidatedDouble(0.01D);
+    public ValidatedDouble levelsPerDistance = new ValidatedDouble(0.0D);
 
     @Comment("How many levels to add per block below sea level (default sea level is Y=64, can be overridden per dimension)")
-    public ValidatedDouble levelsPerDeepness = new ValidatedDouble(0.0D);
+    public ValidatedDouble levelsPerDeepness = new ValidatedDouble(0.05D);
 
     @Comment("How many levels to add per block above sea level (default sea level is Y=64, can be overridden per dimension)")
     public ValidatedDouble levelsPerHeight = new ValidatedDouble(0.0D);

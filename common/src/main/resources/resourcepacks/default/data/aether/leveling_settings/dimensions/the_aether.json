@@ -1,6 +1,5 @@
 {
   "starting_level" : 10,
   "max_level" : 100,
-  "levels_per_distance" : 0.005,
   "random_level_bonus" : 5
 }

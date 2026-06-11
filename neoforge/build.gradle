@@ -30,6 +30,7 @@ dependencies {
     localRuntime("curse.maven:default-skill-trees-1074229:${default_skill_trees_file}")
     compileOnly "curse.maven:health-bars-1367734:8004270"
     localRuntime "curse.maven:health-bars-1367734:8004270"
+    localRuntime "curse.maven:puzzles-lib-495476:8225561"
 }
 
 neoForge {
