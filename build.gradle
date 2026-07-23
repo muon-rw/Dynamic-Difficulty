@@ -3,8 +3,8 @@ plugins {
     id 'net.fabricmc.fabric-loom' version '1.16-SNAPSHOT' apply false
     // see https://projects.neoforged.net/neoforged/moddevgradle for new versions
     id 'net.neoforged.moddev' version '2.0.141' apply false
-    id 'dev.mixinmcp.decompile' version '1.2.0' apply false
-    id "me.modmuss50.mod-publish-plugin" version "1.1.0"
+    id 'dev.mixinmcp.decompile' version '1.3.0' apply false
+    id "me.modmuss50.mod-publish-plugin" version "2.1.1"
 }
 
 // Multi-loader publishing — see https://modmuss50.github.io/mod-publish-plugin/multi_platform/
@@ -51,6 +51,9 @@ publishMods {
             projectId = project.curseforge_id
             projectSlug = project.mod_id
             minecraftVersions.add(mcVersion)
+            // Required since 2.0.0: CurseForge rejects uploads unless at least one side is declared.
+            client = true
+            server = true
             requires {
                 slug = 'fzzy-config'
             }
@@ -75,6 +78,7 @@ publishMods {
             accessToken = providers.environmentVariable('MODRINTH_TOKEN')
             projectId = project.modrinth_id
             minecraftVersions.add(mcVersion)
+            environment = CLIENT_AND_SERVER
             requires {
                 slug = 'fzzy-config'
             }
