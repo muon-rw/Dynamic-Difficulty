@@ -4,7 +4,7 @@ plugins {
     // see https://projects.neoforged.net/neoforged/moddevgradle for new versions
     id 'net.neoforged.moddev' version '2.0.141' apply false
     id 'dev.mixinmcp.decompile' version '1.3.0' apply false
-    id "me.modmuss50.mod-publish-plugin" version "2.1.1"
+    id "me.modmuss50.mod-publish-plugin" version "2.2.0"
 }
 
 // Multi-loader publishing — see https://modmuss50.github.io/mod-publish-plugin/multi_platform/
@@ -47,7 +47,7 @@ publishMods {
 
     if (project.findProperty('curseforge_id')) {
         def cfOptions = curseforgeOptions {
-            accessToken = providers.environmentVariable('CURSEFORGE_TOKEN')
+            accessToken = providers.environmentVariable('CF_TOKEN')
             projectId = project.curseforge_id
             projectSlug = project.mod_id
             minecraftVersions.add(mcVersion)

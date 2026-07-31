@@ -3,6 +3,10 @@ pluginManagement {
         gradlePluginPortal()
         mavenCentral()
         mavenLocal()
+        maven {
+            name = 'Muon'
+            url = uri('https://maven.muon.rip/releases')
+        }
         exclusiveContent {
             forRepository {
                 maven {
