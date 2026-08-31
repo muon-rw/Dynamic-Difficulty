@@ -96,6 +96,17 @@ if (project.findProperty('fabric_modpack_path')) {
         rename { String fileName ->
             fileName.replace(project.version.toString(), 'dev')
         }
+        // Loaders don't guarantee which duplicate mod jar wins, so remove this
+        // mod's versioned jars from the destination before sending the dev jar
+        doFirst {
+            def prefix = "${project.base.archivesName.get()}-"
+            fabricModpackDest.listFiles()?.each { existing ->
+                if (existing.name.startsWith(prefix) && existing.name.endsWith('.jar') && existing.name != "${prefix}dev.jar") {
+                    println "Deleted versioned jar: ${existing.name}"
+                    existing.delete()
+                }
+            }
+        }
         doLast {
             println "Fabric dev jar sent to: ${fabricModpackDest}"
         }
