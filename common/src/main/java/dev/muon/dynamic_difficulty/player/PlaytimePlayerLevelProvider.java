@@ -48,8 +48,8 @@ public class PlaytimePlayerLevelProvider implements PlayerLevelProvider {
 
         int bonusLevels = (int) (averagePlaytimeHours * Configs.SYNC.levelsPerPlaytimeHour.get());
         
-        DynamicDifficulty.LOGGER.debug("Playtime provider: {} players, {} ticks average ({} hours), {} bonus levels",
-                players.size(), String.format("%.0f", averagePlaytimeTicks), String.format("%.2f", averagePlaytimeHours), bonusLevels);
+        DynamicDifficulty.debugLog("Playtime provider: {} players, {} ticks average ({} hours), {} bonus levels",
+                players.size(), (long) averagePlaytimeTicks, averagePlaytimeHours, bonusLevels);
         
         return bonusLevels;
     }

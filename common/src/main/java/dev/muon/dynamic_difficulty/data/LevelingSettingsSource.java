@@ -23,9 +23,9 @@ public record LevelingSettingsSource<T>(
 
     public static final List<LevelingSettingsSource<?>> ALL = List.of(
             of("dimension_leveling_settings", "dimensions",
-                    DimensionLevelingSettings.CODEC, DimensionLevelingSettingsStore::loadSettings),
+                    DimensionLevelingSettings.RAW_CODEC, DimensionLevelingSettingsStore::loadSettings),
             of("dimension_tag_leveling_settings", "dimension_tags",
-                    DimensionLevelingSettings.CODEC, DimensionLevelingSettingsStore::loadTagSettings),
+                    DimensionLevelingSettings.RAW_CODEC, DimensionLevelingSettingsStore::loadTagSettings),
             of("entity_leveling_settings", "entities",
                     EntityLevelingSettings.RAW_CODEC, EntityLevelingSettingsStore::loadSettings),
             of("entity_tag_leveling_settings", "entity_tags",

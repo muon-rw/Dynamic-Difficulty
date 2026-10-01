@@ -74,7 +74,7 @@ public class SyncDungeonDifficultyData implements CustomPacketPayload {
         Minecraft client = Minecraft.getInstance();
         ClientLevel level = client.level;
         if (level == null) {
-            DynamicDifficulty.LOGGER.debug("SyncDungeonDifficultyData: ClientLevel is null, cannot process packet");
+            DynamicDifficulty.debugLog("SyncDungeonDifficultyData: ClientLevel is null, cannot process packet");
             return;
         }
         
@@ -87,7 +87,7 @@ public class SyncDungeonDifficultyData implements CustomPacketPayload {
             // Entity not on client yet - cache for later (with size cap)
             if (PENDING_DATA.size() < MAX_PENDING_ENTRIES) {
                 PENDING_DATA.put(msg.entityId, new PendingData(data, client.level.getGameTime()));
-                DynamicDifficulty.LOGGER.debug("SyncDungeonDifficultyData: Entity ID {} not found yet, caching for later", msg.entityId);
+                DynamicDifficulty.debugLog("SyncDungeonDifficultyData: Entity ID {} not found yet, caching for later", msg.entityId);
             } else {
                 DynamicDifficulty.LOGGER.warn("SyncDungeonDifficultyData: Pending cache full, dropping data for entity ID {}", msg.entityId);
             }
@@ -96,8 +96,8 @@ public class SyncDungeonDifficultyData implements CustomPacketPayload {
 
     private static void applyData(LivingEntity entity, DungeonDifficultyData data, int entityId) {
         DynamicDifficulty.getHelper().getDungeonDifficultyAttachmentHelper().setData(entity, data);
-        DynamicDifficulty.LOGGER.debug("Client received Dungeon Difficulty data for {} (ID {}): {} level {}",
-                entity.getType().getDescription().getString(), entityId, data.difficultyName(), data.level());
+        DynamicDifficulty.debugLog("Client received Dungeon Difficulty data for {} (ID {}): {} level {}",
+                entity.getType(), entityId, data.difficultyName(), data.level());
     }
 
     /**

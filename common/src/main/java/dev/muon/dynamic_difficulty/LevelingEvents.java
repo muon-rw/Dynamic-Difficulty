@@ -78,8 +78,8 @@ public class LevelingEvents {
 
     public static void onPlayerLoggedOut(ServerPlayer player) {
         PlayerLocationTracker.cleanupPlayer(player.getUUID());
-        DynamicDifficulty.LOGGER.debug("Cleaned up location tracking for disconnected player: {}",
-                player.getName().getString());
+        DynamicDifficulty.debugLog("Cleaned up location tracking for disconnected player: {}",
+                player.getScoreboardName());
     }
 
     public static void onPlayerRespawn(ServerPlayer player) {

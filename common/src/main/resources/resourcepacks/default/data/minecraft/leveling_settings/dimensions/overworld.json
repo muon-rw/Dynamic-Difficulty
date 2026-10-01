@@ -1,5 +1,3 @@
 {
-  "starting_level" : 1,
-  "max_level" : 50,
-  "levels_per_deepness" : 0.075
+  "max_level" : 50
 }

@@ -50,7 +50,7 @@ public class PlayerLocationTracker {
         int cleaned = initialSize - playerStates.size();
 
         if (cleaned > 0) {
-            DynamicDifficulty.LOGGER.debug("Cleaned up {} stale player location tracking entries", cleaned);
+            DynamicDifficulty.debugLog("Cleaned up {} stale player location tracking entries", cleaned);
         }
 
         return cleaned;
@@ -118,8 +118,8 @@ public class PlayerLocationTracker {
     private static void sendDimensionEntry(ServerPlayer player, UUID playerId, ResourceKey<Level> currentDimension,
             int currentBaseLevel, int playerBonus, int displayedLevel) {
         playerStates.put(playerId, new PlayerLocationState(null, null, currentDimension, displayedLevel + playerBonus));
-        DynamicDifficulty.LOGGER.debug("Dimension notification for {}: base={}, player={}",
-                player.getName().getString(), currentBaseLevel, playerBonus);
+        DynamicDifficulty.debugLog("Dimension notification for {}: base={}, player={}",
+                player.getScoreboardName(), currentBaseLevel, playerBonus);
         NetworkDispatcher.sendLocationEntry(player, LocationEntryPacket.EntryType.DIMENSION,
                 currentDimension.location(), 0, currentBaseLevel, playerBonus, displayedLevel);
     }
@@ -129,8 +129,8 @@ public class PlayerLocationTracker {
         playerStates.put(playerId, new PlayerLocationState(currentStructure, state.biomeId(), state.dimension(), displayedLevel + playerBonus));
         ResourceLocation sentId = currentStructure != null ? currentStructure : state.structureId();
         int sentBonus = currentStructure != null ? structureBonus.totalBonus() : 0;
-        DynamicDifficulty.LOGGER.debug("Structure notification for {}: base={}, structure={}, player={}",
-                player.getName().getString(), currentBaseLevel, sentBonus, playerBonus);
+        DynamicDifficulty.debugLog("Structure notification for {}: base={}, structure={}, player={}",
+                player.getScoreboardName(), currentBaseLevel, sentBonus, playerBonus);
         NetworkDispatcher.sendLocationEntry(player, LocationEntryPacket.EntryType.STRUCTURE,
                 sentId, sentBonus, currentBaseLevel, playerBonus, displayedLevel);
     }
@@ -138,8 +138,8 @@ public class PlayerLocationTracker {
     private static void sendBiomeEntry(ServerPlayer player, UUID playerId, PlayerLocationState state, ResourceLocation currentBiome,
             BiomeBonus biomeBonus, int currentBaseLevel, int playerBonus, int displayedLevel) {
         playerStates.put(playerId, new PlayerLocationState(state.structureId(), currentBiome, state.dimension(), displayedLevel + playerBonus));
-        DynamicDifficulty.LOGGER.debug("Biome notification for {}: base={}, biome={}, player={}",
-                player.getName().getString(), currentBaseLevel, biomeBonus.totalBonus(), playerBonus);
+        DynamicDifficulty.debugLog("Biome notification for {}: base={}, biome={}, player={}",
+                player.getScoreboardName(), currentBaseLevel, biomeBonus.totalBonus(), playerBonus);
         NetworkDispatcher.sendLocationEntry(player, LocationEntryPacket.EntryType.BIOME,
                 currentBiome, biomeBonus.totalBonus(), currentBaseLevel, playerBonus, displayedLevel);
     }
@@ -155,8 +155,8 @@ public class PlayerLocationTracker {
             NetworkDispatcher.sendLocationEntry(player, LocationEntryPacket.EntryType.DIMENSION,
                     currentDimension.location(), 0, currentBaseLevel, playerBonus, displayedLevel);
         }
-        DynamicDifficulty.LOGGER.debug("Level update for {}: level={} (was {}), base={}, player={}",
-                player.getName().getString(), displayedLevel + playerBonus, state.lastLevel(), currentBaseLevel, playerBonus);
+        DynamicDifficulty.debugLog("Level update for {}: level={} (was {}), base={}, player={}",
+                player.getScoreboardName(), displayedLevel + playerBonus, state.lastLevel(), currentBaseLevel, playerBonus);
     }
 
 }

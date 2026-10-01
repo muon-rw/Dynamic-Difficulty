@@ -52,8 +52,8 @@ public class DungeonDifficultyCompat {
         SyncDungeonDifficultyData packet = new SyncDungeonDifficultyData(entity.getId(), data);
         PacketDistributor.sendToPlayersTrackingEntity(entity, packet);
 
-        DynamicDifficulty.LOGGER.debug("Captured Dungeon Difficulty data for {} (ID {}): {} level {}",
-                entity.getType().getDescription().getString(), entity.getId(), difficultyName, level);
+        DynamicDifficulty.debugLog("Captured Dungeon Difficulty data for {} (ID {}): {} level {}",
+                entity.getType(), entity.getId(), difficultyName, level);
     }
 }
 

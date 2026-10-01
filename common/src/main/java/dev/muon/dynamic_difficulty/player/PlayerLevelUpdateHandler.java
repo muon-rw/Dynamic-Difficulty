@@ -59,8 +59,8 @@ public class PlayerLevelUpdateHandler {
     public static void calculateAndSyncPlayerLevel(ServerPlayer player) {
         int playerLevel = LevelingAPI.getPlayerDisplayLevel(player);
         LevelingSystem.setLevelAttachment(player, playerLevel);
-        DynamicDifficulty.LOGGER.debug("Syncing player {} level ({}) to clients",
-                player.getName().getString(), playerLevel);
+        DynamicDifficulty.debugLog("Syncing player {} level ({}) to clients",
+                player.getScoreboardName(), playerLevel);
         NetworkDispatcher.syncLevelToAllPlayers(player);
     }
 

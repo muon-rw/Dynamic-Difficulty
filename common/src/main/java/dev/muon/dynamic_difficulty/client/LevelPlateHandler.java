@@ -6,7 +6,6 @@ import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyDa
 import dev.muon.dynamic_difficulty.config.ConfigClient;
 import dev.muon.dynamic_difficulty.config.Configs;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -30,14 +29,12 @@ public class LevelPlateHandler {
             DynamicDifficulty.isModLoaded("healthbars_dd_compat");
 
     public static Component modifyHealthBarsName(Component original, LivingEntity entity) {
-        if (HEALTHBARS_DD_COMPAT_LOADED || !LevelingAPI.shouldShowLevel(entity)) {
-            return original;
-        }
-        return modifyNameTag(original, entity);
+        return HEALTHBARS_DD_COMPAT_LOADED ? original : modifyNameTag(original, entity);
     }
 
     /** Controlled by injectLevelIntoMobs and injectLevelIntoPlayers config options. */
     public static boolean shouldInjectLevel(LivingEntity entity) {
+        if (!displaysLevel(entity)) return false;
         if (entity instanceof Player) {
             if (CHRONICLES_LEVELING_LOADED) return false;
             return Configs.CLIENT.injectLevelIntoPlayers.get();
@@ -51,9 +48,15 @@ public class LevelPlateHandler {
      * Controlled by overrideMobNameplateVisibility and overridePlayerNameplateVisibility config options.
      */
     public static boolean shouldOverrideNameplateVisibility(LivingEntity entity) {
+        if (!displaysLevel(entity)) return false;
         return entity instanceof Player
                 ? Configs.CLIENT.overridePlayerNameplateVisibility.get()
                 : Configs.CLIENT.overrideMobNameplateVisibility.get();
+    }
+
+    // Unleveled entities (blacklisted, passive, armor stands) would otherwise read as level 1.
+    private static boolean displaysLevel(LivingEntity entity) {
+        return LevelingAPI.hasLevel(entity) && LevelingAPI.shouldShowLevel(entity);
     }
 
     /**
@@ -183,7 +186,6 @@ public class LevelPlateHandler {
             return false;
         }
 
-        if (!passesLevelAndHiddenFilters(entity)) return false;
         if (!hasLineOfSight(clientPlayer, entity)) return false;
 
         return matchesRenderBehavior(behavior, minecraft, entity);
@@ -201,14 +203,6 @@ public class LevelPlateHandler {
     private static boolean isWithinRenderDistance(LivingEntity entity, LocalPlayer clientPlayer) {
         double maxDistSq = Configs.CLIENT.renderDistance.get() * Configs.CLIENT.renderDistance.get();
         return entity.distanceToSqr(clientPlayer) <= maxDistSq;
-    }
-
-    private static boolean passesLevelAndHiddenFilters(LivingEntity entity) {
-        if (!LevelingAPI.shouldShowLevel(entity)) return false;
-
-        String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
-        if (Configs.CLIENT.hiddenLevelEntities.get().contains(entityId)) return false;
-        return true;
     }
 
     private static boolean hasLineOfSight(LocalPlayer clientPlayer, LivingEntity entity) {

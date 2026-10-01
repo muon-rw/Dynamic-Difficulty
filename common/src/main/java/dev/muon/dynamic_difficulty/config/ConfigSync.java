@@ -199,6 +199,11 @@ public class ConfigSync extends Config {
             "Users can edit that file to customize drop rates, level ranges, and add custom items")
     public ValidatedBoolean enableLevelBasedDrops = new ValidatedBoolean(true);
 
+    @Comment("--- Debug ---\n" +
+            "Log level calculations, location notifications and level syncing for every mob and player\n" +
+            "Very verbose; enable only while diagnosing an issue")
+    public ValidatedBoolean debugLogging = new ValidatedBoolean(false);
+
 
     private static final Map<ResourceKey<Attribute>, AttributeModifier> ATTRIBUTE_BONUSES = new HashMap<>();
 
@@ -260,7 +265,7 @@ public class ConfigSync extends Config {
 
         AttributeModifier modifier = new AttributeModifier(modifierId, amount, operation);
         ATTRIBUTE_BONUSES.put(attributeKey, modifier);
-        DynamicDifficulty.LOGGER.info("Config: Registered attribute bonus for ResourceKey {} ({}) with amount {}/level, operation {}, ModID {}",
+        DynamicDifficulty.debugLog("Config: Registered attribute bonus for ResourceKey {} ({}) with amount {}/level, operation {}, ModID {}",
                 attributeKey.location(), attribute.getDescriptionId(), amount, operation, modifierId);
     }
 

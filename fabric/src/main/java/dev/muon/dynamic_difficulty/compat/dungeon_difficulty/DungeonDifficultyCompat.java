@@ -56,12 +56,12 @@ public class DungeonDifficultyCompat {
         for (ServerPlayer player : trackingPlayers) {
             ServerPlayNetworking.send(player, packet);
             playerCount++;
-            DynamicDifficulty.LOGGER.debug("Sent Dungeon Difficulty packet to player {} for entity ID {}", 
-                    player.getName().getString(), entity.getId());
+            DynamicDifficulty.debugLog("Sent Dungeon Difficulty packet to player {} for entity ID {}", 
+                    player.getScoreboardName(), entity.getId());
         }
 
-        DynamicDifficulty.LOGGER.debug("Captured Dungeon Difficulty data for {} (ID {}): {} level {} - sent to {} players",
-                entity.getType().getDescription().getString(), entity.getId(), difficultyName, level, playerCount);
+        DynamicDifficulty.debugLog("Captured Dungeon Difficulty data for {} (ID {}): {} level {} - sent to {} players",
+                entity.getType(), entity.getId(), difficultyName, level, playerCount);
     }
 }
 

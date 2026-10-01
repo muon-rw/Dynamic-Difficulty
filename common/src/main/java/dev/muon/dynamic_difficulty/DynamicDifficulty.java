@@ -29,6 +29,12 @@ public class DynamicDifficulty {
         // Mod-specific providers are registered in platform-specific init code
     }
 
+    public static void debugLog(String message, Object... args) {
+        if (Configs.SYNC != null && Configs.SYNC.debugLogging.get()) {
+            LOGGER.info(message, args);
+        }
+    }
+
     public static boolean isModLoaded(String modId) {
         if (helper != null) {
             return helper.isModLoaded(modId);

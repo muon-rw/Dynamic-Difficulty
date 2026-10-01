@@ -41,23 +41,24 @@ public record DimensionLevelingSettings(
             Optional<Integer> seaLevel,
             Optional<Map<Attribute, AttributeModifier>> attributeModifiers,
             Optional<Double> playerLevelMultiplier,
-            Optional<ApplyLevelBonuses> applyLevelBonuses
+            Optional<ApplyLevelBonuses> applyLevelBonuses,
+            int priority
     ) {
-        public DimensionLevelingSettings resolve() {
+        public DimensionLevelingSettings resolve(DimensionLevelingSettings prior) {
             return new DimensionLevelingSettings(
-                    startingLevel.orElseGet(() -> Configs.SYNC.startingLevel.get()),
-                    maxLevel.orElseGet(() -> Configs.SYNC.maxLevel.get()),
-                    levelsPerDistance.orElseGet(() -> Configs.SYNC.levelsPerDistance.get().floatValue()),
-                    levelsPerDeepness.orElseGet(() -> Configs.SYNC.levelsPerDeepness.get().floatValue()),
-                    levelsPerHeight.orElseGet(() -> Configs.SYNC.levelsPerHeight.get().floatValue()),
-                    levelsPerDay.orElseGet(() -> Configs.SYNC.levelsPerDay.get().floatValue()),
-                    levelsPerLocalDifficulty.orElseGet(() -> Configs.SYNC.levelsPerLocalDifficulty.get().floatValue()),
-                    randomLevelBonus.orElseGet(() -> Configs.SYNC.randomLevelBonus.get()),
-                    spawnPosOverride.orElse(null),
-                    seaLevel.orElse(64),
-                    attributeModifiers.orElse(null),
-                    playerLevelMultiplier.orElse(null),
-                    applyLevelBonuses.orElse(null)
+                    startingLevel.orElse(prior.startingLevel()),
+                    maxLevel.orElse(prior.maxLevel()),
+                    levelsPerDistance.orElse(prior.levelsPerDistance()),
+                    levelsPerDeepness.orElse(prior.levelsPerDepth()),
+                    levelsPerHeight.orElse(prior.levelsPerHeight()),
+                    levelsPerDay.orElse(prior.levelsPerDay()),
+                    levelsPerLocalDifficulty.orElse(prior.levelsPerLocalDifficulty()),
+                    randomLevelBonus.orElse(prior.randomLevelBonus()),
+                    spawnPosOverride.orElse(prior.spawnPosOverride()),
+                    seaLevel.orElse(prior.seaLevel()),
+                    attributeModifiers.orElse(prior.attributeModifiers()),
+                    playerLevelMultiplier.orElse(prior.playerLevelMultiplier()),
+                    applyLevelBonuses.orElse(prior.applyLevelBonuses())
             );
         }
     }
@@ -97,28 +98,9 @@ public record DimensionLevelingSettings(
             Codec.INT.optionalFieldOf("sea_level").forGetter(RawSettings::seaLevel),
             ATTRIBUTE_MODIFIERS_CODEC.optionalFieldOf("attribute_modifiers").forGetter(RawSettings::attributeModifiers),
             Codec.DOUBLE.optionalFieldOf("player_level_multiplier").forGetter(RawSettings::playerLevelMultiplier),
-            ApplyLevelBonuses.CODEC.optionalFieldOf("apply_level_bonuses").forGetter(RawSettings::applyLevelBonuses)
+            ApplyLevelBonuses.CODEC.optionalFieldOf("apply_level_bonuses").forGetter(RawSettings::applyLevelBonuses),
+            Codec.INT.optionalFieldOf("priority", 0).forGetter(RawSettings::priority)
     ).apply(instance, RawSettings::new));
-
-    public static final Codec<DimensionLevelingSettings> CODEC = RAW_CODEC.xmap(
-            RawSettings::resolve,
-            // Encoding: convert back to raw (all fields present)
-            settings -> new RawSettings(
-                    Optional.of(settings.startingLevel()),
-                    Optional.of(settings.maxLevel()),
-                    Optional.of(settings.levelsPerDistance()),
-                    Optional.of(settings.levelsPerDepth()),
-                    Optional.of(settings.levelsPerHeight()),
-                    Optional.of(settings.levelsPerDay()),
-                    Optional.of(settings.levelsPerLocalDifficulty()),
-                    Optional.of(settings.randomLevelBonus()),
-                    Optional.ofNullable(settings.spawnPosOverride()),
-                    Optional.of(settings.seaLevel()),
-                    Optional.ofNullable(settings.attributeModifiers()),
-                    Optional.ofNullable(settings.playerLevelMultiplier()),
-                    Optional.ofNullable(settings.applyLevelBonuses())
-            )
-    );
 
     public static DimensionLevelingSettings createDefault() {
         return new DimensionLevelingSettings(

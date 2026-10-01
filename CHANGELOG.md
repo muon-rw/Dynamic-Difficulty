@@ -1,3 +1,11 @@
+## 1.3.4
+- Added new optional `priority` field to entity and dimension tag settings for more granularity with overlapping tags (previously, one tag was selected arbitrarily)
+- Fix structure lookups loading or generating chunks on the server thread, which could hang the server (#62)
+- Mobs keep their share of health when a level changes their max health, instead of healing to full; fixes Apothic Spawners' starting health being overridden (#58)
+- Unleveled entities (blacklisted, passive, armor stands) no longer show "Lv. 1" on nameplates or Health Bars, and hidden-level entities no longer get their nameplate forced hidden (#39)
+- The built-in overworld settings no longer override `startingLevel` and `levelsPerDeepness` from the config (#60)
+- Per-mob and per-sync debug logging is now off by default; enable it with `debugLogging` in `sync.toml`
+
 ## 1.3.3
 Brings 1.21.1 up to date with the 26.1.2 releases (1.2.0 through 1.3.3)
 - Migrate to FzzyConfig, now required instead of Forge Config API Port

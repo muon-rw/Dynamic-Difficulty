@@ -113,6 +113,8 @@ Each tier can override any standard scaling field (not just the additive `level_
 
 When multiple biome or structure entries match (individual + tags, or overlapping structures), override fields merge via **per-field max**: the largest value of each field wins independently. The `level_bonus`/`bypasses_cap` pair instead contributes via a bypass-cap bucket model (max bonus per bucket).
 
+When multiple dimension or entity entries match, they instead use an `priority` field and merge entries between all matches (Each layer overrides only the fields it sets) See [Overlapping Entries](#overlapping-entries).
+
 **Example**, entity with `max_level: 20`:
 - Base: `1 + 1600×0.01 + 20×0.05 + 10×0.5 + 2.5×1.0` = **25**
 - Biome bonus (+5, respects cap): `25+5=30` → **capped to 20**
@@ -169,6 +171,7 @@ All fields are optional; omitted fields fall back to the config defaults. Use `a
 | `attribute_modifiers`         | Array   | config  | Per-level attribute bonuses                   |
 | `player_level_multiplier`     | Double  | config  | Player-bonus multiplier override              |
 | `apply_level_bonuses`         | Object  | `null`  | Bonus-source gate (see below)                 |
+| `priority`                    | Integer | 0       | Tag entry apply order (see below)             |
 
 ### `apply_level_bonuses`
 
@@ -207,6 +210,31 @@ Same field set as [Dimensions](#dimensions), minus `spawn_pos_override` and `sea
   "apply_level_bonuses": { "biome": true, "structure": false, "player": true }
 }
 ```
+
+### Overlapping Entries
+
+An entity (or dimension) can match several entries: its own file plus any number of tag files. Every match applies, as layers on top of the resolution chain:
+
+1. Tag entries, in ascending `priority` (default `0`). Equal priorities apply in tag id order.
+2. The individual entry, always last.
+
+A layer overrides only the fields it sets, so a narrower tag can adjust one field of a broader one. Illagers are also raiders; here they get the raiders' modifiers and the illager level:
+
+`data/minecraft/leveling_settings/entity_tags/raiders.json`
+```json
+{
+  "attribute_modifiers": [
+    { "attribute": "minecraft:generic.max_health", "amount": 0.08, "operation": "add_multiplied_total" }
+  ]
+}
+```
+
+`data/minecraft/leveling_settings/entity_tags/illager.json`
+```json
+{ "priority": 1, "starting_level": 10 }
+```
+
+`priority` only orders tag entries; an individual entry applies last regardless. Before 1.3.4, only one matching entry applied, picked arbitrarily.
 
 ### Attribute Modifiers
 
@@ -434,5 +462,6 @@ Each level-up item has a configurable cap (`{itemName}MaxLevel` in sync TOML). D
 
 - `/dynamic_difficulty debug location`: full breakdown of the level calculation at your position (base, overrides, bonuses, cap, final). Indispensable when something looks off.
 - `/dynamic_difficulty dumpStructures`: lists registered structures and their configured bonuses.
+- `debugLogging = true` in `sync.toml`: logs every mob's level calculation and every level sync. Very verbose; turn it off when done.
 - `/datapack list`: confirm your datapack is loaded.
 - Edit datapacks with [VSCode](https://code.visualstudio.com/) by opening the *entire datapack folder*. Much easier than poking files through Explorer/Finder.

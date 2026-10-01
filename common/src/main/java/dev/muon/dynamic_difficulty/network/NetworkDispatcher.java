@@ -64,8 +64,8 @@ public class NetworkDispatcher {
     DungeonDifficultyData data = DynamicDifficulty.getHelper().getDungeonDifficultyAttachmentHelper().getData(entity);
     if (data != null && !data.isEmpty()) {
       getHelper().sendToPlayer(player, new SyncDungeonDifficultyData(entity.getId(), data));
-      DynamicDifficulty.LOGGER.debug("Synced Dungeon Difficulty data to {} for entity {} (ID {}): {} level {}",
-              player.getName().getString(), entity.getType().getDescription().getString(), 
+      DynamicDifficulty.debugLog("Synced Dungeon Difficulty data to {} for entity {} (ID {}): {} level {}",
+              player.getScoreboardName(), entity.getType(),
               entity.getId(), data.difficultyName(), data.level());
     }
   }

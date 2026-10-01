@@ -4,19 +4,22 @@ import dev.muon.dynamic_difficulty.api.BiomeBonus;
 import dev.muon.dynamic_difficulty.api.StructureBonus;
 import dev.muon.dynamic_difficulty.data.DimensionLevelingSettingsStore;
 import dev.muon.dynamic_difficulty.data.LocationLevelingSettingsStore;
+import dev.muon.dynamic_difficulty.mixin.ChunkMapInvoker;
 import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
 import dev.muon.dynamic_difficulty.settings.LevelingSettings;
 import dev.muon.dynamic_difficulty.settings.LocationLevelingSettings.RawSettings;
-import net.minecraft.advancements.critereon.LocationPredicate;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import org.jetbrains.annotations.Nullable;
@@ -114,23 +117,39 @@ public final class LocationBonusUtils {
     }
 
     private static List<Match> structuresAt(ServerLevel level, BlockPos pos) {
+        ChunkAccess chunk = loadedChunk(level, new ChunkPos(pos), ChunkStatus.STRUCTURE_REFERENCES);
+        if (chunk == null) {
+            return List.of();
+        }
         Registry<Structure> structureRegistry = level.registryAccess().registryOrThrow(Registries.STRUCTURE);
         List<Match> matches = new ArrayList<>();
-
-        for (StructureStart start : level.structureManager().startsForStructure(new ChunkPos(pos), structure -> true)) {
-            if (!start.isValid()) continue;
-
-            ResourceLocation structureId = structureRegistry.getKey(start.getStructure());
-            if (structureId == null) continue;
-
-            Holder<Structure> structureHolder = structureRegistry.getHolderOrThrow(ResourceKey.create(Registries.STRUCTURE, structureId));
-            if (!LocationPredicate.Builder.inStructure(structureHolder).build().matches(level, pos.getX(), pos.getY(), pos.getZ())) {
-                continue;
+        chunk.getAllReferences().forEach((structure, startChunks) -> {
+            ResourceLocation structureId = structureRegistry.getKey(structure);
+            if (structureId != null && hasLoadedPieceAt(level, pos, structure, startChunks)) {
+                matches.add(new Match(structureId, LocationLevelingSettingsStore.STRUCTURES.getMatching(structureId, structureRegistry)));
             }
-
-            matches.add(new Match(structureId, LocationLevelingSettingsStore.STRUCTURES.getMatching(structureId, structureRegistry)));
-        }
+        });
         return matches;
+    }
+
+    private static boolean hasLoadedPieceAt(ServerLevel level, BlockPos pos, Structure structure, LongSet startChunks) {
+        StructureManager structureManager = level.structureManager();
+        for (long startChunkPos : startChunks) {
+            ChunkAccess startChunk = loadedChunk(level, new ChunkPos(startChunkPos), ChunkStatus.STRUCTURE_STARTS);
+            if (startChunk == null) continue;
+            StructureStart start = startChunk.getStartForStructure(structure);
+            if (start != null && start.isValid() && structureManager.structureHasPieceAt(pos, start)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Vanilla's structure lookups load or generate missing chunks, which can hang the server tick.
+    @Nullable
+    private static ChunkAccess loadedChunk(ServerLevel level, ChunkPos pos, ChunkStatus status) {
+        ChunkHolder holder = ((ChunkMapInvoker) level.getChunkSource().chunkMap).dynamic_difficulty$getVisibleChunkIfPresent(pos.toLong());
+        return holder == null ? null : holder.getChunkIfPresent(status);
     }
 
     private static StructureBonus structureBonus(List<Match> structures, boolean onlyWithBonuses) {

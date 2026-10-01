@@ -1,7 +1,6 @@
 package dev.muon.dynamic_difficulty.mixin.client;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.client.LevelPlateHandler;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.network.chat.Component;
@@ -21,13 +20,9 @@ public class EntityRendererMixin {
                 target = "Lnet/minecraft/client/renderer/entity/EntityRenderer;shouldShowName(Lnet/minecraft/world/entity/Entity;)Z")
     )
     private boolean modifyShouldShowName(boolean original, Entity entity) {
-        if (!(entity instanceof LivingEntity living) || !LevelingAPI.shouldShowLevel(living)) {
+        if (!(entity instanceof LivingEntity living) || !LevelPlateHandler.shouldOverrideNameplateVisibility(living)) {
             return original;
         }
-        if (!LevelPlateHandler.shouldOverrideNameplateVisibility(living)) {
-            return original;
-        }
-
         return LevelPlateHandler.shouldShowName(living);
     }
 

@@ -81,7 +81,7 @@ public class SyncLevelingData implements CustomPacketPayload {
       // Entity not on client yet - cache for later (with size cap)
       if (PENDING_DATA.size() < MAX_PENDING_ENTRIES) {
         PENDING_DATA.put(msg.entityId, new PendingData(msg.level, level.getGameTime()));
-        DynamicDifficulty.LOGGER.debug("SyncLevelingData: Entity ID {} not found yet, caching for later", msg.entityId);
+        DynamicDifficulty.debugLog("SyncLevelingData: Entity ID {} not found yet, caching for later", msg.entityId);
       } else {
         DynamicDifficulty.LOGGER.warn("SyncLevelingData: Pending cache full, dropping data for entity ID {}", msg.entityId);
       }
@@ -90,8 +90,8 @@ public class SyncLevelingData implements CustomPacketPayload {
 
   private static void applyLevel(LivingEntity entity, int level, int entityId) {
     DynamicDifficulty.getHelper().getLevelAttachmentHelper().setLevel(entity, level);
-    DynamicDifficulty.LOGGER.debug("Updated client attachment: {} (ID {}) level = {}",
-            entity.getType().getDescription().getString(), entityId, level);
+    DynamicDifficulty.debugLog("Updated client attachment: {} (ID {}) level = {}",
+            entity.getType(), entityId, level);
   }
 
   /**

@@ -25,7 +25,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
@@ -77,7 +76,7 @@ public class LevelingSystem {
         }
 
         if (!LevelingAPI.canHaveLevel(entity)) {
-            throw new IllegalArgumentException("Entity type " + entity.getType().getDescription().getString() + " cannot have levels");
+            throw new IllegalArgumentException("Entity type " + entity.getType() + " cannot have levels");
         }
 
         int oldLevel = getLevel(entity);
@@ -89,8 +88,8 @@ public class LevelingSystem {
             NetworkDispatcher.syncLevelToClients(entity);
         }
 
-        DynamicDifficulty.LOGGER.debug("{} level changed: {} -> {}",
-            entity.getType().getDescription().getString(), oldLevel, newLevel);
+        DynamicDifficulty.debugLog("{} level changed: {} -> {}",
+            entity.getType(), oldLevel, newLevel);
     }
 
     /**
@@ -125,9 +124,8 @@ public class LevelingSystem {
     }
 
     private static int calculateLevel(LivingEntity entity, LevelingSettings settings, @Nullable ResolvedLocation location) {
-        String entityName = entity.getType().getDescription().getString();
         if (entity.getType().is(FIXED_LEVEL_ENTITIES)) {
-            DynamicDifficulty.LOGGER.debug("{} has fixed level: {}", entityName, settings.startingLevel());
+            DynamicDifficulty.debugLog("{} has fixed level: {}", entity.getType(), settings.startingLevel());
             return settings.startingLevel();
         }
         if (location == null || !(entity.level() instanceof ServerLevel serverLevel)) {
@@ -140,8 +138,8 @@ public class LevelingSystem {
 
         int finalLevel = LevelingUtils.calculateFinalLevel(baseLevel + randomBonus, settings,
                 location.structureBonus(), location.biomeBonus(), playerBonus);
-        DynamicDifficulty.LOGGER.debug("{} level calculated: base={}, random={}, {}, {}, player={}, max={}, final={}",
-                entityName, baseLevel, randomBonus, location.structureBonus(), location.biomeBonus(),
+        DynamicDifficulty.debugLog("{} level calculated: base={}, random={}, {}, {}, player={}, max={}, final={}",
+                entity.getType(), baseLevel, randomBonus, location.structureBonus(), location.biomeBonus(),
                 playerBonus, settings.maxLevel(), finalLevel);
         return finalLevel;
     }
@@ -170,12 +168,18 @@ public class LevelingSystem {
 
     private static void applyAllLevelAttributes(LivingEntity entity, LevelingSettings settings) {
         Map<Holder<Attribute>, AttributeModifier> wantedModifiers = scaleAttributeBonuses(settings, getLevel(entity));
+        float maxHealth = entity.getMaxHealth();
+        float healthRatio = entity.getHealth() / maxHealth;
         BuiltInRegistries.ATTRIBUTE.holders().forEach(attribute -> {
             AttributeInstance instance = entity.getAttribute(attribute);
             if (instance != null) {
-                reconcileLevelingModifier(entity, attribute, instance, wantedModifiers.get(attribute));
+                reconcileLevelingModifier(instance, wantedModifiers.get(attribute));
             }
         });
+        // Spawners such as Apothic Spawners set starting health as a share of max health.
+        if (entity.getMaxHealth() != maxHealth) {
+            entity.setHealth(healthRatio * entity.getMaxHealth());
+        }
     }
 
     private static Map<Holder<Attribute>, AttributeModifier> scaleAttributeBonuses(LevelingSettings settings, int level) {
@@ -196,21 +200,14 @@ public class LevelingSystem {
     }
 
     // Settings tiers prefix their modifier ids differently, so any of our modifiers but the wanted one is stale.
-    // Leaving an unchanged modifier in place also keeps a reloaded entity from healing to full.
-    private static void reconcileLevelingModifier(LivingEntity entity, Holder<Attribute> attribute,
-                                                  AttributeInstance instance, @Nullable AttributeModifier wanted) {
+    private static void reconcileLevelingModifier(AttributeInstance instance, @Nullable AttributeModifier wanted) {
         for (AttributeModifier existing : List.copyOf(instance.getModifiers())) {
             if (existing.id().getNamespace().equals(DynamicDifficulty.MODID) && !existing.equals(wanted)) {
                 instance.removeModifier(existing.id());
             }
         }
-        if (wanted == null || instance.hasModifier(wanted.id())) {
-            return;
-        }
-        instance.addPermanentModifier(wanted);
-
-        if (attribute == Attributes.MAX_HEALTH && entity.getHealth() < entity.getMaxHealth()) {
-            entity.setHealth(entity.getMaxHealth());
+        if (wanted != null && !instance.hasModifier(wanted.id())) {
+            instance.addPermanentModifier(wanted);
         }
     }
 
@@ -236,7 +233,7 @@ public class LevelingSystem {
 
     private static int getLevelsFromNearbyPlayers(ServerLevel level, LivingEntity entity, LevelingSettings settings) {
         if (!Configs.SYNC.applyPlayerBasedLeveling.get()) {
-            DynamicDifficulty.LOGGER.debug("Player-based leveling disabled in config");
+            DynamicDifficulty.debugLog("Player-based leveling disabled in config");
             return 0;
         }
 
@@ -245,18 +242,18 @@ public class LevelingSystem {
                 entity.getBoundingBox().inflate(radius));
 
         if (nearbyPlayers.isEmpty()) {
-            DynamicDifficulty.LOGGER.debug("No players within {} blocks of {}", radius,
-                entity.getType().getDescription().getString());
+            DynamicDifficulty.debugLog("No players within {} blocks of {}", radius,
+                entity.getType());
             return 0;
         }
 
-        DynamicDifficulty.LOGGER.debug("Found {} players near {}: {}",
+        DynamicDifficulty.debugLog("Found {} players near {}: {}",
             nearbyPlayers.size(),
-            entity.getType().getDescription().getString(),
-            nearbyPlayers.stream().map(p -> p.getName().getString()).toList());
+            entity.getType(),
+            nearbyPlayers);
 
         int total = PlayerLevelProvider.sumBonusLevels(nearbyPlayers);
-        DynamicDifficulty.LOGGER.debug("Total player bonus from {} providers: {}",
+        DynamicDifficulty.debugLog("Total player bonus from {} providers: {}",
             PlayerLevelProvider.getProviders().size(), total);
 
         return scalePlayerBonus(total, settings);

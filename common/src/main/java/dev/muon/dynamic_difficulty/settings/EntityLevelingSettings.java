@@ -35,7 +35,8 @@ public record EntityLevelingSettings(
       Optional<Integer> randomLevelBonus,
       Optional<Map<Attribute, AttributeModifier>> attributeModifiers,
       Optional<Double> playerLevelMultiplier,
-      Optional<DimensionLevelingSettings.ApplyLevelBonuses> applyLevelBonuses
+      Optional<DimensionLevelingSettings.ApplyLevelBonuses> applyLevelBonuses,
+      int priority
   ) {
     public EntityLevelingSettings resolve(LevelingSettings fallback) {
       return new EntityLevelingSettings(
@@ -68,6 +69,7 @@ public record EntityLevelingSettings(
       Codec.INT.optionalFieldOf("random_level_bonus").forGetter(RawSettings::randomLevelBonus),
       ATTRIBUTE_MODIFIERS_CODEC.optionalFieldOf("attribute_modifiers").forGetter(RawSettings::attributeModifiers),
       Codec.DOUBLE.optionalFieldOf("player_level_multiplier").forGetter(RawSettings::playerLevelMultiplier),
-      DimensionLevelingSettings.ApplyLevelBonuses.CODEC.optionalFieldOf("apply_level_bonuses").forGetter(RawSettings::applyLevelBonuses)
+      DimensionLevelingSettings.ApplyLevelBonuses.CODEC.optionalFieldOf("apply_level_bonuses").forGetter(RawSettings::applyLevelBonuses),
+      Codec.INT.optionalFieldOf("priority", 0).forGetter(RawSettings::priority)
   ).apply(instance, RawSettings::new));
 }
