@@ -1,5 +1,6 @@
 import dev.muon.dynamic_difficulty.gradle.Properties
 import dev.muon.dynamic_difficulty.gradle.Versions
+import me.modmuss50.mpp.PublishModTask
 import net.fabricmc.loom.task.RemapJarTask
 import org.gradle.jvm.tasks.Jar
 
@@ -37,6 +38,7 @@ repositories {
     maven("https://maven.quiltmc.org/repository/release" )
     maven("https://maven.uuid.gg/releases" )
     maven("https://maven.puffish.net")
+    maven("https://maven.fzzyhmstrs.me/")
 }
 
 dependencies {
@@ -60,11 +62,13 @@ dependencies {
     modLocalRuntime("curse.maven:emi-580555:6420930")
 
     // Config
-    modImplementation("fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${Versions.FCAP}")
+    modImplementation("me.fzzyhmstrs:fzzy_config:${Versions.FZZY_CONFIG}") {
+        exclude(group = "me.lucko")
+        exclude(group = "com.terraformersmc")
+    }
 
     // Compats
-    // Modmenu
-    modCompileOnly("com.terraformersmc:modmenu:${Versions.MOD_MENU}")
+    // Modmenu; FzzyConfig supplies the config screen factory
     modLocalRuntime("com.terraformersmc:modmenu:${Versions.MOD_MENU}")
 
     // Jade
@@ -82,6 +86,8 @@ dependencies {
     modLocalRuntime("curse.maven:dungeon-difficulty-645559:7279793")
     modLocalRuntime("maven.modrinth:tiny-config:3.0.0-fabric")
 
+    // Health Bars
+    modCompileOnly("maven.modrinth:new-health-bars:${Versions.HEALTH_BARS}-${Versions.MINECRAFT}-Fabric")
 }
 
 loom {
@@ -145,10 +151,10 @@ publishMods {
         minecraftVersions.add(Versions.MINECRAFT)
         javaVersions.add(JavaVersion.VERSION_21)
 
-        clientRequired = true
-        serverRequired = true
+        client = true
+        server = true
 
-        requires ("forge-config-api-port")
+        requires("fzzy-config")
     }
 
 //    modrinth {
@@ -165,4 +171,8 @@ publishMods {
     }
 
      */
+}
+
+tasks.withType<PublishModTask>().configureEach {
+    mustRunAfter(rootProject.subprojects.map { "${it.path}:publishAllPublicationsToMuonRepository" })
 }

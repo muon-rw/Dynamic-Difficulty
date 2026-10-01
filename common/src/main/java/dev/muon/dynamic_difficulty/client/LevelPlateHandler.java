@@ -3,7 +3,8 @@ package dev.muon.dynamic_difficulty.client;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyData;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.ConfigClient;
+import dev.muon.dynamic_difficulty.config.Configs;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.client.player.LocalPlayer;
@@ -20,14 +21,28 @@ import net.minecraft.world.phys.HitResult;
  */
 public class LevelPlateHandler {
 
-    /**
-     * Whether level info should be injected into this entity's nameplate.
-     * Controlled by injectLevelIntoMobs and injectLevelIntoPlayers config options.
-     */
+    // Chronicles: Leveling renders player nameplates itself from our PlayerLevelProvider level.
+    private static final boolean CHRONICLES_LEVELING_LOADED =
+            DynamicDifficulty.isModLoaded("chronicles_leveling");
+
+    // The standalone Health Bars compat mod appends the level itself.
+    private static final boolean HEALTHBARS_DD_COMPAT_LOADED =
+            DynamicDifficulty.isModLoaded("healthbars_dd_compat");
+
+    public static Component modifyHealthBarsName(Component original, LivingEntity entity) {
+        if (HEALTHBARS_DD_COMPAT_LOADED || !LevelingAPI.shouldShowLevel(entity)) {
+            return original;
+        }
+        return modifyNameTag(original, entity);
+    }
+
+    /** Controlled by injectLevelIntoMobs and injectLevelIntoPlayers config options. */
     public static boolean shouldInjectLevel(LivingEntity entity) {
-        return entity instanceof Player
-                ? Config.CLIENT.injectLevelIntoPlayers.get()
-                : Config.CLIENT.injectLevelIntoMobs.get();
+        if (entity instanceof Player) {
+            if (CHRONICLES_LEVELING_LOADED) return false;
+            return Configs.CLIENT.injectLevelIntoPlayers.get();
+        }
+        return Configs.CLIENT.injectLevelIntoMobs.get();
     }
 
     /**
@@ -37,8 +52,8 @@ public class LevelPlateHandler {
      */
     public static boolean shouldOverrideNameplateVisibility(LivingEntity entity) {
         return entity instanceof Player
-                ? Config.CLIENT.overridePlayerNameplateVisibility.get()
-                : Config.CLIENT.overrideMobNameplateVisibility.get();
+                ? Configs.CLIENT.overridePlayerNameplateVisibility.get()
+                : Configs.CLIENT.overrideMobNameplateVisibility.get();
     }
 
     /**
@@ -65,7 +80,7 @@ public class LevelPlateHandler {
                 .withStyle(style -> style.withColor(getLevelColor(Minecraft.getInstance().player, entity)));
 
         // Add Apotheosis world tier if available and enabled
-        if (Config.CLIENT.showApotheosisWorldTier.get()) {
+        if (Configs.CLIENT.showApotheosisWorldTier.get()) {
             String worldTier = ApotheosisClientCache.getWorldTier(entity);
             if (worldTier != null) {
                 MutableComponent tierComponent = Component.literal(" [" + worldTier + "]")
@@ -75,7 +90,7 @@ public class LevelPlateHandler {
         }
 
         // Add Dungeon Difficulty info if available and enabled
-        if (Config.CLIENT.showDungeonDifficultyInfo.get() && DynamicDifficulty.isModLoaded("dungeon_difficulty")) {
+        if (Configs.CLIENT.showDungeonDifficultyInfo.get() && DynamicDifficulty.isModLoaded("dungeon_difficulty")) {
             DungeonDifficultyData ddData = DynamicDifficulty.getHelper().getDungeonDifficultyAttachmentHelper().getData(entity);
             if (ddData != null && !ddData.isEmpty()) {
                 // Use Dungeon Difficulty's translation keys to get proper icons/formatting
@@ -160,39 +175,50 @@ public class LevelPlateHandler {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer clientPlayer = minecraft.player;
 
-        // Early exit checks (cheap operations first)
+        if (!passesCheapGuards(entity, clientPlayer, minecraft)) return false;
+        if (!isWithinRenderDistance(entity, clientPlayer)) return false;
+
+        ConfigClient.RenderBehavior behavior = Configs.CLIENT.renderBehavior.get();
+        if (behavior == ConfigClient.RenderBehavior.NEVER) {
+            return false;
+        }
+
+        if (!passesLevelAndHiddenFilters(entity)) return false;
+        if (!hasLineOfSight(clientPlayer, entity)) return false;
+
+        return matchesRenderBehavior(behavior, minecraft, entity);
+    }
+
+    private static boolean passesCheapGuards(LivingEntity entity, LocalPlayer clientPlayer, Minecraft minecraft) {
         if (clientPlayer == null) return false;
         if (!Minecraft.renderNames()) return false;
         if (entity.isVehicle()) return false;
         if (entity == minecraft.getCameraEntity()) return false;
         if (entity.isInvisibleTo(clientPlayer)) return false;
+        return true;
+    }
 
-        // Check distance before expensive line of sight check
-        double maxDistSq = Config.CLIENT.renderDistance.get() * Config.CLIENT.renderDistance.get();
-        if (entity.distanceToSqr(clientPlayer) > maxDistSq) {
-            return false;
-        }
+    private static boolean isWithinRenderDistance(LivingEntity entity, LocalPlayer clientPlayer) {
+        double maxDistSq = Configs.CLIENT.renderDistance.get() * Configs.CLIENT.renderDistance.get();
+        return entity.distanceToSqr(clientPlayer) <= maxDistSq;
+    }
 
-        Config.RenderBehavior behavior = Config.CLIENT.renderBehavior.get();
-        if (behavior == Config.RenderBehavior.NEVER) {
-            return false;
-        }
-
-        // Check if level should be shown before expensive operations
+    private static boolean passesLevelAndHiddenFilters(LivingEntity entity) {
         if (!LevelingAPI.shouldShowLevel(entity)) return false;
 
         String entityId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
-        if (Config.CLIENT.hiddenLevelEntities.get().contains(entityId)) return false;
+        if (Configs.CLIENT.hiddenLevelEntities.get().contains(entityId)) return false;
+        return true;
+    }
 
-        // Line of sight check - expensive raycast, but only done after all cheap checks pass
-        // Can be disabled via config for better performance
-        if (Config.CLIENT.enableLineOfSightCheck.get()) {
-            if (!clientPlayer.hasLineOfSight(entity)) {
-                return false;
-            }
+    private static boolean hasLineOfSight(LocalPlayer clientPlayer, LivingEntity entity) {
+        if (Configs.CLIENT.enableLineOfSightCheck.get()) {
+            return clientPlayer.hasLineOfSight(entity);
         }
+        return true;
+    }
 
-        // Final behavior checks
+    private static boolean matchesRenderBehavior(ConfigClient.RenderBehavior behavior, Minecraft minecraft, LivingEntity entity) {
         switch (behavior) {
             case NEVER:
                 return false;

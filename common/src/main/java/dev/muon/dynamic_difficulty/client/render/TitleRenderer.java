@@ -1,7 +1,7 @@
 package dev.muon.dynamic_difficulty.client.render;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.ConfigClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -18,6 +18,7 @@ public class TitleRenderer<T> {
     public Component displayedTitle = null;
     public int titleTimer = 0;
     public int cooldownTimer = 0;
+    protected Integer overrideColor = null;
 
     protected final int maxRecentListSize;
     protected final Supplier<Boolean> enabled;
@@ -27,7 +28,7 @@ public class TitleRenderer<T> {
     protected final Supplier<String> textColor;
     protected final Supplier<Boolean> renderShadow;
     protected final Supplier<Double> textSize;
-    protected final Supplier<Config.AnchorPoint> anchor;
+    protected final Supplier<ConfigClient.AnchorPoint> anchor;
     protected final Supplier<Integer> xOffset;
     protected final Supplier<Integer> yOffset;
 
@@ -40,7 +41,7 @@ public class TitleRenderer<T> {
             Supplier<String> textColor,
             Supplier<Boolean> renderShadow,
             Supplier<Double> textSize,
-            Supplier<Config.AnchorPoint> anchor,
+            Supplier<ConfigClient.AnchorPoint> anchor,
             Supplier<Integer> xOffset,
             Supplier<Integer> yOffset
     ) {
@@ -58,6 +59,9 @@ public class TitleRenderer<T> {
     }
 
     protected int getTitleTextColor() {
+        if (overrideColor != null) {
+            return overrideColor;
+        }
         String colorStr = textColor.get();
         try {
             return (int) Long.parseLong(colorStr, 16);
@@ -88,7 +92,7 @@ public class TitleRenderer<T> {
         }
     }
 
-    protected float[] getAnchorPosition(GuiGraphics guiGraphics, Config.AnchorPoint anchorPoint) {
+    protected float[] getAnchorPosition(GuiGraphics guiGraphics, ConfigClient.AnchorPoint anchorPoint) {
         float screenWidth = guiGraphics.guiWidth();
         float screenHeight = guiGraphics.guiHeight();
         float x = 0, y = 0;
@@ -139,7 +143,7 @@ public class TitleRenderer<T> {
      * Get text alignment offset based on anchor point
      * LEFT anchors = 0 (left align), CENTER anchors = -width/2 (center), RIGHT anchors = -width (right align)
      */
-    protected float getAlignmentOffset(Config.AnchorPoint anchorPoint, int textWidth) {
+    protected float getAlignmentOffset(ConfigClient.AnchorPoint anchorPoint, int textWidth) {
         return switch (anchorPoint) {
             case TOP_LEFT, CENTER_LEFT, BOTTOM_LEFT -> 0;  // Left-align
             case TOP_CENTER, CENTER, BOTTOM_CENTER -> -textWidth / 2.0F;  // Center
@@ -173,7 +177,7 @@ public class TitleRenderer<T> {
         guiGraphics.pose().scale(textSizeValue, textSizeValue, 1.0f);
         int titleWidth = fontRenderer.width(displayedTitle);
 
-        Config.AnchorPoint anchorPoint = anchor.get();
+        ConfigClient.AnchorPoint anchorPoint = anchor.get();
         // Alignment offset must account for scaled width since we're rendering in scaled space
         float alignmentOffset = getAlignmentOffset(anchorPoint, titleWidth) * textSizeValue;
 
@@ -189,10 +193,10 @@ public class TitleRenderer<T> {
         guiGraphics.pose().popPose();
     }
 
-    protected boolean isTopAnchor(Config.AnchorPoint anchorPoint) {
-        return anchorPoint == Config.AnchorPoint.TOP_LEFT ||
-                anchorPoint == Config.AnchorPoint.TOP_CENTER ||
-                anchorPoint == Config.AnchorPoint.TOP_RIGHT;
+    protected boolean isTopAnchor(ConfigClient.AnchorPoint anchorPoint) {
+        return anchorPoint == ConfigClient.AnchorPoint.TOP_LEFT ||
+                anchorPoint == ConfigClient.AnchorPoint.TOP_CENTER ||
+                anchorPoint == ConfigClient.AnchorPoint.TOP_RIGHT;
     }
 
     public void tick() {
@@ -208,7 +212,12 @@ public class TitleRenderer<T> {
     }
 
     public void displayTitle(Component titleText) {
+        displayTitle(titleText, null);
+    }
+
+    public void displayTitle(Component titleText, Integer overrideColor) {
         displayedTitle = titleText;
+        this.overrideColor = overrideColor;
         titleTimer = fadeInTime.get() + displayTime.get() + fadeOutTime.get();
     }
 

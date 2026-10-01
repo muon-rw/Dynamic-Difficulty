@@ -1,7 +1,12 @@
 import dev.muon.dynamic_difficulty.gradle.Properties
 import dev.muon.dynamic_difficulty.gradle.Versions
+import me.modmuss50.mpp.PublishModTask
 import org.apache.tools.ant.filters.LineContains
 import org.gradle.jvm.tasks.Jar
+import java.nio.file.FileSystemException
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 
 plugins {
     id("conventions.loader")
@@ -110,6 +115,8 @@ repositories {
     maven("https://maven.theillusivec4.top/")
     maven("https://raw.githubusercontent.com/Fuzss/modresources/main/maven/")
     maven("https://maven.puffish.net")
+    maven("https://maven.fzzyhmstrs.me/")
+    maven("https://thedarkcolour.github.io/KotlinForForge/")
 }
 
 val localRuntime: Configuration by configurations.creating
@@ -124,6 +131,7 @@ configurations {
 }
 
 dependencies {
+    implementation("me.fzzyhmstrs:fzzy_config:${Versions.FZZY_CONFIG}+neoforge")
 
     // Dev Env
     localRuntime("mezz.jei:jei-${Versions.MINECRAFT}-neoforge:${Versions.JEI}")
@@ -160,6 +168,9 @@ dependencies {
     // Dungeon Difficulty
     compileOnly("curse.maven:dungeon-difficulty-645559:7279795")
     // localRuntime("curse.maven:dungeon-difficulty-645559:7279795") Requires FFAPI. Rather not rn
+
+    // Health Bars
+    compileOnly("maven.modrinth:new-health-bars:${Versions.HEALTH_BARS}-${Versions.MINECRAFT}-NeoForge")
 }
 
 publishMods {
@@ -176,9 +187,10 @@ publishMods {
         minecraftVersions.add(Versions.MINECRAFT)
         javaVersions.add(JavaVersion.VERSION_21)
 
-        clientRequired = true
-        serverRequired = true
+        client = true
+        server = true
 
+        requires("fzzy-config")
     }
 
 //    modrinth {
@@ -195,4 +207,39 @@ publishMods {
         parent(project(":common").tasks.named("publishGithub"))
     }
      */
+}
+
+tasks.withType<PublishModTask>().configureEach {
+    mustRunAfter(rootProject.subprojects.map { "${it.path}:publishAllPublicationsToMuonRepository" })
+}
+
+tasks.register("sendToModpack") {
+    group = "publishing"
+    val jarTask = tasks.named<Jar>("jar")
+    dependsOn(jarTask)
+    val builtJar = jarTask.flatMap { it.archiveFile }
+    val modsDir = Path.of(System.getProperty("user.home"), "curseforge", "minecraft", "Instances", "Raven's High Fantasy", "mods")
+    val deployedJar = modsDir.resolve(jarTask.get().archiveFileName.get().replace(project.version.toString(), "dev"))
+    val releasedJarPrefix = "${base.archivesName.get()}-"
+    doLast {
+        // The pack ships a released copy of this mod; loaders don't pick a winner between duplicates.
+        Files.list(modsDir).use { files ->
+            files.filter { it != deployedJar && it.fileName.toString().let { name -> name.startsWith(releasedJarPrefix) && name.endsWith(".jar") } }
+                .forEach {
+                    Files.move(it, it.resolveSibling("${it.fileName}.disabled"), StandardCopyOption.REPLACE_EXISTING)
+                    println("Disabled ${it.fileName} in the modpack")
+                }
+        }
+        // Writing into the deployed jar corrupts a running pack's open handle; replacing the file leaves the pack on the old one.
+        val staged = deployedJar.resolveSibling("${deployedJar.fileName}.staged")
+        Files.copy(builtJar.get().asFile.toPath(), staged, StandardCopyOption.REPLACE_EXISTING)
+        try {
+            Files.deleteIfExists(deployedJar)
+        } catch (e: FileSystemException) {
+            Files.delete(staged)
+            throw GradleException("${deployedJar.fileName} is held open by a running pack; close it and rerun", e)
+        }
+        Files.move(staged, deployedJar)
+        println("Mod JAR sent to modpack folder: ${deployedJar.fileName}")
+    }
 }

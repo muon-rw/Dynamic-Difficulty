@@ -1,6 +1,9 @@
 pluginManagement {
     repositories {
         gradlePluginPortal()
+        maven("https://maven.muon.rip/releases") {
+            name = "Muon"
+        }
         mavenCentral()
         mavenLocal()
         maven("https://maven.neoforged.net/releases") {

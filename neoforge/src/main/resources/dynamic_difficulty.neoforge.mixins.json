@@ -5,13 +5,12 @@
   "compatibilityLevel": "JAVA_21",
   "plugin": "dev.muon.dynamic_difficulty.MixinConfigPluginNeoForge",
   "mixins": [
-    "LivingEntityAccessor",
-    "LivingEntityMixin",
     "compat.dungeon_difficulty.EntityScalingMixin",
     "compat.puffish_skills.SkillsModMixin",
     "compat.reskillable.SyncToClientMixin"
   ],
   "client": [
+    "compat.healthbars.EntityDataCacheMixin"
   ],
   "server": [],
   "injectors": {

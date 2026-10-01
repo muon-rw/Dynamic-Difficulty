@@ -1,7 +1,8 @@
 package dev.muon.dynamic_difficulty.client.render;
 
-import dev.muon.dynamic_difficulty.config.Config;
-import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
+import dev.muon.dynamic_difficulty.DynamicDifficulty;
+import dev.muon.dynamic_difficulty.config.Configs;
+import dev.muon.dynamic_difficulty.data.DimensionLevelingSettingsStore;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -17,6 +18,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.dimension.DimensionType;
 
+import org.jetbrains.annotations.Nullable;
+
 public class TitleRenderManager {
     private static TitleRenderManager instance;
 
@@ -29,7 +32,6 @@ public class TitleRenderManager {
 
     private DimensionType currentDimension = null;
 
-    // Track final displayed values to detect actual changes (avoids retriggering on location change with same level)
     private int lastDisplayedLevel = -1;
     private int lastPlayerBonus = -1;
 
@@ -66,9 +68,6 @@ public class TitleRenderManager {
         }
     }
 
-    /**
-     * Called on player tick to detect biome/dimension changes
-     */
     public void playerTick(Player player) {
         if (player instanceof LocalPlayer && player.level().isLoaded(player.blockPosition())) {
             BlockPos playerPos = player.blockPosition();
@@ -85,31 +84,20 @@ public class TitleRenderManager {
         }
     }
 
-    /**
-     * Called when player changes dimension.
-     * Resets biome cache since biome titles are dimension-specific.
-     */
+    /** Clears the biome cache; biome titles are dimension-specific. */
     private void playerChangedDimension(Player player) {
-        if (Config.CLIENT.showBiomeTitles.get()) {
+        if (Configs.CLIENT.showBiomeTitles.get()) {
             biomeTitleRenderer.clearTimer();
             biomeTitleRenderer.recentEntries.clear();
             biomeTitleRenderer.displayedTitle = null;
         }
     }
 
-    /**
-     * Display structure title when notified by server
-     */
     public void displayStructureTitle(ResourceLocation structureId, int structureBonus, int baseLevel, int playerBonus, int displayedLevel) {
-        // Update level info only if displayed values changed
-        if (shouldUpdateLevelInfo(displayedLevel, playerBonus)) {
-            levelInfoRenderer.displayLevelInfo(displayedLevel, playerBonus);
-            lastDisplayedLevel = displayedLevel;
-            lastPlayerBonus = playerBonus;
-        }
-        
-        if (Config.CLIENT.showStructureTitles.get()) {
-            boolean shouldDisplay = !Config.CLIENT.structureTitleOnlyAnnounceIfModified.get() || structureBonus > 0;
+        updateLevelInfoIfChanged(displayedLevel, playerBonus);
+
+        if (Configs.CLIENT.showStructureTitles.get()) {
+            boolean shouldDisplay = !Configs.CLIENT.structureTitleOnlyAnnounceIfModified.get() || structureBonus > 0;
             if (shouldDisplay && !structureTitleRenderer.matchesAnyRecentEntry(id -> id.equals(structureId))) {
                 Component structureName = getStructureName(structureId);
                 structureTitleRenderer.displayTitle(structureName);
@@ -118,23 +106,14 @@ public class TitleRenderManager {
         }
     }
 
-    /**
-     * Display biome title when notified by server
-     */
     public void displayBiomeTitle(ResourceLocation biomeId, int biomeBonus, int baseLevel, int playerBonus, int displayedLevel) {
-        // Update level info only if displayed values changed
-        if (shouldUpdateLevelInfo(displayedLevel, playerBonus)) {
-            levelInfoRenderer.displayLevelInfo(displayedLevel, playerBonus);
-            lastDisplayedLevel = displayedLevel;
-            lastPlayerBonus = playerBonus;
-        }
-        
-        if (Config.CLIENT.showBiomeTitles.get()) {
-            boolean shouldDisplay = !Config.CLIENT.biomeTitleOnlyAnnounceIfModified.get() || biomeBonus > 0;
+        updateLevelInfoIfChanged(displayedLevel, playerBonus);
+
+        if (Configs.CLIENT.showBiomeTitles.get()) {
+            boolean shouldDisplay = !Configs.CLIENT.biomeTitleOnlyAnnounceIfModified.get() || biomeBonus > 0;
             if (shouldDisplay) {
                 Component biomeName = getBiomeName(biomeId);
                 if (biomeName != null) {
-                    // Check if we've recently shown this biome by comparing displayed name
                     if (biomeTitleRenderer.displayedTitle == null ||
                             !biomeName.getString().equals(biomeTitleRenderer.displayedTitle.getString())) {
 
@@ -152,77 +131,57 @@ public class TitleRenderManager {
         }
     }
 
-    /**
-     * Display dimension title when notified by server
-     * Note: Dimensions affect base level through settings, not bonuses
-     */
+    /** Dimensions affect base level through settings, not bonuses. */
     public void displayDimensionTitle(ResourceLocation dimensionId, int baseLevel, int playerBonus, int displayedLevel) {
-        // Update level info only if displayed values changed
-        if (shouldUpdateLevelInfo(displayedLevel, playerBonus)) {
-            levelInfoRenderer.displayLevelInfo(displayedLevel, playerBonus);
-            lastDisplayedLevel = displayedLevel;
-            lastPlayerBonus = playerBonus;
-        }
-        
-        if (Config.CLIENT.showDimensionTitles.get()) {
+        updateLevelInfoIfChanged(displayedLevel, playerBonus);
+
+        if (Configs.CLIENT.showDimensionTitles.get()) {
             boolean shouldDisplay = true;
-            if (Config.CLIENT.dimensionTitleOnlyAnnounceIfModified.get()) {
+            if (Configs.CLIENT.dimensionTitleOnlyAnnounceIfModified.get()) {
                 Level world = Minecraft.getInstance().level;
                 if (world != null) {
-                    shouldDisplay = DimensionsLevelingSettingsReloader.hasCustomSettings(
-                            world.dimension(), world.registryAccess().registryOrThrow(Registries.DIMENSION));
+                    shouldDisplay = DimensionLevelingSettingsStore.hasCustomSettings(world);
                 }
             }
             
             if (shouldDisplay) {
-                Component dimensionName = getDimensionName(dimensionId);
-                if (dimensionName != null) {
-                    DimensionType currDimension = Minecraft.getInstance().level != null ?
-                            Minecraft.getInstance().level.dimensionType() : null;
-                    if (currDimension != null &&
-                            !dimensionTitleRenderer.matchesAnyRecentEntry(d -> d == currDimension)) {
+                DimensionTitle dimensionTitle = getDimensionTitle(dimensionId);
+                DimensionType currDimension = Minecraft.getInstance().level != null ?
+                        Minecraft.getInstance().level.dimensionType() : null;
+                if (currDimension != null &&
+                        !dimensionTitleRenderer.matchesAnyRecentEntry(d -> d == currDimension)) {
 
-                        dimensionTitleRenderer.displayTitle(dimensionName);
-                        dimensionTitleRenderer.addRecentEntry(currDimension);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Updates the dimension title if conditions are met
-     */
-    private void updateDimensionTitle(Level world, Player player) {
-        if (!Config.CLIENT.showDimensionTitles.get()) {
-            return;
-        }
-
-        boolean shouldDisplay = true;
-        if (Config.CLIENT.dimensionTitleOnlyAnnounceIfModified.get()) {
-            shouldDisplay = DimensionsLevelingSettingsReloader.hasCustomSettings(
-                    world.dimension(), world.registryAccess().registryOrThrow(Registries.DIMENSION));
-        }
-
-        if (shouldDisplay) {
-            DimensionType currDimension = world.dimensionType();
-            if (!dimensionTitleRenderer.matchesAnyRecentEntry(d -> d == currDimension)) {
-                ResourceLocation dimensionBaseKey = world.dimension().location();
-                Component dimensionTitle = getDimensionName(dimensionBaseKey);
-
-                if (dimensionTitle != null) {
-                    dimensionTitleRenderer.displayTitle(dimensionTitle);
+                    dimensionTitleRenderer.displayTitle(dimensionTitle.name(), dimensionTitle.overrideColor());
                     dimensionTitleRenderer.addRecentEntry(currDimension);
                 }
             }
         }
     }
 
-    /**
-     * Updates the biome title if conditions are met
-     */
+    private void updateDimensionTitle(Level world, Player player) {
+        if (!Configs.CLIENT.showDimensionTitles.get()) {
+            return;
+        }
+
+        boolean shouldDisplay = true;
+        if (Configs.CLIENT.dimensionTitleOnlyAnnounceIfModified.get()) {
+            shouldDisplay = DimensionLevelingSettingsStore.hasCustomSettings(world);
+        }
+
+        if (shouldDisplay) {
+            DimensionType currDimension = world.dimensionType();
+            if (!dimensionTitleRenderer.matchesAnyRecentEntry(d -> d == currDimension)) {
+                ResourceLocation dimensionBaseKey = world.dimension().location();
+                DimensionTitle dimensionTitle = getDimensionTitle(dimensionBaseKey);
+
+                dimensionTitleRenderer.displayTitle(dimensionTitle.name(), dimensionTitle.overrideColor());
+                dimensionTitleRenderer.addRecentEntry(currDimension);
+            }
+        }
+    }
+
     private void updateBiomeTitle(Level world, BlockPos playerPos, Player player) {
-        if (!Config.CLIENT.showBiomeTitles.get() || biomeTitleRenderer.cooldownTimer > 0) {
+        if (!Configs.CLIENT.showBiomeTitles.get() || biomeTitleRenderer.cooldownTimer > 0) {
             return;
         }
 
@@ -249,18 +208,18 @@ public class TitleRenderManager {
         }
     }
 
-    /**
-     * Check if level info should be updated based on the final displayed values.
-     * Only triggers when the actual displayed level or player bonus changes,
-     * avoiding unnecessary updates when location changes but level stays the same.
-     */
+    private void updateLevelInfoIfChanged(int displayedLevel, int playerBonus) {
+        if (shouldUpdateLevelInfo(displayedLevel, playerBonus)) {
+            levelInfoRenderer.displayLevelInfo(displayedLevel, playerBonus);
+            lastDisplayedLevel = displayedLevel;
+            lastPlayerBonus = playerBonus;
+        }
+    }
+
     private boolean shouldUpdateLevelInfo(int displayedLevel, int playerBonus) {
-        // Always update on first call
         if (lastDisplayedLevel == -1) {
             return true;
         }
-        
-        // Only update if the displayed values actually changed
         return lastDisplayedLevel != displayedLevel || lastPlayerBonus != playerBonus;
     }
 
@@ -289,21 +248,22 @@ public class TitleRenderManager {
         return Component.literal(formattedName.toString().trim());
     }
 
-    /**
-     * Get dimension name with Traveler's Titles preference.
-     * Falls back to standard dimension key, then formatted ID if no translation found.
-     */
-    private Component getDimensionName(ResourceLocation dimensionBaseKey) {
+    /** {@code overrideColor} comes from a Traveler's Titles resource pack key ending in {@code .color}. */
+    public record DimensionTitle(Component name, @Nullable Integer overrideColor) {}
+
+    /** Lookup order: Traveler's Titles key, then standard dimension key, then formatted ID. */
+    private DimensionTitle getDimensionTitle(ResourceLocation dimensionBaseKey) {
         Language language = Language.getInstance();
 
         String travelersTitlesKey = Util.makeDescriptionId(TRAVELERS_TITLES_MOD_ID, dimensionBaseKey);
         if (language.has(travelersTitlesKey)) {
-            return Component.translatable(travelersTitlesKey);
+            Integer overrideColor = parseColorKey(language, travelersTitlesKey + ".color");
+            return new DimensionTitle(Component.translatable(travelersTitlesKey), overrideColor);
         }
 
         String dimensionKey = Util.makeDescriptionId("dimension", dimensionBaseKey);
         if (language.has(dimensionKey)) {
-            return Component.translatable(dimensionKey);
+            return new DimensionTitle(Component.translatable(dimensionKey), null);
         }
 
         String name = dimensionBaseKey.getPath()
@@ -321,13 +281,23 @@ public class TitleRenderManager {
             }
         }
 
-        return Component.literal(formattedName.toString().trim());
+        return new DimensionTitle(Component.literal(formattedName.toString().trim()), null);
     }
 
-    /**
-     * Get biome name with Traveler's Titles preference.
-     * Falls back to standard biome key. Returns null if no translation found.
-     */
+    @Nullable
+    private static Integer parseColorKey(Language language, String key) {
+        if (!language.has(key)) {
+            return null;
+        }
+        String hex = language.getOrDefault(key);
+        try {
+            return (int) Long.parseLong(hex.trim(), 16);
+        } catch (NumberFormatException e) {
+            DynamicDifficulty.LOGGER.warn("Invalid hex color '{}' for lang key {}", hex, key);
+            return null;
+        }
+    }
+
     private Component getBiomeName(ResourceLocation biomeBaseKey) {
         Language language = Language.getInstance();
 
@@ -344,9 +314,6 @@ public class TitleRenderManager {
         return null;
     }
 
-    /**
-     * Clear all cached state (called on disconnect)
-     */
     public void clearCache() {
         structureTitleRenderer.recentEntries.clear();
         structureTitleRenderer.displayedTitle = null;

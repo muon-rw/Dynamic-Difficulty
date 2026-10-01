@@ -3,6 +3,7 @@ package dev.muon.dynamic_difficulty.api;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.LevelingSystem;
 import dev.muon.dynamic_difficulty.player.PlayerLevelCalculator;
+import dev.muon.dynamic_difficulty.settings.LocationLevelingSettings;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
 import dev.muon.dynamic_difficulty.util.LocationBonusUtils;
 import net.minecraft.core.BlockPos;
@@ -14,6 +15,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
@@ -71,7 +73,7 @@ public class LevelingAPI {
      * <p><b>Side:</b> Server only
      */
     public static int calculateLevelForEntity(@NotNull LivingEntity entity) {
-        return LevelingSystem.createLevelForEntity(entity);
+        return LevelingSystem.calculateLevelForEntity(entity);
     }
 
     /** <b>Side:</b> Server only */
@@ -91,8 +93,8 @@ public class LevelingAPI {
     }
 
     /**
-     * Base level at entity's position (dimension, spawn distance, depth, day, local difficulty, structures, biomes).
-     * Excludes: player scaling, random variation, entity overrides. Returns 1 on client.
+     * Base level at entity's position (dimension, spawn distance, depth, day, local difficulty, structures, biomes),
+     * after the level cap. Excludes: player scaling, random variation, entity overrides. Returns 1 on client.
      * <p><b>Side:</b> Server only
      */
     public static int getLevelAt(@NotNull LivingEntity entity) {
@@ -107,16 +109,17 @@ public class LevelingAPI {
      * <p><b>Side:</b> Server only
      */
     public static int getLevelAt(@NotNull ServerLevel level, @NotNull BlockPos pos) {
-        int baseLevel = LevelingUtils.calculateBaseEntityLevel(level, pos);
-        StructureBonus structureBonus = LocationBonusUtils.getStructureAt(level, pos, true);
-        BiomeBonus biomeBonus = LocationBonusUtils.getBiomeAt(level, pos);
-        return Math.max(1, baseLevel + structureBonus.totalBonus() + biomeBonus.totalBonus());
+        LocationBonusUtils.ResolvedLocation location = LocationBonusUtils.resolveLocation(level, pos);
+        int baseLevel = LevelingUtils.calculateBaseEntityLevel(level, pos, location.settings(), location.dimension());
+        return LevelingUtils.calculateFinalLevel(baseLevel, location.settings(),
+                location.structureBonus(), location.biomeBonus(), 0);
     }
 
     /** {@link StructureBonus#EMPTY} if called on client. <b>Side:</b> Server only */
     @NotNull
     public static StructureBonus getStructureBonus(@NotNull LivingEntity entity) {
-        return LevelingSystem.getStructureBonus(entity);
+        if (!(entity.level() instanceof ServerLevel serverLevel)) return StructureBonus.EMPTY;
+        return LocationBonusUtils.getStructureAt(serverLevel, entity.blockPosition(), true);
     }
 
     /** <b>Side:</b> Server only */
@@ -128,7 +131,8 @@ public class LevelingAPI {
     /** {@link BiomeBonus#EMPTY} if called on client. <b>Side:</b> Server only */
     @NotNull
     public static BiomeBonus getBiomeBonus(@NotNull LivingEntity entity) {
-        return LevelingSystem.getBiomeBonus(entity);
+        if (!(entity.level() instanceof ServerLevel serverLevel)) return BiomeBonus.EMPTY;
+        return LocationBonusUtils.getBiomeAt(serverLevel, entity.blockPosition());
     }
 
     /** <b>Side:</b> Server only */
@@ -151,5 +155,49 @@ public class LevelingAPI {
      */
     public static int getPlayerDisplayLevel(@NotNull ServerPlayer player) {
         return PlayerLevelCalculator.calculatePlayerDisplayLevel(player);
+    }
+
+    /**
+     * Structure settings at position, merged per field (highest wins) across overlapping structures and their tags.
+     * Null if none apply.
+     * <p><b>Side:</b> Server only
+     * @since 1.3.0
+     */
+    @Nullable
+    public static LocationLevelingSettings.RawSettings getStructureSettings(@NotNull ServerLevel level, @NotNull BlockPos pos) {
+        return LocationBonusUtils.getStructureSettingsAt(level, pos);
+    }
+
+    /**
+     * Null if none apply or called on client.
+     * <p><b>Side:</b> Server only
+     * @since 1.3.0
+     */
+    @Nullable
+    public static LocationLevelingSettings.RawSettings getStructureSettings(@NotNull LivingEntity entity) {
+        if (!(entity.level() instanceof ServerLevel serverLevel)) return null;
+        return LocationBonusUtils.getStructureSettingsAt(serverLevel, entity.blockPosition());
+    }
+
+    /**
+     * Biome settings at position, merged per field (highest wins) across the biome entry and its tags.
+     * Null if none apply.
+     * <p><b>Side:</b> Server only
+     * @since 1.3.0
+     */
+    @Nullable
+    public static LocationLevelingSettings.RawSettings getBiomeSettings(@NotNull ServerLevel level, @NotNull BlockPos pos) {
+        return LocationBonusUtils.getBiomeSettingsAt(level, pos);
+    }
+
+    /**
+     * Null if none apply or called on client.
+     * <p><b>Side:</b> Server only
+     * @since 1.3.0
+     */
+    @Nullable
+    public static LocationLevelingSettings.RawSettings getBiomeSettings(@NotNull LivingEntity entity) {
+        if (!(entity.level() instanceof ServerLevel serverLevel)) return null;
+        return LocationBonusUtils.getBiomeSettingsAt(serverLevel, entity.blockPosition());
     }
 }

@@ -23,7 +23,7 @@ config = "${mod_id}.neoforge.mixins.json"
 [[dependencies.${mod_id}]]
 modId="neoforge"
 type="required"
-versionRange="${neoforge_loader_version_range}"
+versionRange="[${neoforge_version},)"
 ordering="NONE"
 side="BOTH"
 
@@ -31,5 +31,12 @@ side="BOTH"
 modId="minecraft"
 type="required"
 versionRange="${neoforge_minecraft_version_range}"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="fzzy_config"
+type="required"
+versionRange="[0,)"
 ordering="NONE"
 side="BOTH"

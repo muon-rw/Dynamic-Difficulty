@@ -1,26 +1,23 @@
 package dev.muon.dynamic_difficulty;
 
-import dev.muon.dynamic_difficulty.api.BiomeBonus;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
-import dev.muon.dynamic_difficulty.api.StructureBonus;
-import dev.muon.dynamic_difficulty.config.Config;
-import dev.muon.dynamic_difficulty.data.DimensionsLevelingSettingsReloader;
-import dev.muon.dynamic_difficulty.data.EntityLevelingSettingsReloader;
+import dev.muon.dynamic_difficulty.config.ConfigSync;
+import dev.muon.dynamic_difficulty.config.Configs;
+import dev.muon.dynamic_difficulty.data.DimensionLevelingSettingsStore;
+import dev.muon.dynamic_difficulty.data.EntityLevelingSettingsStore;
 import dev.muon.dynamic_difficulty.network.NetworkDispatcher;
-import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
 import dev.muon.dynamic_difficulty.settings.EntityLevelingSettings;
 import dev.muon.dynamic_difficulty.settings.LevelingSettings;
 import dev.muon.dynamic_difficulty.util.LevelingUtils;
 import dev.muon.dynamic_difficulty.util.LocationBonusUtils;
-import net.minecraft.core.BlockPos;
+import dev.muon.dynamic_difficulty.util.LocationBonusUtils.ResolvedLocation;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.stats.Stats;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -29,67 +26,32 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.DifficultyInstance;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
-/**
- * Core leveling system for Dynamic Difficulty.
- * 
- * IMPORTANT: This system handles levels differently for players vs non-players:
- * 
- * MOBS/ENTITIES:
- * - Level determines combat power (health, damage, armor, etc.)
- * - Levels are calculated on spawn based on location, structures, nearby players
- * - Attribute bonuses are applied based on level
- * - Level can be changed at runtime via setAndUpdateLevel() or addLevels()
- * 
- * PLAYERS:
- * - Level is used for display (shown above head, color-coding mob difficulty) and
- *   for calculating mob level bonuses based on nearby player proximity
- * - Player levels do NOT grant attribute bonuses
- * - Player levels are calculated from PlayerLevelProvider implementations (e.g., skill points)
- * - Cannot use setAndUpdateLevel() on players (throws exception)
- */
 public class LevelingSystem {
     private static final TagKey<EntityType<?>> FIXED_LEVEL_ENTITIES = TagKey.create(Registries.ENTITY_TYPE,
             DynamicDifficulty.loc("fixed_level_entities"));
 
     public static boolean hasLevel(Entity entity) {
         if (entity instanceof LivingEntity living) {
-            // Check if entity has attachment data explicitly set (not just default value)
             return DynamicDifficulty.getHelper().getLevelAttachmentHelper().hasLevel(living);
         }
         return false;
     }
 
     /**
-     * Gets the level of any living entity, including players.
-     * 
-     * IMPORTANT: Player levels are used for display (name tags, color-coding difficulty)
-     * and for calculating mob level bonuses based on nearby player proximity.
-     * Player levels do NOT grant attribute bonuses - players use the PlayerLevelProvider
-     * system to contribute to mob difficulty, not to gain power themselves.
-     * 
-     * Non-player entity levels DO grant attribute bonuses and are used for combat scaling.
-     * 
-     * @param entity The entity to get the level for
-     * @return The entity's level (1 if no level set)
+     * @return the entity's level, or 1 if no level is set.
      */
     public static int getLevel(LivingEntity entity) {
-        // Use attachment on both client and server - it's the single source of truth
-        // On client, if attachment hasn't been set yet (entity not synced), defaults to 1
         return DynamicDifficulty.getHelper().getLevelAttachmentHelper().getLevel(entity);
     }
 
     /**
-     * Internal: Sets the level attachment without updating attributes or syncing.
      * Use setAndUpdateLevel() for runtime level changes.
      */
     @ApiStatus.Internal
@@ -100,43 +62,41 @@ public class LevelingSystem {
     /**
      * Sets an entity's level, updates its attributes, and syncs to clients.
      * This is the proper way to change an entity's level at runtime.
-     * 
+     *
      * @param entity The entity to level up/down (must not be a player)
      * @param newLevel The new level to set
      * @throws IllegalArgumentException if entity is a player or level is negative
      */
     public static void setAndUpdateLevel(LivingEntity entity, int newLevel) {
         if (entity instanceof ServerPlayer) {
-            throw new IllegalArgumentException("Cannot set levels on players - use PlayerLevelProvider system instead");
+            throw new IllegalArgumentException("Cannot set levels on players; use the PlayerLevelProvider system instead");
         }
-        
+
         if (newLevel < 0) {
             throw new IllegalArgumentException("Level cannot be negative");
         }
-        
+
         if (!LevelingAPI.canHaveLevel(entity)) {
             throw new IllegalArgumentException("Entity type " + entity.getType().getDescription().getString() + " cannot have levels");
         }
-        
+
         int oldLevel = getLevel(entity);
         setLevelAttachment(entity, newLevel);
-        
-        // Reapply all attribute bonuses with new level
+
         applyAllLevelAttributes(entity);
-        
-        // Sync to tracking clients if on server
+
         if (entity.level() instanceof ServerLevel) {
             NetworkDispatcher.syncLevelToClients(entity);
         }
-        
-        DynamicDifficulty.LOGGER.debug("{} level changed: {} -> {}", 
+
+        DynamicDifficulty.LOGGER.debug("{} level changed: {} -> {}",
             entity.getType().getDescription().getString(), oldLevel, newLevel);
     }
 
     /**
      * Adds levels to an entity (can be negative to subtract).
      * Updates attributes and syncs to clients.
-     * 
+     *
      * @param entity The entity to level up/down (must not be a player)
      * @param levelsToAdd How many levels to add (negative to subtract)
      * @throws IllegalArgumentException if entity is a player
@@ -147,413 +107,164 @@ public class LevelingSystem {
         setAndUpdateLevel(entity, newLevel);
     }
 
-    public static int createLevelForEntity(LivingEntity entity) {
+    public static int calculateLevelForEntity(LivingEntity entity) {
         if (!LevelingAPI.canHaveLevel(entity)) {
             return 1;
         }
+        ResolvedLocation location = resolveLocation(entity);
+        return calculateLevel(entity, resolveEntitySettings(entity, location), location);
+    }
 
+    /** Resolves the settings chain once for both the level and its attribute bonuses. */
+    @ApiStatus.Internal
+    public static void initializeLevel(LivingEntity entity) {
+        ResolvedLocation location = resolveLocation(entity);
+        LevelingSettings settings = resolveEntitySettings(entity, location);
+        setLevelAttachment(entity, calculateLevel(entity, settings, location));
+        applyAllLevelAttributes(entity, settings);
+    }
+
+    private static int calculateLevel(LivingEntity entity, LevelingSettings settings, @Nullable ResolvedLocation location) {
+        String entityName = entity.getType().getDescription().getString();
         if (entity.getType().is(FIXED_LEVEL_ENTITIES)) {
-            int fixedLevel = getFixedLevel(entity);
-            DynamicDifficulty.LOGGER.debug("{} has fixed level: {}", 
-                entity.getType().getDescription().getString(), fixedLevel);
-            return fixedLevel;
+            DynamicDifficulty.LOGGER.debug("{} has fixed level: {}", entityName, settings.startingLevel());
+            return settings.startingLevel();
+        }
+        if (location == null || !(entity.level() instanceof ServerLevel serverLevel)) {
+            return Math.max(1, settings.startingLevel());
         }
 
-        int baseLevel = calculateInitialLevel(entity);
-        
-        // Non-bypassing bonuses are applied before the cap, so they can be limited
-        int nonBypassingBonuses = calculateNonBypassingBonuses(entity);
-        baseLevel += nonBypassingBonuses;
-        
-        LevelingSettings settings = getLevelingSettings(entity);
-        int maxLevel = settings.maxLevel();
-        if (maxLevel > 1) {
-            int originalLevel = baseLevel;
-            baseLevel = Math.min(baseLevel, maxLevel);
-            if (originalLevel != baseLevel) {
-                DynamicDifficulty.LOGGER.debug("{} capped at max level: {} -> {}", 
-                    entity.getType().getDescription().getString(), originalLevel, baseLevel);
-            }
-        }
-        
-        // Bypassing bonuses are applied after the cap, allowing them to exceed max level
-        int bypassingBonuses = calculateBypassingBonuses(entity);
-        int finalLevel = Math.max(1, baseLevel + bypassingBonuses);
-        DynamicDifficulty.LOGGER.debug("{} level calculated: base={}, non-bypassing={}, capped={}, bypassing={}, final={}", 
-            entity.getType().getDescription().getString(), 
-            baseLevel - nonBypassingBonuses, nonBypassingBonuses, baseLevel, bypassingBonuses, finalLevel);
+        int baseLevel = LevelingUtils.calculateBaseEntityLevel(serverLevel, entity.blockPosition(), settings, location.dimension());
+        int randomBonus = settings.randomLevelBonus() > 0 ? entity.getRandom().nextInt(settings.randomLevelBonus() + 1) : 0;
+        int playerBonus = settings.appliesPlayerBonus() ? getLevelsFromNearbyPlayers(serverLevel, entity, settings) : 0;
+
+        int finalLevel = LevelingUtils.calculateFinalLevel(baseLevel + randomBonus, settings,
+                location.structureBonus(), location.biomeBonus(), playerBonus);
+        DynamicDifficulty.LOGGER.debug("{} level calculated: base={}, random={}, {}, {}, player={}, max={}, final={}",
+                entityName, baseLevel, randomBonus, location.structureBonus(), location.biomeBonus(),
+                playerBonus, settings.maxLevel(), finalLevel);
         return finalLevel;
     }
 
-    private static int getFixedLevel(LivingEntity entity) {
-        return getLevelingSettings(entity).startingLevel();
+    @Nullable
+    private static ResolvedLocation resolveLocation(LivingEntity entity) {
+        return entity.level() instanceof ServerLevel serverLevel
+                ? LocationBonusUtils.resolveLocation(serverLevel, entity.blockPosition())
+                : null;
     }
 
-    private static int calculateInitialLevel(LivingEntity entity) {
-        LevelingSettings settings = getLevelingSettings(entity);
-        BlockPos spawnPos = getSpawnPosition(entity);
-        BlockPos entityPos = entity.blockPosition();
-        // Use 2D horizontal distance (ignore Y) for distance-based scaling
-        double dx = spawnPos.getX() - entityPos.getX();
-        double dz = spawnPos.getZ() - entityPos.getZ();
-        double distanceToSpawn = Math.sqrt(dx * dx + dz * dz);
-
-        int startingLevel = settings.startingLevel();
-        int baseLevel = startingLevel;
-
-        int distanceBonus = LevelingUtils.calculateDistanceFactors(entity, distanceToSpawn, settings);
-        baseLevel += distanceBonus;
-
-        // Day scaling (from entity/dimension settings, which fall back to config)
-        int dayBonus = 0;
-        if (entity.level() instanceof ServerLevel serverLevel) {
-            long days = serverLevel.getDayTime() / 24000L;
-            dayBonus = (int) (days * settings.levelsPerDay());
-            baseLevel += dayBonus;
-        }
-
-        // Local difficulty scaling (from entity/dimension settings, which fall back to config)
-        int localDifficultyBonus = 0;
-        if (entity.level() instanceof ServerLevel serverLevel) {
-            DifficultyInstance difficulty = serverLevel.getCurrentDifficultyAt(entityPos);
-            float effectiveDifficulty = difficulty.getEffectiveDifficulty();
-            localDifficultyBonus = (int) (effectiveDifficulty * settings.levelsPerLocalDifficulty());
-            baseLevel += localDifficultyBonus;
-        }
-
-        int randomBonus = 0;
-        int randomBonusValue = settings.randomLevelBonus();
-        if (randomBonusValue > 0) { 
-            randomBonus = entity.getRandom().nextInt(randomBonusValue + 1);
-            baseLevel += randomBonus;
-        }
-
-        DynamicDifficulty.LOGGER.debug("{} base factors: starting={}, distance={}, day={}, localDifficulty={}, random={}, subtotal={}", 
-            entity.getType().getDescription().getString(), 
-            startingLevel, distanceBonus, dayBonus, localDifficultyBonus, randomBonus, baseLevel);
-
-        baseLevel = Math.max(1, baseLevel);
-        
-        return baseLevel;
+    private static LevelingSettings resolveEntitySettings(LivingEntity entity, @Nullable ResolvedLocation location) {
+        LevelingSettings prior = location != null ? location.settings() : DimensionLevelingSettingsStore.get(entity.level());
+        EntityLevelingSettings entitySettings = EntityLevelingSettingsStore.get(entity.getType(), prior);
+        return entitySettings != null ? entitySettings : prior;
     }
 
-    /**
-     * Calculates bonuses that do NOT bypass the max level cap.
-     * These are applied before the cap check, so they can be limited by maxLevel.
-     * Examples: biome bonuses with bypasses_cap=false, structure bonuses with bypasses_cap=false,
-     * player bonuses when playerLevelBypassesCap=false
-     */
-    private static int calculateNonBypassingBonuses(LivingEntity entity) {
-        if (!(entity.level() instanceof ServerLevel serverLevel)) return 0;
-        
-        DimensionLevelingSettings.ApplyLevelBonuses applyBonuses = getApplyLevelBonusesOverride(entity);
-        boolean applyBiome = applyBonuses == null || applyBonuses.biome();
-        boolean applyStructure = applyBonuses == null || applyBonuses.structure();
-        boolean applyPlayer = applyBonuses == null || applyBonuses.player();
-        
-        int bonusLevels = 0;
-        BlockPos pos = entity.blockPosition();
-        BonusResults results = calculateLocationBonuses(serverLevel, pos);
-        
-        if (applyBiome) {
-            bonusLevels += results.biomeNonBypassing;
-        }
-        if (applyStructure) {
-            bonusLevels += results.structureNonBypassing;
-        }
-        
-        // Player bonus is non-bypassing when playerLevelBypassesCap is false
-        int playerBonus = 0;
-        if (applyPlayer && Config.COMMON.applyPlayerBasedLeveling.get() && !Config.COMMON.playerLevelBypassesCap.get()) {
-            playerBonus = LevelingAPI.getLevelsFromNearbyPlayers(serverLevel, entity);
-            bonusLevels += playerBonus;
-        }
-        
-        if (results.structureNonBypassing > 0 || results.biomeNonBypassing > 0 || playerBonus > 0) {
-            DynamicDifficulty.LOGGER.debug("{} non-bypassing bonuses: biome={} (applied={}), structure={} (applied={}), player={} (applied={})", 
-                entity.getType().getDescription().getString(), 
-                results.biomeNonBypassing, applyBiome,
-                results.structureNonBypassing, applyStructure,
-                playerBonus, applyPlayer);
-        }
-        
-        return bonusLevels;
+    /** Dimension, biome, structure, then entity; on the client only the dimension and entity tiers. */
+    public static LevelingSettings getLevelingSettings(LivingEntity entity) {
+        return resolveEntitySettings(entity, resolveLocation(entity));
     }
-
-    /**
-     * Calculates bonuses that DO bypass the max level cap.
-     * These are applied after the cap check, allowing them to exceed maxLevel.
-     * Examples: structure bonuses with bypasses_cap=true, biome bonuses with bypasses_cap=true,
-     * player bonuses when playerLevelBypassesCap=true (default)
-     */
-    private static int calculateBypassingBonuses(LivingEntity entity) {
-        if (!(entity.level() instanceof ServerLevel serverLevel)) return 0;
-        
-        DimensionLevelingSettings.ApplyLevelBonuses applyBonuses = getApplyLevelBonusesOverride(entity);
-        boolean applyBiome = applyBonuses == null || applyBonuses.biome();
-        boolean applyStructure = applyBonuses == null || applyBonuses.structure();
-        boolean applyPlayer = applyBonuses == null || applyBonuses.player();
-        
-        int bonusLevels = 0;
-        int playerBonus = 0;
-        
-        // Player bonus is bypassing when playerLevelBypassesCap is true (default)
-        if (applyPlayer && Config.COMMON.applyPlayerBasedLeveling.get() && Config.COMMON.playerLevelBypassesCap.get()) {
-            playerBonus = LevelingAPI.getLevelsFromNearbyPlayers(serverLevel, entity);
-            bonusLevels += playerBonus;
-        }
-        
-        // Calculate structure and biome bonuses
-        BlockPos pos = entity.blockPosition();
-        BonusResults results = calculateLocationBonuses(serverLevel, pos);
-        
-        if (applyStructure) {
-            bonusLevels += results.structureBypassing;
-        }
-        if (applyBiome) {
-            bonusLevels += results.biomeBypassing;
-        }
-        
-        if (playerBonus > 0 || results.structureBypassing > 0 || results.biomeBypassing > 0) {
-            DynamicDifficulty.LOGGER.debug("{} bypassing bonuses: player={} (applied={}), structure={} (applied={}), biome={} (applied={}), total={}", 
-                entity.getType().getDescription().getString(), 
-                playerBonus, applyPlayer,
-                results.structureBypassing, applyStructure,
-                results.biomeBypassing, applyBiome,
-                bonusLevels);
-        }
-        
-        return bonusLevels;
-    }
-    
-    /**
-     * Calculates both structure and biome bonuses using direct lookups.
-     * Structure detection uses startsForStructure + LocationPredicate for efficiency.
-     * Biome lookups use Minecraft's internal caching.
-     */
-    private static BonusResults calculateLocationBonuses(ServerLevel serverLevel, BlockPos pos) {
-        StructureBonus structureResult = LocationBonusUtils.getStructureAt(serverLevel, pos, true);
-        BiomeBonus biomeResult = LocationBonusUtils.getBiomeAt(serverLevel, pos);
-        
-        return new BonusResults(
-            structureResult.nonBypassingBonus(), structureResult.bypassingBonus(),
-            biomeResult.nonBypassingBonus(), biomeResult.bypassingBonus()
-        );
-    }
-    
-    /**
-     * Helper record to hold bonus calculation results.
-     */
-    private record BonusResults(
-        int structureNonBypassing,
-        int structureBypassing,
-        int biomeNonBypassing,
-        int biomeBypassing
-    ) {}
-    
 
     public static void applyAllLevelAttributes(LivingEntity entity) {
-        getAttributeBonuses(entity).forEach((attributeKey, modifier) -> {
-            Optional<? extends Holder<Attribute>> optAttributeHolder = BuiltInRegistries.ATTRIBUTE.getHolder(attributeKey);
-            if (optAttributeHolder.isPresent()) {
-                applyAttributeBonus(entity, optAttributeHolder.get(), modifier);
-            } else {
-                DynamicDifficulty.LOGGER.warn("Entity {}: Could not find attribute holder for key {} when applying all attributes.", 
-                                            EntityType.getKey(entity.getType()), attributeKey.location());
+        applyAllLevelAttributes(entity, getLevelingSettings(entity));
+    }
+
+    private static void applyAllLevelAttributes(LivingEntity entity, LevelingSettings settings) {
+        Map<Holder<Attribute>, AttributeModifier> wantedModifiers = scaleAttributeBonuses(settings, getLevel(entity));
+        BuiltInRegistries.ATTRIBUTE.holders().forEach(attribute -> {
+            AttributeInstance instance = entity.getAttribute(attribute);
+            if (instance != null) {
+                reconcileLevelingModifier(entity, attribute, instance, wantedModifiers.get(attribute));
             }
         });
     }
 
-    public static Map<ResourceKey<Attribute>, AttributeModifier> getAttributeBonuses(LivingEntity entity) {
-        LevelingSettings settings = getLevelingSettings(entity);
-        
-        // Get modifiers from settings (already resolved: entity → dimension → null)
-        Map<Attribute, AttributeModifier> modifiers = settings.attributeModifiers();
-        
-        // null = field was omitted at all levels, fall back to config
-        // empty map = explicitly set to [] (disable modifiers)
-        // non-empty map = use these modifiers
-        if (modifiers == null) {
-            return Config.getAttributeBonuses();
+    private static Map<Holder<Attribute>, AttributeModifier> scaleAttributeBonuses(LevelingSettings settings, int level) {
+        Map<Holder<Attribute>, AttributeModifier> scaled = new HashMap<>();
+        if (level == 1) {
+            return scaled;
         }
-        
-        return convertAttributeMapToKeyMap(modifiers);
+        getAttributeBonuses(settings).forEach((attributeKey, modifier) -> {
+            if (modifier.amount() == 0) {
+                return;
+            }
+            BuiltInRegistries.ATTRIBUTE.getHolder(attributeKey).ifPresentOrElse(
+                    attribute -> scaled.put(attribute, new AttributeModifier(
+                            modifier.id(), modifier.amount() * level, modifier.operation())),
+                    () -> DynamicDifficulty.LOGGER.warn("Could not find attribute {} for a leveling bonus", attributeKey.location()));
+        });
+        return scaled;
     }
 
-    // Helper method to convert Map<Attribute, AttributeModifier> to Map<ResourceKey<Attribute>, AttributeModifier>
-    private static Map<ResourceKey<Attribute>, AttributeModifier> convertAttributeMapToKeyMap(Map<Attribute, AttributeModifier> attributeMap) {
-        Map<ResourceKey<Attribute>, AttributeModifier> keyMap = new HashMap<>();
-        for (Map.Entry<Attribute, AttributeModifier> entry : attributeMap.entrySet()) {
-            BuiltInRegistries.ATTRIBUTE.getResourceKey(entry.getKey())
-                .ifPresent(key -> keyMap.put(key, entry.getValue()));
+    // Settings tiers prefix their modifier ids differently, so any of our modifiers but the wanted one is stale.
+    // Leaving an unchanged modifier in place also keeps a reloaded entity from healing to full.
+    private static void reconcileLevelingModifier(LivingEntity entity, Holder<Attribute> attribute,
+                                                  AttributeInstance instance, @Nullable AttributeModifier wanted) {
+        for (AttributeModifier existing : List.copyOf(instance.getModifiers())) {
+            if (existing.id().getNamespace().equals(DynamicDifficulty.MODID) && !existing.equals(wanted)) {
+                instance.removeModifier(existing.id());
+            }
         }
-        return keyMap;
-    }
-
-    private static void applyAttributeBonus(
-            LivingEntity entity,
-            Holder<Attribute> attributeHolder,
-            AttributeModifier modifier) {
-
-        AttributeInstance instance = entity.getAttribute(attributeHolder);
-
-        if (instance == null) {
+        if (wanted == null || instance.hasModifier(wanted.id())) {
             return;
         }
-        instance.removeModifier(modifier.id());
+        instance.addPermanentModifier(wanted);
 
-        int level = getLevel(entity);
-
-        if (level == 1 || modifier.amount() == 0) {
-            return;
-        }
-
-        double scaledAmount = modifier.amount() * level;
-
-        AttributeModifier newModifier = new AttributeModifier(modifier.id(), scaledAmount, modifier.operation());
-
-        instance.addPermanentModifier(newModifier);
-
-        if (attributeHolder == Attributes.MAX_HEALTH) {
+        if (attribute == Attributes.MAX_HEALTH && entity.getHealth() < entity.getMaxHealth()) {
             entity.setHealth(entity.getMaxHealth());
         }
     }
 
-    static BlockPos getSpawnPosition(LivingEntity entity) {
-        ResourceKey<Level> dimension = entity.level().dimension();
-        DimensionLevelingSettings settings = DimensionsLevelingSettingsReloader.get(dimension);
-        return settings.spawnPosOverride() != null ?
-                settings.spawnPosOverride() :
-                entity.level().getSharedSpawnPos();
+    public static Map<ResourceKey<Attribute>, AttributeModifier> getAttributeBonuses(LivingEntity entity) {
+        return getAttributeBonuses(getLevelingSettings(entity));
     }
 
-    static LevelingSettings getLevelingSettings(LivingEntity entity) {
-        ResourceKey<Level> dimension = entity.level().dimension();
-        DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension);
-        
-        // Entity settings resolve with dimension as fallback
-        LevelingSettings entitySettings = EntityLevelingSettingsReloader.get(entity.getType(), dimSettings);
-        if (entitySettings != null) {
-            return entitySettings;
+    private static Map<ResourceKey<Attribute>, AttributeModifier> getAttributeBonuses(LevelingSettings settings) {
+        Map<Attribute, AttributeModifier> modifiers = settings.attributeModifiers();
+        if (modifiers == null) {
+            return ConfigSync.getAttributeBonuses();
         }
 
-        return dimSettings;
+        Map<ResourceKey<Attribute>, AttributeModifier> keyMap = new HashMap<>();
+        modifiers.forEach((attribute, modifier) -> BuiltInRegistries.ATTRIBUTE.getResourceKey(attribute)
+                .ifPresent(key -> keyMap.put(key, modifier)));
+        return keyMap;
     }
 
-    /**
-     * Gets the player level multiplier override, checking entity -> dimension -> config.
-     * Returns null if no override is set (use config default).
-     */
-    private static Double getPlayerLevelMultiplierOverride(LivingEntity entity) {
-        ResourceKey<Level> dimension = entity.level().dimension();
-        DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension);
-        
-        // Check entity settings first
-        EntityLevelingSettings entitySettings = EntityLevelingSettingsReloader.get(entity.getType(), dimSettings);
-        if (entitySettings != null && entitySettings.playerLevelMultiplier() != null) {
-            return entitySettings.playerLevelMultiplier();
-        }
-        
-        // Check dimension settings
-        if (dimSettings.playerLevelMultiplier() != null) {
-            return dimSettings.playerLevelMultiplier();
-        }
-        
-        // No override, return null to use config default
-        return null;
-    }
-
-    /**
-     * Gets the apply level bonuses override, checking entity -> dimension -> config.
-     * Returns null if no override is set (use config defaults for all bonuses).
-     */
-    private static DimensionLevelingSettings.ApplyLevelBonuses getApplyLevelBonusesOverride(LivingEntity entity) {
-        ResourceKey<Level> dimension = entity.level().dimension();
-        DimensionLevelingSettings dimSettings = DimensionsLevelingSettingsReloader.get(dimension);
-        
-        // Check entity settings first
-        EntityLevelingSettings entitySettings = EntityLevelingSettingsReloader.get(entity.getType(), dimSettings);
-        if (entitySettings != null && entitySettings.applyLevelBonuses() != null) {
-            return entitySettings.applyLevelBonuses();
-        }
-        
-        // Check dimension settings
-        if (dimSettings.applyLevelBonuses() != null) {
-            return dimSettings.applyLevelBonuses();
-        }
-        
-        // No override, return null to use config defaults
-        return null;
-    }
-
-    /**
-     * Gets the level contribution from nearby players within configured radius.
-     */
     public static int getLevelsFromNearbyPlayers(ServerLevel level, LivingEntity entity) {
-        if (!Config.COMMON.applyPlayerBasedLeveling.get()) {
+        return getLevelsFromNearbyPlayers(level, entity, getLevelingSettings(entity));
+    }
+
+    private static int getLevelsFromNearbyPlayers(ServerLevel level, LivingEntity entity, LevelingSettings settings) {
+        if (!Configs.SYNC.applyPlayerBasedLeveling.get()) {
             DynamicDifficulty.LOGGER.debug("Player-based leveling disabled in config");
             return 0;
         }
 
-        double radius = Config.COMMON.playerLevelRadius.get();
+        double radius = Configs.SYNC.playerLevelRadius.get();
         List<ServerPlayer> nearbyPlayers = level.getEntitiesOfClass(ServerPlayer.class,
                 entity.getBoundingBox().inflate(radius));
 
         if (nearbyPlayers.isEmpty()) {
-            DynamicDifficulty.LOGGER.debug("No players within {} blocks of {}", radius, 
+            DynamicDifficulty.LOGGER.debug("No players within {} blocks of {}", radius,
                 entity.getType().getDescription().getString());
             return 0;
         }
 
-        DynamicDifficulty.LOGGER.debug("Found {} players near {}: {}", 
-            nearbyPlayers.size(), 
+        DynamicDifficulty.LOGGER.debug("Found {} players near {}: {}",
+            nearbyPlayers.size(),
             entity.getType().getDescription().getString(),
             nearbyPlayers.stream().map(p -> p.getName().getString()).toList());
 
-        int total = PlayerLevelProvider.getProviders().stream()
-                .filter(PlayerLevelProvider::isEnabled)
-                .mapToInt(provider -> {
-                    int bonus = provider.calculateBonusLevels(nearbyPlayers);
-                    DynamicDifficulty.LOGGER.debug("Provider {} calculated bonus: {}", 
-                        provider.getClass().getSimpleName(), bonus);
-                    return bonus;
-                })
-                .sum();
-
-        DynamicDifficulty.LOGGER.debug("Total player bonus from {} providers: {}", 
+        int total = PlayerLevelProvider.sumBonusLevels(nearbyPlayers);
+        DynamicDifficulty.LOGGER.debug("Total player bonus from {} providers: {}",
             PlayerLevelProvider.getProviders().size(), total);
 
-        // Apply multiplier override (entity -> dimension -> config)
-        Double multiplierOverride = getPlayerLevelMultiplierOverride(entity);
-        double multiplier = multiplierOverride != null ? multiplierOverride : Config.COMMON.playerLevelMultiplier.get();
-        int scaledBonus = (int) (total * multiplier);
-        
-        if (multiplier != 1.0 || multiplierOverride != null) {
-            String source = multiplierOverride != null ? 
-                (EntityLevelingSettingsReloader.get(entity.getType(), DimensionsLevelingSettingsReloader.get(entity.level().dimension())) != null ? 
-                    "entity override" : "dimension override") : "config";
-            DynamicDifficulty.LOGGER.debug("Player bonus scaled: {} * {} = {} (from {})", 
-                total, multiplier, scaledBonus, source);
-        }
-
-        return scaledBonus;
+        return scalePlayerBonus(total, settings);
     }
 
-    /**
-     * Gets the structure bonus for an entity's current position.
-     */
-    public static StructureBonus getStructureBonus(LivingEntity entity) {
-        if (!(entity.level() instanceof ServerLevel serverLevel)) return StructureBonus.EMPTY;
-        
-        return LocationBonusUtils.getStructureAt(serverLevel, entity.blockPosition(), true);
-    }
-
-    /**
-     * Gets the biome bonus for an entity's current position.
-     */
-    public static BiomeBonus getBiomeBonus(LivingEntity entity) {
-        if (!(entity.level() instanceof ServerLevel serverLevel)) return BiomeBonus.EMPTY;
-        
-        return LocationBonusUtils.getBiomeAt(serverLevel, entity.blockPosition());
+    public static int scalePlayerBonus(int rawBonus, LevelingSettings settings) {
+        Double multiplierOverride = settings.playerLevelMultiplier();
+        double multiplier = multiplierOverride != null ? multiplierOverride : Configs.SYNC.playerLevelMultiplier.get();
+        return (int) (rawBonus * multiplier);
     }
 }

@@ -3,7 +3,7 @@ package dev.muon.dynamic_difficulty.mixin;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
 import dev.muon.dynamic_difficulty.attribute.ModAttributesFabric;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.Configs;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -35,7 +35,7 @@ public class LivingEntityMixinFabric {
             return original;
         }
         int levelValue = LevelingAPI.getLevel(self) + 1;
-        double expBonus = Config.COMMON.expBonus.get() * levelValue;
+        double expBonus = Configs.SYNC.expBonus.get() * levelValue;
         return (int) (original + original * expBonus);
     }
 }

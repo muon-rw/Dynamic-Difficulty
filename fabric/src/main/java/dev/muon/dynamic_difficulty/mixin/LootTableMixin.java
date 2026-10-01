@@ -4,7 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.Configs;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -57,7 +57,7 @@ public abstract class LootTableMixin {
             return;
         }
 
-        if (!Config.COMMON.enableLevelBasedDrops.get()) {
+        if (!Configs.SYNC.enableLevelBasedDrops.get()) {
             original.call(context, output);
             return;
         }

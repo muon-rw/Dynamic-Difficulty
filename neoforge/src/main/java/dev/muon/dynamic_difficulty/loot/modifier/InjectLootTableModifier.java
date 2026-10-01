@@ -3,7 +3,7 @@ package dev.muon.dynamic_difficulty.loot.modifier;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.Configs;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -43,7 +43,7 @@ public class InjectLootTableModifier extends LootModifier {
 
     @Override
     protected @NotNull ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
-        if (!Config.COMMON.enableLevelBasedDrops.get()) {
+        if (!Configs.SYNC.enableLevelBasedDrops.get()) {
             return generatedLoot;
         }
 

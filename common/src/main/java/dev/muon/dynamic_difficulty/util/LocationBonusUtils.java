@@ -2,10 +2,11 @@ package dev.muon.dynamic_difficulty.util;
 
 import dev.muon.dynamic_difficulty.api.BiomeBonus;
 import dev.muon.dynamic_difficulty.api.StructureBonus;
-import dev.muon.dynamic_difficulty.data.BiomeLevelingSettingsReloader;
-import dev.muon.dynamic_difficulty.data.StructureLevelingSettingsReloader;
-import dev.muon.dynamic_difficulty.settings.BiomeBonusSettings;
-import dev.muon.dynamic_difficulty.settings.StructureBonusSettings;
+import dev.muon.dynamic_difficulty.data.DimensionLevelingSettingsStore;
+import dev.muon.dynamic_difficulty.data.LocationLevelingSettingsStore;
+import dev.muon.dynamic_difficulty.settings.DimensionLevelingSettings;
+import dev.muon.dynamic_difficulty.settings.LevelingSettings;
+import dev.muon.dynamic_difficulty.settings.LocationLevelingSettings.RawSettings;
 import net.minecraft.advancements.critereon.LocationPredicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -18,106 +19,156 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class LocationBonusUtils {
-    
-    private LocationBonusUtils() {} // Utility class
-    
+
+    private LocationBonusUtils() {}
+
     /**
-     * Finds the structure with the highest bonus at the given position.
-     * 
-     * @param level The server level
-     * @param pos The block position
-     * @param onlyWithBonuses If true, only returns structures with configured bonuses.
-     *                        If false, returns any structure (for StructureCredits-like display).
-     * @return The structure bonus info (structureId may be null if no structure at position)
+     * The dimension, biome and structure tiers of the settings chain at a position, without the entity tier.
+     * {@code structureBonus} also names a structure that has no bonus.
+     */
+    public record ResolvedLocation(
+            DimensionLevelingSettings dimension,
+            LevelingSettings settings,
+            @Nullable RawSettings biomeSettings,
+            @Nullable RawSettings structureSettings,
+            BiomeBonus biomeBonus,
+            StructureBonus structureBonus) {}
+
+    private record Match(ResourceLocation id, List<RawSettings> entries) {}
+
+    private record BonusPair(int nonBypassing, int bypassing) {
+        static BonusPair highestPerBucket(List<RawSettings> entries) {
+            int nonBypassing = 0;
+            int bypassing = 0;
+            for (RawSettings entry : entries) {
+                int bonus = entry.levelBonus();
+                if (bonus <= 0) continue;
+                if (entry.bypassesCap()) bypassing = Math.max(bypassing, bonus);
+                else nonBypassing = Math.max(nonBypassing, bonus);
+            }
+            return new BonusPair(nonBypassing, bypassing);
+        }
+
+        int total() {
+            return nonBypassing + bypassing;
+        }
+    }
+
+    public static ResolvedLocation resolveLocation(ServerLevel level, BlockPos pos) {
+        DimensionLevelingSettings dimension = DimensionLevelingSettingsStore.get(level);
+        Match biome = biomeAt(level, pos);
+        List<Match> structures = structuresAt(level, pos);
+
+        RawSettings biomeSettings = biome == null ? null : merge(biome.entries());
+        RawSettings structureSettings = mergeAll(structures);
+
+        LevelingSettings settings = dimension;
+        if (biomeSettings != null) {
+            settings = biomeSettings.resolve(settings);
+        }
+        if (structureSettings != null) {
+            settings = structureSettings.resolve(settings);
+        }
+
+        return new ResolvedLocation(dimension, settings, biomeSettings, structureSettings,
+                biomeBonus(biome), structureBonus(structures, false));
+    }
+
+    /**
+     * @param onlyWithBonuses If false, a structure without a bonus can still be reported (for title display).
      */
     public static StructureBonus getStructureAt(ServerLevel level, BlockPos pos, boolean onlyWithBonuses) {
+        return structureBonus(structuresAt(level, pos), onlyWithBonuses);
+    }
+
+    /** Merged per field (highest wins) across every structure overlapping the position and their tags. */
+    @Nullable
+    public static RawSettings getStructureSettingsAt(ServerLevel level, BlockPos pos) {
+        return mergeAll(structuresAt(level, pos));
+    }
+
+    public static BiomeBonus getBiomeAt(ServerLevel level, BlockPos pos) {
+        return biomeBonus(biomeAt(level, pos));
+    }
+
+    /** Merged per field (highest wins) across the biome's own entry and its tags. */
+    @Nullable
+    public static RawSettings getBiomeSettingsAt(ServerLevel level, BlockPos pos) {
+        Match biome = biomeAt(level, pos);
+        return biome == null ? null : merge(biome.entries());
+    }
+
+    @Nullable
+    private static Match biomeAt(ServerLevel level, BlockPos pos) {
+        Registry<Biome> biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
+        return biomeRegistry.getResourceKey(level.getBiome(pos).value())
+                .map(key -> new Match(key.location(),
+                        LocationLevelingSettingsStore.BIOMES.getMatching(key.location(), biomeRegistry)))
+                .orElse(null);
+    }
+
+    private static List<Match> structuresAt(ServerLevel level, BlockPos pos) {
         Registry<Structure> structureRegistry = level.registryAccess().registryOrThrow(Registries.STRUCTURE);
-        ChunkPos chunkPos = new ChunkPos(pos);
-        
-        ResourceLocation bestStructureId = null;
-        int highestNonBypassing = 0;
-        int highestBypassing = 0;
-        int highestTotalBonus = 0;
-        
-        // Get all structure starts in this chunk - this is fast, only iterates structures actually present
-        var structureStarts = level.structureManager().startsForStructure(chunkPos, structure -> true);
-        
-        for (StructureStart start : structureStarts) {
+        List<Match> matches = new ArrayList<>();
+
+        for (StructureStart start : level.structureManager().startsForStructure(new ChunkPos(pos), structure -> true)) {
             if (!start.isValid()) continue;
-            
-            Structure structure = start.getStructure();
-            ResourceLocation structureId = structureRegistry.getKey(structure);
+
+            ResourceLocation structureId = structureRegistry.getKey(start.getStructure());
             if (structureId == null) continue;
-            
-            // Get holder for LocationPredicate
-            ResourceKey<Structure> structureKey = ResourceKey.create(Registries.STRUCTURE, structureId);
-            Holder<Structure> structureHolder = structureRegistry.getHolderOrThrow(structureKey);
-            
-            // Check if player is actually inside this structure's bounds
+
+            Holder<Structure> structureHolder = structureRegistry.getHolderOrThrow(ResourceKey.create(Registries.STRUCTURE, structureId));
             if (!LocationPredicate.Builder.inStructure(structureHolder).build().matches(level, pos.getX(), pos.getY(), pos.getZ())) {
                 continue;
             }
-            
-            // Player is inside this structure
-            StructureBonusSettings settings = StructureLevelingSettingsReloader.get(structureId, structureRegistry);
-            
-            if (onlyWithBonuses && settings == null) {
-                continue; // Skip structures without bonuses when filtering
-            }
-            
-            int bonus = settings != null ? settings.levelBonus() : 0;
-            boolean bypasses = settings != null && settings.bypassesCap();
-            
-            if (bypasses) {
-                highestBypassing = Math.max(highestBypassing, bonus);
-            } else {
-                highestNonBypassing = Math.max(highestNonBypassing, bonus);
-            }
-            
-            // Track structure with highest bonus, or first structure if no bonuses
-            if (bonus > highestTotalBonus || (bestStructureId == null && !onlyWithBonuses)) {
-                highestTotalBonus = bonus;
-                bestStructureId = structureId;
-            }
+
+            matches.add(new Match(structureId, LocationLevelingSettingsStore.STRUCTURES.getMatching(structureId, structureRegistry)));
         }
-        
-        return new StructureBonus(bestStructureId, highestNonBypassing, highestBypassing);
+        return matches;
     }
-    
-    /**
-     * Gets biome bonus information at the given position.
-     * Minecraft caches biome lookups internally, so no additional caching needed.
-     * 
-     * @param level The server level
-     * @param pos The block position
-     * @return The biome bonus info (biomeId may be null if lookup fails)
-     */
-    public static BiomeBonus getBiomeAt(ServerLevel level, BlockPos pos) {
-        Registry<Biome> biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
-        Biome biome = level.getBiome(pos).value();
-        Optional<ResourceKey<Biome>> optKey = biomeRegistry.getResourceKey(biome);
-        
-        if (optKey.isEmpty()) {
+
+    private static StructureBonus structureBonus(List<Match> structures, boolean onlyWithBonuses) {
+        ResourceLocation bestStructureId = null;
+        int highestTotal = 0;
+        int nonBypassing = 0;
+        int bypassing = 0;
+
+        for (Match structure : structures) {
+            BonusPair bonus = BonusPair.highestPerBucket(structure.entries());
+            if (onlyWithBonuses && bonus.total() == 0) continue;
+
+            if (bestStructureId == null || bonus.total() > highestTotal) {
+                bestStructureId = structure.id();
+                highestTotal = bonus.total();
+            }
+            nonBypassing = Math.max(nonBypassing, bonus.nonBypassing());
+            bypassing = Math.max(bypassing, bonus.bypassing());
+        }
+
+        return new StructureBonus(bestStructureId, nonBypassing, bypassing);
+    }
+
+    private static BiomeBonus biomeBonus(@Nullable Match biome) {
+        if (biome == null) {
             return BiomeBonus.EMPTY;
         }
-        
-        ResourceLocation biomeId = optKey.get().location();
-        BiomeBonusSettings settings = BiomeLevelingSettingsReloader.get(biomeId, biomeRegistry);
-        
-        if (settings == null) {
-            return new BiomeBonus(biomeId, 0, 0);
-        }
-        
-        int bonus = settings.levelBonus();
-        if (settings.bypassesCap()) {
-            return new BiomeBonus(biomeId, 0, bonus);
-        } else {
-            return new BiomeBonus(biomeId, bonus, 0);
-        }
+        BonusPair bonus = BonusPair.highestPerBucket(biome.entries());
+        return new BiomeBonus(biome.id(), bonus.nonBypassing(), bonus.bypassing());
+    }
+
+    @Nullable
+    private static RawSettings mergeAll(List<Match> matches) {
+        return merge(matches.stream().flatMap(match -> match.entries().stream()).toList());
+    }
+
+    @Nullable
+    private static RawSettings merge(List<RawSettings> entries) {
+        return entries.stream().reduce(RawSettings::merge).orElse(null);
     }
 }
-

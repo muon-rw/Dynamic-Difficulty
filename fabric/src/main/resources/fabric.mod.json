@@ -31,9 +31,6 @@
     "mixinsquared-adjuster": [
       "dev.muon.dynamic_difficulty.mixin.DDMixinAdjuster"
     ],
-    "modmenu": [
-      "dev.muon.dynamic_difficulty.compat.modmenu.ModMenuIntegration"
-    ],
     "jade": [
       "dev.muon.dynamic_difficulty.compat.jade.JadePlugin"
     ]
@@ -46,7 +43,7 @@
     "fabricloader": "${fabric_loader_range}",
     "fabric-api": "*",
     "minecraft": "${fabric_minecraft_version_range}",
-    "forgeconfigapiport": "*",
+    "fzzy_config": "*",
     "java": ">=${java_version}"
   }
 }

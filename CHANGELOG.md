@@ -1,3 +1,30 @@
+## 1.3.3
+Brings 1.21.1 up to date with the 26.1.2 releases (1.2.0 through 1.3.3)
+- Migrate to FzzyConfig, now required instead of Forge Config API Port
+- Config files are now `config/dynamic_difficulty/sync.toml` and `client.toml`; gameplay settings are synced from the server
+- *Configs* can NOT be reused from old versions, you'll need to reapply changes
+- Existing *datapacks* should still be compatible, except for the renamed structure tags below
+- Biome/structure datapacks can now override any base setting (`starting_level`, `levels_per_*`, `attribute_modifiers`, `player_level_multiplier`, …), not just `level_bonus`/`bypasses_cap`
+- Resolution chain is now dimension -> biome -> structure -> entity
+- Multi-tag and overlapping-structure matches merge per highest of each field
+- Negative biome/structure `level_bonus` values are now ignored; override `starting_level` or `max_level` instead
+- Built-in structure tags renamed from `level_1`..`level_6` to `level_5`..`level_30` (named after their bonus), and now belong to the built-in datapack
+- Add Health Bars (Fuzs) compat
+- Better compat for Visual Traveler's Titles
+- Change default component from "Level n" to "Lv. n"
+- Don't inject nameplate onto players regardless of config if Chronicles: Leveling is loaded
+- Default config: player level multiplier 1.0 -> 0.3, no mob armor per level, depth scaling 0.05 per block
+- Disable all horizontal-distance-based-scaling by default
+- Add a few default biome-tag based bonuses
+- Fix damage bonuses being applied twice on Neoforge
+- Fix playtime scaling and player level updates never registering on Fabric
+- Fix `dimension_tags` settings only affecting the debug display, not spawned mobs
+- Fix the level HUD and `LevelingAPI.getLevelAt` ignoring the max level, `playerLevelBypassesCap` and `apply_level_bonuses`
+- Leveling attribute bonuses that are no longer configured are removed from existing mobs when they next load
+- Fix mobs healing to full whenever their chunk reloads
+- Invalid leveling settings files are now logged instead of silently skipped
+- Biome and structure lookups now run once per mob spawn
+
 ## 1.1.1
 - Update Reskillable Reimagined compat to 2.3.3
 - Fix levelup items not being usable on Tamed Wolves (or other mobs that override right click behavior)

@@ -47,6 +47,7 @@ repositories {
         url = uri("https://raw.githubusercontent.com/Fuzss/modresources/main/maven/")
     }
     maven("https://maven.puffish.net")
+    maven("https://maven.fzzyhmstrs.me/")
 }
 
 dependencies {
@@ -59,7 +60,11 @@ dependencies {
 
     compileOnlyApi("org.jetbrains:annotations:24.1.0")
 
-    api("fuzs.forgeconfigapiport:forgeconfigapiport-common-neoforgeapi:${Versions.FCAP}")
+    // The Fabric jar is intermediary-mapped on 1.21.1; the NeoForge jar is Mojang-mapped like common
+    compileOnly("me.fzzyhmstrs:fzzy_config:${Versions.FZZY_CONFIG}+neoforge") {
+        isTransitive = false
+    }
+    compileOnly("org.jetbrains.kotlin:kotlin-stdlib:${Versions.KOTLIN}")
 
     compileOnly("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}")
 }

@@ -1,6 +1,6 @@
 package dev.muon.dynamic_difficulty.item;
 
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.Configs;
 import net.minecraft.core.Holder;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
@@ -24,35 +24,35 @@ public class ModItems {
     public static final Supplier<LevelUpItem> POTION_OF_GROWTH_SUPPLIER = () -> new LevelUpItem(
             new Item.Properties().stacksTo(16).rarity(Rarity.COMMON),
             1,
-            Config.COMMON.potionOfGrowthMaxLevel,
+            Configs.SYNC.potionOfGrowthMaxLevel,
             false
     );
     
     public static final Supplier<LevelUpItem> ELIXIR_OF_NURTURING_SUPPLIER = () -> new LevelUpItem(
             new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON),
             1,
-            Config.COMMON.elixirOfNurturingMaxLevel,
+            Configs.SYNC.elixirOfNurturingMaxLevel,
             false
     );
     
     public static final Supplier<LevelUpItem> DRAUGHT_OF_ASCENSION_SUPPLIER = () -> new LevelUpItem(
             new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
             1,
-            Config.COMMON.draughtOfAscensionMaxLevel,
+            Configs.SYNC.draughtOfAscensionMaxLevel,
             false
     );
     
     public static final Supplier<LevelUpItem> ESSENCE_OF_VITALITY_SUPPLIER = () -> new LevelUpItem(
             new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
             1,
-            Config.COMMON.essenceOfVitalityMaxLevel,
+            Configs.SYNC.essenceOfVitalityMaxLevel,
             false
     );
     
     public static final Supplier<LevelUpItem> CRYSTAL_OF_AWAKENING_SUPPLIER = () -> new LevelUpItem(
             new Item.Properties().stacksTo(16).rarity(Rarity.EPIC),
             1,
-            Config.COMMON.crystalOfAwakeningMaxLevel,
+            Configs.SYNC.crystalOfAwakeningMaxLevel,
             true  // Has enchantment glint
     );
     

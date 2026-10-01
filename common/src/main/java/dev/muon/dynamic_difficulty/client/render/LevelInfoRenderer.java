@@ -1,7 +1,8 @@
 package dev.muon.dynamic_difficulty.client.render;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.ConfigClient;
+import dev.muon.dynamic_difficulty.config.Configs;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -17,15 +18,15 @@ public class LevelInfoRenderer extends TitleRenderer<Void> {
         super(
                 0, // No recent entries tracking for level info
                 () -> true, // Always enabled (handled in renderText)
-                Config.CLIENT.levelInfoFadeInTime,
-                Config.CLIENT.levelInfoDisplayTime,
-                Config.CLIENT.levelInfoFadeOutTime,
-                Config.CLIENT.levelInfoTextColor,
-                Config.CLIENT.levelInfoRenderShadow,
-                Config.CLIENT.levelInfoTextSize,
-                Config.CLIENT.levelInfoAnchor,
-                Config.CLIENT.levelInfoXOffset,
-                Config.CLIENT.levelInfoYOffset
+                Configs.CLIENT.levelInfoFadeInTime,
+                Configs.CLIENT.levelInfoDisplayTime,
+                Configs.CLIENT.levelInfoFadeOutTime,
+                Configs.CLIENT.levelInfoTextColor,
+                Configs.CLIENT.levelInfoRenderShadow,
+                Configs.CLIENT.levelInfoTextSize,
+                Configs.CLIENT.levelInfoAnchor,
+                Configs.CLIENT.levelInfoXOffset,
+                Configs.CLIENT.levelInfoYOffset
         );
     }
 
@@ -74,7 +75,7 @@ public class LevelInfoRenderer extends TitleRenderer<Void> {
         int levelInfoWidth = fontRenderer.width(displayedLevelInfo);
         // Derive alignment from anchor point
         // Note: alignmentOffset needs to account for scaled width
-        Config.AnchorPoint anchorPoint = anchor.get();
+        ConfigClient.AnchorPoint anchorPoint = anchor.get();
         float alignmentOffset = getAlignmentOffset(anchorPoint, levelInfoWidth) * textSizeValue;
 
         int xOffsetValue = (int) ((alignmentOffset + xOffset.get()) / textSizeValue);

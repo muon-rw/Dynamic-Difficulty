@@ -5,7 +5,7 @@ import dev.muon.dynamic_difficulty.attribute.ModAttributesNeoForge;
 import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyAttachmentNeoForge;
 import dev.muon.dynamic_difficulty.compat.puffish.PuffishSkillsProviderNeoForge;
 import dev.muon.dynamic_difficulty.compat.reskillable.ReskillableReimaginedProvider;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.Configs;
 import dev.muon.dynamic_difficulty.item.ModItemsNeoForge;
 import dev.muon.dynamic_difficulty.loot.condition.ModLootConditionsNeoForge;
 import dev.muon.dynamic_difficulty.loot.modifier.ModLootModifiersNeoForge;
@@ -17,7 +17,6 @@ import net.minecraft.server.packs.repository.PackSource;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.event.AddPackFindersEvent;
 
 @Mod(DynamicDifficulty.MODID)
@@ -54,15 +53,11 @@ public class DynamicDifficultyNeoForge {
         
         // Built-in datapack
         eventBus.addListener(this::addPackFinders);
-        
-        // Register config
-        modContainer.registerConfig(ModConfig.Type.COMMON, Config.COMMON_SPEC);
-        modContainer.registerConfig(ModConfig.Type.CLIENT, Config.CLIENT_SPEC);
     }
 
     
     private void addPackFinders(AddPackFindersEvent event) {
-        if (Config.COMMON.useDefaultLevelingSettings.get()) {
+        if (Configs.SYNC.useDefaultLevelingSettings.get()) {
             event.addPackFinders(
                     DynamicDifficulty.loc("resourcepacks/default"),
                     PackType.SERVER_DATA,

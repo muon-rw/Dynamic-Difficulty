@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    {"id":"minecraft:end_city", "required": false},
+    {"id":"dungeons_arise:keep_kayra", "required": false},
+    {"id":"aether:gold_dungeon", "required": false},
+    {"id":"mes:enderwatch_tower", "required": false},
+    {"id":"nova_structures:lone_citadel", "required": false},
+    {"id":"dungeons_arise:heavenly_challenger", "required": false},
+    {"id":"dungeons_arise:typhon", "required": false},
+    {"id":"nova_structures:shrine_combat_tier_5", "required": false}
+  ]
+} 

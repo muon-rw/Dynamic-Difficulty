@@ -132,7 +132,7 @@ publishing {
     repositories {
         maven {
             name = "Muon"
-            url = uri("https://maven.muon.rip/releases")
+            url = uri(System.getenv("MAVEN_URL") ?: "https://maven.muon.rip/releases")
             credentials {
                 username = System.getenv("MAVEN_USERNAME")
                 password = System.getenv("MAVEN_PASSWORD")
@@ -141,5 +141,11 @@ publishing {
                 create<BasicAuthentication>("basic")
             }
         }
+    }
+}
+
+plugins.withId("me.modmuss50.mod-publish-plugin") {
+    tasks.named("publishMods") {
+        dependsOn("publishAllPublicationsToMuonRepository")
     }
 }

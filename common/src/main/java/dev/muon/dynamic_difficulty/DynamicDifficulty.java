@@ -2,6 +2,7 @@ package dev.muon.dynamic_difficulty;
 
 import com.mojang.logging.LogUtils;
 import dev.muon.dynamic_difficulty.api.LevelingAPI;
+import dev.muon.dynamic_difficulty.config.Configs;
 import dev.muon.dynamic_difficulty.player.PlayerLevelUpdateHandler;
 import dev.muon.dynamic_difficulty.player.PlaytimePlayerLevelProvider;
 import dev.muon.dynamic_difficulty.platform.PlatformHelper;
@@ -19,12 +20,12 @@ public class DynamicDifficulty {
     }
 
     public static void init() {
-        // Register player level update callback
+        Configs.register();
+
         PlayerLevelUpdateHandler.registerCallback(PlayerLevelUpdateHandler::updatePlayerLevel);
 
-        // Register built-in playtime provider (always available)
         LevelingAPI.registerPlayerLevelProvider(new PlaytimePlayerLevelProvider());
-        
+
         // Mod-specific providers are registered in platform-specific init code
     }
 

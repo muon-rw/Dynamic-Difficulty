@@ -1,7 +1,7 @@
 package dev.muon.dynamic_difficulty.gradle
 
 object Versions {
-    const val MOD = "1.1.1"
+    const val MOD = "1.3.3"
 
     const val MINECRAFT = "1.21.1"
     const val PARCHMENT_MINECRAFT = "1.21.1"
@@ -34,9 +34,12 @@ object Versions {
     const val PLACEBO = "9.8.0"
     const val CURIOS = "9.4.2+$MINECRAFT"
 
-    const val FCAP = "21.1.3"
+    const val FZZY_CONFIG = "0.7.7+1.21"
+    const val KOTLIN = "2.0.20"
 
     const val PUFFISH_SKILLS = "0.17.0+1.21"
     const val PUFFISH_ATTRIBUTES = "0.7.3+1.21"
+
+    const val HEALTH_BARS = "v21.1.0"
 
 }

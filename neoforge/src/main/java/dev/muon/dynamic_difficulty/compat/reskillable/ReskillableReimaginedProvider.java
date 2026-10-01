@@ -2,7 +2,7 @@ package dev.muon.dynamic_difficulty.compat.reskillable;
 
 import dev.muon.dynamic_difficulty.DynamicDifficulty;
 import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.Configs;
 import net.bandit.reskillable.common.capabilities.SkillModel;
 import net.bandit.reskillable.common.skills.Skill;
 import net.minecraft.server.level.ServerPlayer;
@@ -44,7 +44,7 @@ public class ReskillableReimaginedProvider implements PlayerLevelProvider {
             return 0;
         }
         
-        Set<Skill> blacklist = Config.COMMON.reskillableSkillBlacklist.get().stream()
+        Set<Skill> blacklist = Configs.SYNC.reskillableSkillBlacklist.get().stream()
                 .map(skillName -> {
                     try {
                         return Skill.valueOf(skillName.toUpperCase());

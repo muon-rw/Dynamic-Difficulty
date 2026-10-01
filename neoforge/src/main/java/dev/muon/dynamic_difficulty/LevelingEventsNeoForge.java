@@ -1,14 +1,14 @@
 package dev.muon.dynamic_difficulty;
 
 import dev.muon.dynamic_difficulty.command.ModCommands;
-import dev.muon.dynamic_difficulty.data.*;
+import dev.muon.dynamic_difficulty.data.LevelingSettingsReloaderNeoForge;
+import dev.muon.dynamic_difficulty.data.LevelingSettingsSource;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -51,22 +51,7 @@ public class LevelingEventsNeoForge {
 
     @SubscribeEvent
     public static void reloadSettings(AddReloadListenerEvent event) {
-        event.addListener(new DimensionsLevelingSettingsReloaderNeoForge());
-        event.addListener(new DimensionTagLevelingSettingsReloaderNeoForge());
-        event.addListener(new EntityLevelingSettingsReloaderNeoForge());
-        event.addListener(new EntityTagLevelingSettingsReloaderNeoForge());
-        event.addListener(new StructureLevelingSettingsReloaderNeoForge());
-        event.addListener(new StructureTagLevelingSettingsReloaderNeoForge());
-        event.addListener(new BiomeLevelingSettingsReloaderNeoForge());
-        event.addListener(new BiomeTagLevelingSettingsReloaderNeoForge());
-    }
-
-    @SubscribeEvent
-    public static void onConfigReload(ModConfigEvent.Reloading event) {
-        if (event.getConfig().getType() == net.neoforged.fml.config.ModConfig.Type.COMMON
-                && event.getConfig().getModId().equals(DynamicDifficulty.MODID)) {
-            LevelingEvents.onConfigReload();
-        }
+        LevelingSettingsSource.ALL.forEach(source -> event.addListener(new LevelingSettingsReloaderNeoForge(source)));
     }
 
     @SubscribeEvent

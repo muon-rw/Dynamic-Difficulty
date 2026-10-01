@@ -1,7 +1,7 @@
 package dev.muon.dynamic_difficulty.player;
 
 import dev.muon.dynamic_difficulty.api.PlayerLevelProvider;
-import dev.muon.dynamic_difficulty.config.Config;
+import dev.muon.dynamic_difficulty.config.Configs;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Comparator;
@@ -33,7 +33,7 @@ public class PlayerLevelCalculator {
             return 1; // Default level if no providers
         }
         
-        PlayerLevelDisplayStrategy strategy = Config.COMMON.playerLevelDisplayStrategy.get();
+        PlayerLevelDisplayStrategy strategy = Configs.SYNC.playerLevelDisplayStrategy.get();
         
         return switch (strategy) {
             case HIGHEST_PRIORITY -> calculateHighestPriority(player, enabledProviders);
