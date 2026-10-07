@@ -1,3 +1,6 @@
+## 1.3.5
+- Performance: LevelPlaterHandler now only runs its invisibility and raycast checks for mobs eligible for nameplate rendering at all
+
 ## 1.3.4
 - Added new optional `priority` field to entity and dimension tag settings for more granularity with overlapping tags (previously, one tag was selected arbitrarily)
 - Fix structure lookups loading or generating chunks on the server thread, which could hang the server (#62)

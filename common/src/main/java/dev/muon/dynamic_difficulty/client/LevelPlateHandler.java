@@ -180,24 +180,17 @@ public class LevelPlateHandler {
 
         if (!passesCheapGuards(entity, clientPlayer, minecraft)) return false;
         if (!isWithinRenderDistance(entity, clientPlayer)) return false;
-
-        ConfigClient.RenderBehavior behavior = Configs.CLIENT.renderBehavior.get();
-        if (behavior == ConfigClient.RenderBehavior.NEVER) {
-            return false;
-        }
-
-        if (!hasLineOfSight(clientPlayer, entity)) return false;
-
-        return matchesRenderBehavior(behavior, minecraft, entity);
+        if (!matchesRenderBehavior(Configs.CLIENT.renderBehavior.get(), minecraft, entity)) return false;
+        // isInvisibleTo can hit Curios lookups, and line of sight raycasts; both run per entity per frame.
+        if (entity.isInvisibleTo(clientPlayer)) return false;
+        return hasLineOfSight(clientPlayer, entity);
     }
 
     private static boolean passesCheapGuards(LivingEntity entity, LocalPlayer clientPlayer, Minecraft minecraft) {
         if (clientPlayer == null) return false;
         if (!Minecraft.renderNames()) return false;
         if (entity.isVehicle()) return false;
-        if (entity == minecraft.getCameraEntity()) return false;
-        if (entity.isInvisibleTo(clientPlayer)) return false;
-        return true;
+        return entity != minecraft.getCameraEntity();
     }
 
     private static boolean isWithinRenderDistance(LivingEntity entity, LocalPlayer clientPlayer) {
