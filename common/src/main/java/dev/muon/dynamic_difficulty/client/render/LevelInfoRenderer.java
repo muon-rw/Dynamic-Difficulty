@@ -17,7 +17,7 @@ public class LevelInfoRenderer extends TitleRenderer<Void> {
     public LevelInfoRenderer() {
         super(
                 0, // No recent entries tracking for level info
-                () -> true, // Always enabled (handled in renderText)
+                Configs.CLIENT.showLevelInfo,
                 Configs.CLIENT.levelInfoFadeInTime,
                 Configs.CLIENT.levelInfoDisplayTime,
                 Configs.CLIENT.levelInfoFadeOutTime,
@@ -47,7 +47,7 @@ public class LevelInfoRenderer extends TitleRenderer<Void> {
                            StructureTitleRenderer<?> structureRenderer) {
         // Render level info independently - it doesn't require a title to be active
         // Level info displays whenever we have it, regardless of whether titles are showing
-        if (displayedLevelInfo == null || titleTimer <= 0) {
+        if (!enabled.get() || displayedLevelInfo == null || titleTimer <= 0) {
             return;
         }
 

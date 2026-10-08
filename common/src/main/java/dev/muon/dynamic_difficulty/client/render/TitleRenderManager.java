@@ -209,6 +209,9 @@ public class TitleRenderManager {
     }
 
     private void updateLevelInfoIfChanged(int displayedLevel, int playerBonus) {
+        if (!Configs.CLIENT.showLevelInfo.get()) {
+            return;
+        }
         if (shouldUpdateLevelInfo(displayedLevel, playerBonus)) {
             levelInfoRenderer.displayLevelInfo(displayedLevel, playerBonus);
             lastDisplayedLevel = displayedLevel;

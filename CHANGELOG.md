@@ -1,3 +1,6 @@
+## 1.3.6
+- Added a config toggle for whether entering an area with a different level should display anything at all
+
 ## 1.3.5
 - Performance: LevelPlaterHandler now only runs its invisibility and raycast checks for mobs eligible for nameplate rendering at all
 

@@ -61,7 +61,8 @@ public class ConfigSync extends Config {
             "Base level for all entities")
     public ValidatedInt startingLevel = new ValidatedInt(1);
 
-    @Comment("Maximum level cap (0 for unlimited)")
+    @Comment("Default maximum level cap (0 for unlimited)\n" +
+            "Dimensions, biomes, structures, and entities that set their own max_level use that value instead")
     public ValidatedInt maxLevel = new ValidatedInt(0);
 
     @Comment("Random bonus levels added to entities (0-value)")

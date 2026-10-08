@@ -202,7 +202,10 @@ public class ConfigClient extends Config {
     public ValidatedInt dimensionTitleYOffset = new ValidatedInt(-35);
 
     @Comment("--- Level Info Display ---\n" +
-            "Time in ticks for level info to fade in")
+            "Display the area level when it changes")
+    public ValidatedBoolean showLevelInfo = new ValidatedBoolean(true);
+
+    @Comment("Time in ticks for level info to fade in")
     public ValidatedInt levelInfoFadeInTime = new ValidatedInt(10, 100, 0);
 
     @Comment("Time in ticks to display level info")
