@@ -1,3 +1,6 @@
+## 1.3.7
+- Iron's Spells 'n Spellbooks summons no longer level or show a level, toggleable with `cancelLevelsForIronsSpellbooksSummons`
+
 ## 1.3.6
 - Added a config toggle for whether entering an area with a different level should display anything at all
 

@@ -1,6 +1,7 @@
 package dev.muon.dynamic_difficulty.platform;
 
 import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyAttachmentHelper;
+import net.minecraft.world.entity.Entity;
 
 public interface PlatformHelper {
 
@@ -46,4 +47,6 @@ public interface PlatformHelper {
      * @return The Dungeon Difficulty attachment helper for this platform.
      */
     DungeonDifficultyAttachmentHelper getDungeonDifficultyAttachmentHelper();
+
+    boolean isIronsSpellbooksSummon(Entity entity);
 }

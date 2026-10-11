@@ -159,6 +159,9 @@ public class ConfigSync extends Config {
             "Whether passive mobs (animals) should be prevented from leveling")
     public ValidatedBoolean cancelLevelsForPassives = new ValidatedBoolean(true);
 
+    @Comment("Whether Iron's Spells 'n Spellbooks summons should be prevented from leveling")
+    public ValidatedBoolean cancelLevelsForIronsSpellbooksSummons = new ValidatedBoolean(true);
+
     @Comment("Entities that cannot level up\n" +
             "Supports wildcards: use 'modid:*' to blacklist all entities from a mod\n" +
             "Examples: [\"minecraft:zombie\", \"minecraft:skeleton\", \"cataclysm:*\"]")

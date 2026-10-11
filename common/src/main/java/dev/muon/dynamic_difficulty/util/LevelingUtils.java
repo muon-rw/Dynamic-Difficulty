@@ -70,6 +70,8 @@ public class LevelingUtils {
     public static boolean canHaveLevel(Entity entity) {
         if (!(entity instanceof LivingEntity)) return false;
         if (entity.getType() == EntityType.PLAYER) return false;
+        if (Configs.SYNC.cancelLevelsForIronsSpellbooksSummons.get()
+                && DynamicDifficulty.getHelper().isIronsSpellbooksSummon(entity)) return false;
 
         if (entity instanceof Animal animal && Configs.SYNC.cancelLevelsForPassives.get()) {
             if (entity.getType().is(PASSIVE_WHITELIST)) {

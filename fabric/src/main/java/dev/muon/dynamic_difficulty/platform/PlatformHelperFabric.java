@@ -3,6 +3,7 @@ package dev.muon.dynamic_difficulty.platform;
 import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyAttachmentHelper;
 import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyAttachmentHelperFabric;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.world.entity.Entity;
 
 public class PlatformHelperFabric implements PlatformHelper {
     
@@ -38,5 +39,10 @@ public class PlatformHelperFabric implements PlatformHelper {
     @Override
     public DungeonDifficultyAttachmentHelper getDungeonDifficultyAttachmentHelper() {
         return DUNGEON_DIFFICULTY_ATTACHMENT_HELPER;
+    }
+
+    @Override
+    public boolean isIronsSpellbooksSummon(Entity entity) {
+        return false;
     }
 }

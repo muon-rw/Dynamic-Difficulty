@@ -2,6 +2,8 @@ package dev.muon.dynamic_difficulty.platform;
 
 import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyAttachmentHelper;
 import dev.muon.dynamic_difficulty.compat.dungeon_difficulty.DungeonDifficultyAttachmentHelperNeoForge;
+import dev.muon.dynamic_difficulty.compat.irons_spellbooks.IronsSpellbooksCompat;
+import net.minecraft.world.entity.Entity;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
@@ -44,5 +46,10 @@ public class PlatformHelperNeoForge implements PlatformHelper {
     @Override
     public DungeonDifficultyAttachmentHelper getDungeonDifficultyAttachmentHelper() {
         return DUNGEON_DIFFICULTY_ATTACHMENT_HELPER;
+    }
+
+    @Override
+    public boolean isIronsSpellbooksSummon(Entity entity) {
+        return isModLoaded("irons_spellbooks") && IronsSpellbooksCompat.isSummon(entity);
     }
 }

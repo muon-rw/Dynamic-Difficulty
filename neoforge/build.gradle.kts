@@ -154,6 +154,9 @@ dependencies {
     compileOnly("dev.shadowsoffire:ApothicEnchanting:${Versions.MINECRAFT}-${Versions.APOTHIC_ENCHANTING}")
     localRuntime("dev.shadowsoffire:ApothicEnchanting:${Versions.MINECRAFT}-${Versions.APOTHIC_ENCHANTING}")
 
+    // Iron's Spells 'n Spellbooks
+    compileOnly("io.redspace:irons_spellbooks:${Versions.IRONS_SPELLBOOKS}")
+
     // Puffish
     compileOnly("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}:neoforge")
     localRuntime("net.puffish:skillsmod:${Versions.PUFFISH_SKILLS}:neoforge")
