@@ -1,3 +1,6 @@
+## 1.3.8
+- Fix an issue with the inject loot table modifier which could cause all other loot modifiers to roll twice
+
 ## 1.3.7
 - Iron's Spells 'n Spellbooks summons no longer level or show a level, toggleable with `cancelLevelsForIronsSpellbooksSummons`
 

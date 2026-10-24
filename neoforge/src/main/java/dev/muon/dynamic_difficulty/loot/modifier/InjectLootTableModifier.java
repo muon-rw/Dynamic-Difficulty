@@ -32,9 +32,6 @@ public class InjectLootTableModifier extends LootModifier {
     );
 
     private final ResourceLocation lootTable;
-    
-    // ThreadLocal guard to prevent infinite recursion
-    private static final ThreadLocal<Boolean> PROCESSING = ThreadLocal.withInitial(() -> false);
 
     public InjectLootTableModifier(LootItemCondition[] conditions, ResourceLocation lootTable) {
         super(conditions);
@@ -42,6 +39,7 @@ public class InjectLootTableModifier extends LootModifier {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     protected @NotNull ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
         if (!Configs.SYNC.enableLevelBasedDrops.get()) {
             return generatedLoot;
@@ -51,33 +49,23 @@ public class InjectLootTableModifier extends LootModifier {
             return generatedLoot;
         }
 
-        if (PROCESSING.get()) {
-            return generatedLoot;
-        }
-
         if (findPlayer(context) == null) {
             return generatedLoot;
         }
 
-        try {
-            PROCESSING.set(true);
-            
-            // Get the loot table to inject
-            ResourceKey<LootTable> tableKey = ResourceKey.create(Registries.LOOT_TABLE, lootTable);
-            LootTable table = context.getLevel().getServer().reloadableRegistries().getLootTable(tableKey);
-            
-            if (table == LootTable.EMPTY) {
-                DynamicDifficulty.LOGGER.warn("Configured inject loot table {} not found or is empty!", lootTable);
-                return generatedLoot;
-            }
-            
-            // Add loot from the configured table into the original drop table
-            table.getRandomItems(context, generatedLoot::add);
+        ResourceKey<LootTable> tableKey = ResourceKey.create(Registries.LOOT_TABLE, lootTable);
+        LootTable table = context.getLevel().getServer().reloadableRegistries().getLootTable(tableKey);
 
+        if (table == LootTable.EMPTY) {
+            DynamicDifficulty.LOGGER.warn("Configured inject loot table {} not found or is empty!", lootTable);
             return generatedLoot;
-        } finally {
-            PROCESSING.set(false);
         }
+
+        // getRandomItems would run every global loot modifier again on this shared context, and
+        // NeoForge keeps the queried table ID from the outer roll, so every modifier targeting the
+        // killed mob's table would add its loot a second time.
+        table.getRandomItemsRaw(context, LootTable.createStackSplitter(context.getLevel(), generatedLoot::add));
+        return generatedLoot;
     }
     
     /**
